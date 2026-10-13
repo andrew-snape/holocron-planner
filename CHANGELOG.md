@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2
+
+- Update test: no changes to how Holocron works.
+
 ## 1.1
 
 - A new data folder starts with a typical school day and a list of subjects (existing files are never changed).
