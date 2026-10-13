@@ -42,20 +42,25 @@ BUILD=$((BUILD + 1))
 sed -i '' -E "s/MARKETING_VERSION = [0-9.]+;/MARKETING_VERSION = $VERSION;/; s/CURRENT_PROJECT_VERSION = [0-9]+;/CURRENT_PROJECT_VERSION = $BUILD;/" "$PBX"
 
 echo "Building Holocron $VERSION (build $BUILD)..."
-rm -rf build dist
+rm -rf dist
 mkdir -p dist
+
+# Build in a temporary folder outside Documents. Folders that iCloud syncs add hidden Finder
+# attributes to the app, and code signing then fails with "detritus not allowed".
+BUILD_DIR="$(mktemp -d /tmp/holocron-build.XXXXXX)"
+trap 'rm -rf "$BUILD_DIR"' EXIT
 xcodebuild -project Holocron.xcodeproj -target Holocron -configuration Release \
-  SYMROOT="$PWD/build" CODE_SIGN_IDENTITY=- clean build > dist/build.log 2>&1 || {
+  SYMROOT="$BUILD_DIR" CODE_SIGN_IDENTITY=- clean build > dist/build.log 2>&1 || {
     echo "The build failed. The end of the log:"; tail -25 dist/build.log; exit 1; }
 
-APP="build/Release/Holocron.app"
-[ -d "$APP" ] || { echo "Build finished but $APP was not found. See dist/build.log"; exit 1; }
-BUILT="$(defaults read "$PWD/$APP/Contents/Info" CFBundleShortVersionString)"
+APP="$BUILD_DIR/Release/Holocron.app"
+[ -d "$APP" ] || { echo "Build finished but the app was not found. See dist/build.log"; exit 1; }
+BUILT="$(defaults read "$APP/Contents/Info" CFBundleShortVersionString)"
 [ "$BUILT" = "$VERSION" ] || { echo "The built app says $BUILT, not $VERSION."; exit 1; }
 codesign --verify --deep --strict "$APP"
 
 ZIP="Holocron-$VERSION-mac.zip"
-ditto -c -k --keepParent "$APP" "dist/$ZIP"
+ditto -c -k --keepParent --norsrc --noextattr --noqtn "$APP" "dist/$ZIP"
 ( cd dist && shasum -a 256 "$ZIP" > "$ZIP.sha256" )
 awk -v v="## $VERSION" '$0==v{f=1;next} /^## /{f=0} f' CHANGELOG.md > dist/notes.md
 
