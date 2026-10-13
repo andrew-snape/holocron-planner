@@ -158,10 +158,10 @@ struct BlockRow: View {
                     Text(c.summary).font(.system(size: 13.5)).textSelection(.enabled).padding(.top, 2)
                 }
                 if !c.li.isEmpty {
-                    (Text("LI ").fontWeight(.bold) + Text(c.li)).font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    Text("\(Text("LI ").fontWeight(.bold))\(c.li)").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
                 }
                 if let u = unit {
-                    (Text("Unit ").fontWeight(.bold) + Text(u.s("title"))).font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    Text("\(Text("Unit ").fontWeight(.bold))\(u.s("title"))").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
                 }
             }
             .padding(.vertical, 11)

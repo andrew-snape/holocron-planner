@@ -37,6 +37,14 @@ if git ls-files | grep -qiE '\.csv$|(^|/)photos/'; then
 fi
 
 PBX="Holocron.xcodeproj/project.pbxproj"
+BUILD_DIR=""
+FINISHED=0
+cleanup() {
+  if [ -n "$BUILD_DIR" ]; then rm -rf "$BUILD_DIR"; fi
+  # If anything went wrong, put the project file back the way it was so no version number is used up.
+  if [ "$FINISHED" != "1" ]; then git checkout -- "$PBX" 2>/dev/null || true; fi
+}
+trap cleanup EXIT
 BUILD="$(grep -m1 'CURRENT_PROJECT_VERSION' "$PBX" | sed 's/[^0-9]//g')"
 BUILD=$((BUILD + 1))
 sed -i '' -E "s/MARKETING_VERSION = [0-9.]+;/MARKETING_VERSION = $VERSION;/; s/CURRENT_PROJECT_VERSION = [0-9]+;/CURRENT_PROJECT_VERSION = $BUILD;/" "$PBX"
@@ -48,9 +56,8 @@ mkdir -p dist
 # Build in a temporary folder outside Documents. Folders that iCloud syncs add hidden Finder
 # attributes to the app, and code signing then fails with "detritus not allowed".
 BUILD_DIR="$(mktemp -d /tmp/holocron-build.XXXXXX)"
-trap 'rm -rf "$BUILD_DIR"' EXIT
 xcodebuild -project Holocron.xcodeproj -target Holocron -configuration Release \
-  SYMROOT="$BUILD_DIR" CODE_SIGN_IDENTITY=- clean build > dist/build.log 2>&1 || {
+  SYMROOT="$BUILD_DIR" CODE_SIGN_IDENTITY=- build > dist/build.log 2>&1 || {
     echo "The build failed. The end of the log:"; tail -25 dist/build.log; exit 1; }
 
 APP="$BUILD_DIR/Release/Holocron.app"
@@ -63,6 +70,8 @@ ZIP="Holocron-$VERSION-mac.zip"
 ditto -c -k --keepParent --norsrc --noextattr --noqtn "$APP" "dist/$ZIP"
 ( cd dist && shasum -a 256 "$ZIP" > "$ZIP.sha256" )
 awk -v v="## $VERSION" '$0==v{f=1;next} /^## /{f=0} f' CHANGELOG.md > dist/notes.md
+
+FINISHED=1
 
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
   git add -A
