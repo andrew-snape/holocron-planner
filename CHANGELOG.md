@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8.10
+
+- The current week is now highlighted on Term, Units and Devotion. On the Term grid the week gets a This week tag and a soft blue tint, with today still in a stronger blue. A unit whose dates include this week shows a This week tag, and the devotion for this week is tagged too.
+
 ## 1.8.9
 
 - On the Class screen, the First, Then and Next steps now sit below the I can list, so the learning intention and success criteria come first.
