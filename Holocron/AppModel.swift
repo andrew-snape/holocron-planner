@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 import ImageIO
 
 enum NavItem: String, CaseIterable, Identifiable {
-    case today, week, classScreen, term, units, devotion, students, quick, assess, hours, settings
+    case today, week, term, units, devotion, classScreen, students, quick, assess, hours, settings
 
     var id: String { rawValue }
 

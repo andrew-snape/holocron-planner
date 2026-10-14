@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.2
+
+- The sidebar calendar now has a Week and Month switch. Week shows just the current week in one row (use the arrows to step through weeks), which leaves room for every menu item. Holocron remembers your choice, and on a shorter window a month shows as a week automatically.
+- The sidebar menu is reordered: Today, Week, Term, Units, Devotion, Class screen, Students, Quick log, Mark class, Hours, Settings. Planning screens now sit together, then the in-class tools, then student records, then admin. The Cmd+number shortcuts under the Go menu follow the new order.
+
 ## 1.6.1
 
 - Fixed the mini calendar in the sidebar. The first and last week of a month were drawn twice as tall as the others, leaving uneven gaps between the rows. All weeks are now evenly spaced.

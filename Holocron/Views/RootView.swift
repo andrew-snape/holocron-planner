@@ -149,9 +149,10 @@ struct SidebarView: View {
             .listStyle(.sidebar)
 
             Divider()
-            // The mini calendar steps aside on short windows so every module stays in reach.
-            if height > 780 {
-                MiniCalendar()
+            // The mini calendar shrinks to one week on shorter windows, and steps aside on very short ones,
+            // so every module stays in reach.
+            if height > 620 {
+                MiniCalendar(forceWeek: height <= 780)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                 Divider()
@@ -190,26 +191,33 @@ struct WeekBox: View {
 
 struct MiniCalendar: View {
     @Environment(AppModel.self) private var model
+    /// Set by the sidebar when the window is too short for a whole month.
+    var forceWeek = false
+    @AppStorage("miniCalMode") private var modeRaw = "week"
+    /// Weeks away from the week that holds the selected day. Resets when the selected day changes.
+    @State private var weekOffset = 0
+
+    private var showMonth: Bool { modeRaw == "month" && !forceWeek }
 
     var body: some View {
-        let first = model.calMonth
-        let (y, mo, _) = Cal.parts(first) ?? (2026, 1, 1)
-        let lead = dayIdx(first)
-        let daysInMonth = Cal.civilFromDays(Cal.daysFromCivil(mo == 12 ? y + 1 : y, mo == 12 ? 1 : mo + 1, 1) - 1).2
         let today = todayISO()
-        let cells: [String?] = {
-            var c: [String?] = Array(repeating: nil, count: lead)
-            for d in 1...daysInMonth { c.append(Cal.make(y, mo, d)) }
-            while c.count % 7 != 0 { c.append(nil) }
-            return c
-        }()
         VStack(spacing: 4) {
             HStack {
                 Button { shift(-1) } label: { Image(systemName: "chevron.left") }.buttonStyle(.plain)
                 Spacer()
-                Text("\(Cal.monthLong[mo - 1]) \(String(y))").font(.system(size: 12.5, weight: .semibold))
+                Text(title).font(.system(size: 12.5, weight: .semibold))
                 Spacer()
                 Button { shift(1) } label: { Image(systemName: "chevron.right") }.buttonStyle(.plain)
+            }
+            if !forceWeek {
+                Picker("", selection: $modeRaw) {
+                    Text("Week").tag("week")
+                    Text("Month").tag("month")
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .controlSize(.mini)
+                .padding(.bottom, 2)
             }
             HStack(spacing: 0) {
                 ForEach(["M", "T", "W", "T", "F", "S", "S"].indices, id: \.self) { i in
@@ -218,7 +226,7 @@ struct MiniCalendar: View {
                         .frame(maxWidth: .infinity)
                 }
             }
-            let rows = stride(from: 0, to: cells.count, by: 7).map { Array(cells[$0..<min($0 + 7, cells.count)]) }
+            let rows = showMonth ? monthRows() : [weekCells()]
             ForEach(rows.indices, id: \.self) { r in
                 HStack(spacing: 0) {
                     ForEach(rows[r].indices, id: \.self) { c in
@@ -227,6 +235,43 @@ struct MiniCalendar: View {
                 }
             }
         }
+        .onChange(of: model.cursor) { weekOffset = 0 }
+        .onChange(of: modeRaw) {
+            // Opening the month view lands on the month of the day you are looking at.
+            if let (y, m, _) = Cal.parts(addDays(mondayOf(model.cursor), 7 * weekOffset)) {
+                model.calMonth = Cal.make(y, m, 1)
+            }
+        }
+    }
+
+    private var weekStart: String { addDays(mondayOf(model.cursor), 7 * weekOffset) }
+
+    private var title: String {
+        if showMonth {
+            let (y, mo, _) = Cal.parts(model.calMonth) ?? (2026, 1, 1)
+            return "\(Cal.monthLong[mo - 1]) \(String(y))"
+        }
+        let first = weekStart
+        let last = addDays(first, 6)
+        guard let (_, m1, d1) = Cal.parts(first), let (_, m2, d2) = Cal.parts(last) else { return "" }
+        return m1 == m2
+            ? "\(d1) to \(d2) \(Cal.monthShort[m2 - 1])"
+            : "\(d1) \(Cal.monthShort[m1 - 1]) to \(d2) \(Cal.monthShort[m2 - 1])"
+    }
+
+    private func weekCells() -> [String?] {
+        (0..<7).map { addDays(weekStart, $0) }
+    }
+
+    private func monthRows() -> [[String?]] {
+        let first = model.calMonth
+        let (y, mo, _) = Cal.parts(first) ?? (2026, 1, 1)
+        let lead = dayIdx(first)
+        let daysInMonth = Cal.civilFromDays(Cal.daysFromCivil(mo == 12 ? y + 1 : y, mo == 12 ? 1 : mo + 1, 1) - 1).2
+        var c: [String?] = Array(repeating: nil, count: lead)
+        for d in 1...daysInMonth { c.append(Cal.make(y, mo, d)) }
+        while c.count % 7 != 0 { c.append(nil) }
+        return stride(from: 0, to: c.count, by: 7).map { Array(c[$0..<$0 + 7]) }
     }
 
     @ViewBuilder
@@ -257,6 +302,7 @@ struct MiniCalendar: View {
     }
 
     private func shift(_ n: Int) {
+        if !showMonth { weekOffset += n; return }
         guard let (y, m, _) = Cal.parts(model.calMonth) else { return }
         var ny = y, nm = m + n
         while nm < 1 { nm += 12; ny -= 1 }
