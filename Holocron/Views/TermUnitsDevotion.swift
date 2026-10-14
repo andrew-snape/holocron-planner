@@ -187,6 +187,7 @@ struct TermGrid: View {
 
     var body: some View {
         let today = todayISO()
+        let thisMonday = mondayOf(today)
         Grid(alignment: .topLeading, horizontalSpacing: 4, verticalSpacing: 4) {
             GridRow {
                 Color.clear.frame(width: TermGrid.labelW, height: 1)
@@ -209,6 +210,9 @@ struct TermGrid: View {
                             }
                         }
                         Text(shortDate(w.monday)).font(.system(size: 11.5)).foregroundStyle(Color.ink2)
+                        if w.monday == thisMonday {
+                            Text("This week").font(.system(size: 10.5, weight: .semibold)).foregroundStyle(Color.appBlue)
+                        }
                         if let u = w.unit {
                             let ut = ToneMaths.tone(hex: PYP.themeHex(u.s("theme")))
                             Text(u.s("title")).font(.system(size: 10.5, weight: .semibold)).lineLimit(2)
@@ -220,8 +224,10 @@ struct TermGrid: View {
                     }
                     .frame(width: TermGrid.labelW, alignment: .leading)
                     .padding(.top, 4)
+                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(w.monday == thisMonday ? Color.appBlue.opacity(0.06) : Color.clear))
                     ForEach(w.cells) { c in
-                        cell(c.date, c.cell, today: today)
+                        cell(c.date, c.cell, today: today, current: w.monday == thisMonday)
                     }
                 }
             }
@@ -229,7 +235,7 @@ struct TermGrid: View {
     }
 
     @ViewBuilder
-    private func cell(_ date: String, _ cell: TermCell, today: String) -> some View {
+    private func cell(_ date: String, _ cell: TermCell, today: String, current: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("\(Cal.weekdayShort[dayIdx(date)]) \(Cal.parts(date)?.2 ?? 0)")
                 .font(.system(size: 10.5, weight: .medium)).foregroundStyle(Color.ink3)
@@ -248,7 +254,7 @@ struct TermGrid: View {
         .padding(6)
         .frame(width: colW, alignment: .topLeading)
         .frame(minHeight: 66, maxHeight: .infinity, alignment: .topLeading)
-        .background(date == today ? Color.appBlue.opacity(0.08) : Color.black.opacity(0.025))
+        .background(date == today ? Color.appBlue.opacity(0.08) : (current ? Color.appBlue.opacity(0.045) : Color.black.opacity(0.025)))
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
@@ -334,6 +340,9 @@ struct UnitCard: View {
         let today = todayISO()
         let st = today < unit.s("start") ? "Coming up" : (today > unit.s("end") ? "Finished" : "Now")
         let status = unit.s("start").isEmpty || unit.s("end").isEmpty ? "" : st
+        let thisMonday = mondayOf(today)
+        let inThisWeek = !unit.s("start").isEmpty && !unit.s("end").isEmpty
+            && unit.s("start") <= addDays(thisMonday, 4) && unit.s("end") >= thisMonday
         let tone = ToneMaths.tone(hex: PYP.themeHex(unit.s("theme")))
         let stats = db.unitStats(unit)
         let lines = linesOf(unit.s("lines"))
@@ -344,6 +353,7 @@ struct UnitCard: View {
                 Text(unit.s("theme").isEmpty ? "No theme" : unit.s("theme"))
                     .font(.system(size: 11.5, weight: .bold)).foregroundStyle(tone.inkColor)
                 if !status.isEmpty { TagLabel(text: status, fg: tone.inkColor, bg: Color.white.opacity(0.7)) }
+                if inThisWeek { TagLabel(text: "This week", fg: tone.inkColor, bg: Color.white.opacity(0.7)) }
                 Spacer()
                 Button("Edit") { model.sheet = .unit(id: unit.s("id")) }
             }
@@ -552,6 +562,7 @@ struct DevotionView: View {
             let i = dates.firstIndex(of: date) ?? 0
             let d = all[i]
             let t = db.termOf(date)
+            let thisWeek = mondayOf(date) == mondayOf(todayISO())
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack(alignment: .firstTextBaseline, spacing: 12) {
@@ -559,6 +570,7 @@ struct DevotionView: View {
                         Text("\(Cal.weekdayLong[dayIdx(date)]) \(shortDate(date))"
                              + (t.map { " · Term \($0.term), week \(db.termWeek(date) ?? 0)" } ?? ""))
                             .font(.system(size: 13)).foregroundStyle(Color.ink2)
+                        if thisWeek { TagLabel(text: "This week") }
                         Spacer()
                     }
                     FlowLayout(spacing: 8) {
