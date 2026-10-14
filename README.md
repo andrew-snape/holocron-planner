@@ -24,6 +24,7 @@ The timetable runs on an A and B fortnightly cycle that restarts each term. Whol
 
 ## What's new
 
+- **1.8.9**: First, Then and Next steps move below I can on the Class screen.
 - **1.8.8**: A student friendly Class screen, with We are learning to and I can, First, Then and Next steps you type on the screen, and a Now and Next strip.
 - **1.8.7**: Privacy for Devotion scripts and subject lessons now sits together in Settings, then Data, and the Settings text is tidier.
 - **1.8.6**: Fixed the duplicated Class name field in Settings, and matched the Settings colours to the rest of Holocron.

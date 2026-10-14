@@ -185,18 +185,6 @@ struct ClassScreenView: View {
                             Text(c.summary.isEmpty ? "Get ready to learn!" : c.summary)
                                 .font(.system(size: 44, weight: .bold)).tracking(-1)
                         }
-                        if showSteps {
-                            stepsRow(tone: tone)
-                                .padding(.top, 10)
-                        } else {
-                            Button { stepsOpen = true } label: {
-                                Label("Add First, Then, Next", systemImage: "list.number")
-                            }
-                            .buttonStyle(.plain)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color.ink3)
-                            .help("Type three short steps for the class to follow")
-                        }
                         if !sc.isEmpty {
                             heading("I can", tone).padding(.top, 14)
                             VStack(alignment: .leading, spacing: 14) {
@@ -208,6 +196,18 @@ struct ClassScreenView: View {
                                     .font(.system(size: 28, weight: .medium))
                                 }
                             }
+                        }
+                        if showSteps {
+                            stepsRow(tone: tone)
+                                .padding(.top, 14)
+                        } else {
+                            Button { stepsOpen = true } label: {
+                                Label("Add First, Then, Next", systemImage: "list.number")
+                            }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.ink3)
+                            .help("Type three short steps for the class to follow")
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)

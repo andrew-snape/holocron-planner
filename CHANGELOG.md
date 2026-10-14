@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8.9
+
+- On the Class screen, the First, Then and Next steps now sit below the I can list, so the learning intention and success criteria come first.
+
 ## 1.8.8
 
 - The Class screen is now student friendly. The learning intention sits under We are learning to and the success criteria under I can. If a lesson already starts with those words (or WALT), they are trimmed so they do not appear twice. A lesson with no plan shows Get ready to learn!
