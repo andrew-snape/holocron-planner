@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8
+
+- Settings now lives in the toolbar. A gear button sits at the right of the window, and Settings opens in its own window, as in other Mac apps. Cmd+comma and the app menu open the same window. Settings is no longer in the sidebar or the Go menu.
+- Check for Updates now opens Settings on the Updates tab.
+- Today is the only screen that always stays on. Settings no longer appears in the module switches.
+
 ## 1.7
 
 - Private subjects. In Settings, then Timetable, each subject now has a Private switch. When your planner folder is shared, the lessons for a private subject (Devotion, say) are saved in a file only you have, lessonsprivate.csv in your student folder, and the timetable slot stays shared. A colleague's own lessons for that subject are never touched, and switching a subject back to shared hides the private ones without deleting them. When you make a subject private that already has lessons, you can copy them across or start empty. The shared copies are left as they are.
