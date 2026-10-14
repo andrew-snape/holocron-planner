@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1
+
+- Settings is now split into tabs across the top (General, Timetable, Calendar, Updates and Data) instead of one long page.
+- Holocron, Check for Updates in the menu now opens Settings on the Updates tab.
+
 ## 1.2
 
 - Update test: no changes to how Holocron works.
