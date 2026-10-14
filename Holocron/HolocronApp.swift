@@ -35,6 +35,11 @@ struct HolocronApp: App {
                     }
                 }
             }
+            CommandGroup(after: .pasteboard) {
+                Button("Copy Day as Markdown") { model.copyDay(model.cursor) }
+                    .keyboardShortcut("c", modifiers: [.command, .option])
+                    .disabled(model.nav != .today)
+            }
             CommandGroup(replacing: .printItem) {
                 Button("Print Week...") { PrintWeek.open(model: model) }
                     .keyboardShortcut("p", modifiers: .command)

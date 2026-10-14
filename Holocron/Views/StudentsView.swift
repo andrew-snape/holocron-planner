@@ -404,6 +404,7 @@ struct AssessTab: View {
     @State private var task = ""
     @State private var result = ""
     @State private var comment = ""
+    @AppStorage("resultMode") private var mode = ResultMode.score
 
     var body: some View {
         let db = model.db
@@ -422,7 +423,19 @@ struct AssessTab: View {
                 }
             }
             LineField(label: "Task", text: $task)
-            LineField(label: "Result", hint: "for example At Standard, or 18/20", text: $result)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 10) {
+                    FieldLabel(text: "Result", hint: mode == .score ? "for example 18/20" : "")
+                    Spacer()
+                    ResultModePicker(mode: $mode)
+                }
+                if mode == .level {
+                    LevelPicker(value: $result, emptyLabel: "Choose a level")
+                        .frame(maxWidth: 240, alignment: .leading)
+                } else {
+                    TextField("", text: $result).textFieldStyle(.roundedBorder)
+                }
+            }
             NoteBox(label: "Comment", text: $comment, lines: 2)
             Button("Add assessment") {
                 db.addAssessment(student: sid, date: date, subject: subject, task: task, result: result, comment: comment)

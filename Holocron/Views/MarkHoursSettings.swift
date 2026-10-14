@@ -12,6 +12,7 @@ struct MarkClassView: View {
     @State private var results: [String: String] = [:]
     @State private var comments: [String: String] = [:]
     @State private var reopen = ""
+    @AppStorage("resultMode") private var mode = ResultMode.score
 
     var body: some View {
         let db = model.db
@@ -70,6 +71,12 @@ struct MarkClassView: View {
                             }
                         }
                         DateField(iso: $date)
+                        if !rubOn {
+                            VStack(alignment: .leading, spacing: 4) {
+                                FieldLabel(text: "Result")
+                                ResultModePicker(mode: $mode)
+                            }
+                        }
                     }
                     if rubOn, !task.isEmpty { RubricDescriptors(rubric: rubric, element: task) }
                     if !started.isEmpty {
@@ -107,6 +114,9 @@ struct MarkClassView: View {
                                     }
                                     .labelsHidden()
                                     .frame(width: 170)
+                                } else if mode == .level {
+                                    LevelPicker(value: bindResult(s.id))
+                                        .frame(width: 170)
                                 } else {
                                     TextField("Result", text: bindResult(s.id))
                                         .textFieldStyle(.roundedBorder)
@@ -160,6 +170,11 @@ struct MarkClassView: View {
         for a in model.db.rows(.assessments) where matches(a) {
             results[a.s("student_id")] = a.s("result")
             comments[a.s("student_id")] = a.s("comment")
+        }
+        // Show a task the way it was marked: as levels when every result is a level, otherwise as typed text.
+        let vals = results.values.filter { !$0.isEmpty }
+        if !vals.isEmpty && !vals.allSatisfy({ Lists.rubricLevels.contains($0) }) {
+            mode = vals.allSatisfy({ Lists.resultLevels.contains($0) }) ? .level : .score
         }
     }
 

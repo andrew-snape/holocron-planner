@@ -12,9 +12,10 @@ Holocron keeps your fortnightly timetable, lesson summaries, student notes and t
 
 - **Today**: every block of the day in a vertical list, with the current period highlighted, birthdays coming up, and a quote card.
 - **Week and Term**: plan a whole fortnight in a grid. Type straight into a slot, drag to swap lessons, change a slot for one day or for every cycle, push or pull lessons when a day is lost, and print the week on one A4 page or save it as a PDF.
+- **Copy lessons**: copy a whole day (times, lessons and resources) as Markdown to paste into your school LMS for a relief teacher.
 - **Class screen**: the lesson name, learning intention, success criteria and a timer, ready for the projector.
 - **Students**: a class list and a record for each student with notes, assessments, wellbeing, behaviour, plan notes and a report pack. Photos, birth dates and adjustments are kept on your Mac only.
-- **Quick log and Mark class**: log a note for several students at once, or mark the whole class on one task.
+- **Quick log and Mark class**: log a note for several students at once, or mark the whole class on one task, typing a score or picking an achievement level.
 - **Hours**: face to face time, release time and duties other than teaching and learning, by term and for the year, including the period lost to wellbeing work.
 - **Units and Devotion**: units of inquiry and daily devotion scripts. Every module can be switched off in Settings.
 

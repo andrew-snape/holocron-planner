@@ -80,12 +80,12 @@ struct PrintableWeek: View {
     let mon: String
     let showIntentions: Bool
 
-    private let margin: CGFloat = 28
+    private let margin: CGFloat = 20
     private let labelW: CGFloat = 70
-    private let gap: CGFloat = 4
-    private let headerH: CGFloat = 46
-    private let dayRowH: CGFloat = 22
-    private let footerH: CGFloat = 14
+    private let gap: CGFloat = 3
+    private let headerH: CGFloat = 38
+    private let dayRowH: CGFloat = 18
+    private let footerH: CGFloat = 12
 
     var body: some View {
         let wk = db.weekLetter(mon) ?? "A"
@@ -102,7 +102,7 @@ struct PrintableWeek: View {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(db.className).font(.system(size: 20, weight: .bold))
                 Text(lead).font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.ink2)
-                Text("\(shortDate(mon)) to \(shortDate(addDays(mon, 4))) \(yearOf(mon))")
+                Text("\(shortDate(mon)) to \(shortDate(addDays(mon, 4))) \(String(yearOf(mon)))")
                     .font(.system(size: 11)).foregroundStyle(Color.ink2)
                 Spacer()
                 Text("Week \(wk)")
@@ -197,6 +197,13 @@ private struct PrintCell: View {
         }
     }
 
+    /// The summary in plain black, so any link or other styling in the text does not change its colour.
+    private func summaryText(_ s: String) -> AttributedString {
+        var a = AttributedString(s)
+        a.swiftUI.foregroundColor = Color.black
+        return a
+    }
+
     private var lesson: some View {
         let subj = db.plannedSubject(date, period.period, fallbackWeek: wk)
         let info = db.subjectInfo(subj)
@@ -216,10 +223,9 @@ private struct PrintCell: View {
                 Text("Release").font(.system(size: 8)).foregroundStyle(tone.inkColor.opacity(0.75))
             } else {
                 if !c.summary.isEmpty {
-                    Text(c.summary)
+                    Text(summaryText(c.summary))
                         .font(.system(size: 8))
-                        .foregroundStyle(Color.black)
-                        .lineLimit(5)
+                        .lineLimit(6)
                 }
                 if showIntentions && !li.isEmpty {
                     Text("LI: " + li)
@@ -230,7 +236,7 @@ private struct PrintCell: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(6)
+        .padding(5)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(tone.tintColor)
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))

@@ -56,6 +56,8 @@ struct TodayView: View {
                 .labelsHidden()
                 .datePickerStyle(.compact)
             Spacer()
+            Button("Copy lessons") { model.copyDay(date) }
+                .help("Copy every lesson and time for this day as Markdown, ready to paste into the school LMS")
             Button("Class screen") {
                 if let t = ClassTarget.pick(model, date: date) { openWindow(id: "classscreen", value: t) }
                 else { model.showToast("No lessons on this day") }

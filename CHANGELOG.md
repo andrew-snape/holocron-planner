@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6
+
+- New Copy lessons button on the Today screen (and Edit, then Copy Day as Markdown, Option+Cmd+C). It copies every lesson and time for the day you are looking at as Markdown, ready to paste into the school LMS for a relief teacher: each period with its times, subject, summary, learning intention, success criteria, lesson sequence, resources as links, curriculum codes, and the day's devotion on Circle Time. Student records are never included.
+- Assessments: the Result can now be typed as a score, as before, or picked from a dropdown of Extending, Mastering, Consolidating, Developing, Emerging and Modified. A Score or Achievement switch sits on Mark class and on each student's Assessment tab, and Holocron remembers your choice. Reopening a task shows it the way it was marked, and results are still saved as plain text.
+
+## 1.5.1
+
+- Print Week: the year no longer prints as 2,026, the page margins are tighter so more of each lesson summary fits, and summaries always print in plain black.
+
 ## 1.5
 
 - New Print button on the Week screen, and File, then Print Week (Cmd+P). It lays the week out on one A4 landscape page, with the subject colours, lesson summaries, learning intentions (you can switch these off), camps, carnivals and days off, and opens it ready to print. Save as PDF (Shift+Cmd+P) keeps a copy instead.
