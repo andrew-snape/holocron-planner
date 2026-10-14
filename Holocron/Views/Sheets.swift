@@ -353,7 +353,7 @@ struct PlanSheet: View {
                 .background(uTone.tintColor)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
-        if !c.summary.isEmpty { Text(c.summary).font(.system(size: 14)).textSelection(.enabled) }
+        if !c.summary.isEmpty { Text(linkified(c.summary)).font(.system(size: 14)).textSelection(.enabled) }
         if !c.li.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
                 Text("LEARNING INTENTION").font(.system(size: 10.5, weight: .bold)).tracking(0.6).foregroundStyle(tone.inkColor)

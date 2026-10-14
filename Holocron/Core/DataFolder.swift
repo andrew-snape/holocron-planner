@@ -2,7 +2,7 @@ import Foundation
 
 /// Reads and writes the CSV files in the data folder.
 ///
-/// Safety rules (same as the web app):
+/// Safety rules:
 ///  - A file that does not exist yet is created blank.
 ///  - A file that exists but cannot be read is marked unsafe, and nothing will overwrite it.
 ///  - Writes are atomic (temp file, then replace), so a crash cannot truncate real data.

@@ -396,7 +396,7 @@ struct SetupSheet: View {
             } label: {
                 Label("Import my existing planner data...", systemImage: "square.and.arrow.down")
             }
-            Text("Pick the data folder from your NAS copy. Its CSV files and photos are copied across.")
+            Text("Pick an existing Holocron data folder. Its CSV files and photos are copied across.")
                 .font(.system(size: 12)).foregroundStyle(Color.ink3)
 
             if !message.isEmpty {

@@ -166,7 +166,7 @@ func hm(_ t: String) -> Int? {
     return p[0] * 60 + p[1]
 }
 
-/// Hours with one decimal, from minutes (matches the web app's rounding).
+/// Hours with one decimal, from minutes .
 func hrs(_ m: Double) -> String {
     String(format: "%.1f", (m / 6).rounded() / 10)
 }
@@ -180,7 +180,7 @@ func fmtTime(_ t: String) -> String {
     return "\(h12):" + (m < 10 ? "0" : "") + String(m) + " " + (h < 12 ? "am" : "pm")
 }
 
-/// Random short id, like the web app's `uid()`.
+/// Random short id.
 func uid() -> String {
     let ms = Int(Date().timeIntervalSince1970 * 1000)
     let chars = Array("0123456789abcdefghijklmnopqrstuvwxyz")

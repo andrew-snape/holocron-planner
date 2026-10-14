@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct WeekView: View {
     @Environment(AppModel.self) private var model
@@ -177,6 +178,14 @@ struct SlotCell: View {
                 if !subj.isEmpty {
                     HStack {
                         Spacer()
+                        if let link = firstLink(in: c.summary) {
+                            Button { NSWorkspace.shared.open(link) } label: {
+                                Image(systemName: "link").font(.system(size: 11, weight: .semibold))
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(tone.inkColor)
+                            .help("Open \(link.host ?? "link")")
+                        }
                         Button {
                             model.sheet = .plan(date: date, per: pn, edit: !c.hasPlan)
                         } label: {

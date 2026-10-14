@@ -529,7 +529,7 @@ final class AppModel {
 
     // MARK: Import from another planner data folder
 
-    /// Copies every CSV (and photos) from another folder, such as the NAS copy, into the current one.
+    /// Copies every CSV (and photos) from another folder into the current one.
     func importData(from source: URL) -> String {
         let fm = FileManager.default
         var copied = 0

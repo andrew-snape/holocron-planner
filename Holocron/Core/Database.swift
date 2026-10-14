@@ -150,11 +150,34 @@ func listOf(_ t: String) -> [String] {
     t.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
 }
 
+// MARK: - Web links in lesson text
+
+/// The first http or https link in some text, such as a lesson summary.
+func firstLink(in text: String) -> URL? {
+    guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else { return nil }
+    let range = NSRange(text.startIndex..., in: text)
+    for match in detector.matches(in: text, options: [], range: range) {
+        if let url = match.url, url.scheme == "http" || url.scheme == "https" { return url }
+    }
+    return nil
+}
+
+/// The text with each web link made clickable, for read-only lines such as Today.
+func linkified(_ text: String) -> AttributedString {
+    let attributed = NSMutableAttributedString(string: text)
+    if let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) {
+        for match in detector.matches(in: text, options: [], range: NSRange(location: 0, length: attributed.length)) {
+            if let url = match.url { attributed.addAttribute(.link, value: url, range: match.range) }
+        }
+    }
+    return AttributedString(attributed)
+}
+
 // MARK: - The database
 
 /// All of the planner's data, held as rows exactly as they sit in the CSV files.
 /// Every screen reads from here and every change goes through here, so the logic
-/// matches the web app: `plannedSubject` is the single source of truth for what is on.
+/// `plannedSubject` is the single source of truth for what is on.
 ///
 /// Screens are told about changes one table at a time. Every read goes through `watch`, which makes
 /// SwiftUI remember "this view looked at the lessons table", and every change bumps that table's

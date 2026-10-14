@@ -1,7 +1,6 @@
 import Foundation
 
 /// Every CSV file the planner reads and writes, with its columns.
-/// This matches the web app's `FILES` list exactly, so the same data folder works for both.
 enum TableName: String, CaseIterable {
     case students, subjects, periods, timetable, dayplan, lessons, assessments, rubrics
     case plannotes, wellbeing, behaviour, lessonnotes, dottl, terms, nonteaching, dayoverrides
@@ -55,7 +54,7 @@ enum TableName: String, CaseIterable {
     }
 }
 
-// MARK: - Fixed lists from the web app
+// MARK: - Fixed lists
 
 enum PYP {
     static let themes: [(name: String, hex: String)] = [

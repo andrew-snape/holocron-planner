@@ -157,7 +157,7 @@ struct BlockRow: View {
                 Text("\(info.isRelease ? "Release" : "Face to face") · \(period.minutes) min" + (moved ? " · changed for today" : ""))
                     .font(.system(size: 12)).foregroundStyle(Color.ink2)
                 if !c.summary.isEmpty {
-                    Text(c.summary).font(.system(size: 13.5)).textSelection(.enabled).padding(.top, 2)
+                    Text(linkified(c.summary)).font(.system(size: 13.5)).textSelection(.enabled).padding(.top, 2)
                 }
                 if !c.li.isEmpty {
                     Text("\(Text("LI ").fontWeight(.bold))\(c.li)").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
