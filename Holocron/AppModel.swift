@@ -126,6 +126,11 @@ final class AppModel {
     let updater = Updater()
 
     @ObservationIgnored private var pending: Set<TableName> = []
+    /// Subjects whose lessons are kept in lessonsprivate.csv. See `mergeLessons`.
+    @ObservationIgnored private var privateSubjects: Set<String> = []
+    @ObservationIgnored private var hiddenShared: [Row] = []
+    @ObservationIgnored private var hiddenPrivate: [Row] = []
+    @ObservationIgnored private var privacySnapshot = ""
     @ObservationIgnored private var saveWork: DispatchWorkItem?
     @ObservationIgnored private var toastWork: DispatchWorkItem?
     @ObservationIgnored private var imageCache: [String: NSImage] = [:]
@@ -226,16 +231,24 @@ final class AppModel {
         if force { fileSigs.removeAll() }
         var messages: [String] = []
         var ok = folder.exists()
+        readPrivacy()
         for t in TableName.allCases {
+            // Private lessons are read together with the shared ones, below.
+            if t == .lessonsprivate { continue }
             let sig = folder.signature(t)
-            if !force, !previouslyBad.contains(t.rawValue), let s = sig, fileSigs[t] == s { continue }
+            var unchanged = !force && !previouslyBad.contains(t.rawValue) && sig != nil && fileSigs[t] == sig
+            if t == .lessons {
+                unchanged = unchanged && !previouslyBad.contains(TableName.lessonsprivate.rawValue)
+                    && fileSigs[.lessonsprivate] == folder.signature(.lessonsprivate)
+            }
+            if unchanged { continue }
             switch folder.read(t) {
             case .ok(let header, let rows):
-                db.load(t, header: header, rows: rows)
+                db.load(t, header: header, rows: t == .lessons ? mergeLessons(shared: rows, messages: &messages) : rows)
                 fileSigs[t] = sig
             case .missing:
                 let starter = Starter.rows(for: t)
-                db.load(t, header: t.header, rows: starter)
+                db.load(t, header: t.header, rows: t == .lessons ? mergeLessons(shared: starter, messages: &messages) : starter)
                 fileSigs[t] = nil
                 if ok {
                     try? folder.write(t, header: t.header, rows: starter)
@@ -270,6 +283,98 @@ final class AppModel {
         folder.url.path.contains("com~apple~CloudDocs") ? "iCloud Drive" : folder.url.lastPathComponent
     }
 
+    // MARK: Private subjects
+
+    /// Reads which subjects (and whether the Devotion scripts) are private, straight from settings.csv,
+    /// before the other files are read. If the answer has changed since the last read, every file is read again.
+    private func readPrivacy() {
+        var subjects = Set<String>()
+        var devotion = false
+        if case .ok(_, let rows) = folder.read(.settings) {
+            let p = Database.privacy(from: rows)
+            subjects = p.subjects
+            devotion = p.devotion
+        }
+        privateSubjects = subjects
+        let privateTables: Set<TableName> = devotion ? [.devotion, .quotes] : []
+        if folder.privateTables != privateTables { folder.privateTables = privateTables }
+        let snapshot = subjects.sorted().joined(separator: "|") + (devotion ? "#devotion" : "")
+        if snapshot != privacySnapshot {
+            privacySnapshot = snapshot
+            fileSigs.removeAll()
+        }
+    }
+
+    /// Lessons sit in two files. lessons.csv is the planner folder's copy, shared with colleagues, and
+    /// lessonsprivate.csv is yours alone. In memory they are one table: the shared file's lessons for
+    /// subjects that are not private, plus the private file's lessons for subjects that are.
+    /// Each file keeps, exactly as they were, any rows it holds for subjects that belong to the other
+    /// one. Those rows are not shown, and are written back untouched, so switching a subject between
+    /// shared and private never moves or loses anything, and a colleague's lessons are never overwritten.
+    private func mergeLessons(shared: [Row], messages: inout [String]) -> [Row] {
+        hiddenShared = shared.filter { privateSubjects.contains($0.s("subject")) }
+        var visible = shared.filter { !privateSubjects.contains($0.s("subject")) }
+        var mine: [Row] = []
+        switch folder.read(.lessonsprivate) {
+        case .ok(_, let rows): mine = rows
+        case .missing: break
+        case .failed(let msg):
+            badLoads.insert(TableName.lessonsprivate.rawValue)
+            messages.append(msg)
+        }
+        hiddenPrivate = mine.filter { !privateSubjects.contains($0.s("subject")) }
+        visible += mine.filter { privateSubjects.contains($0.s("subject")) }
+        fileSigs[.lessonsprivate] = folder.signature(.lessonsprivate)
+        return visible
+    }
+
+    /// How many lessons the shared file holds for a subject.
+    func sharedLessonCount(_ subject: String) -> Int {
+        guard !isSubjectPrivate(subject) else { return 0 }
+        return db.rows(.lessons).filter { $0.s("subject") == subject }.count
+    }
+
+    func isSubjectPrivate(_ subject: String) -> Bool { db.isPrivateSubject(subject) }
+
+    /// Marks a subject private or shared. With `copyLessons`, the subject's current lessons are also
+    /// copied into the private file the first time it is made private. The shared copies are left alone.
+    func setSubjectPrivate(_ subject: String, _ on: Bool, copyLessons: Bool = false) {
+        flushNow(wait: true)
+        if on && copyLessons {
+            let existing = db.rows(.lessons).filter { $0.s("subject") == subject }
+            let have = Set(hiddenPrivate.filter { $0.s("subject") == subject }.map { $0.s("date") + "|" + $0.s("period") })
+            hiddenPrivate += existing.filter { !have.contains($0.s("date") + "|" + $0.s("period")) }
+        }
+        db.setSetting(Database.privateSubjectPrefix + subject, on ? "on" : "off")
+        // Save the settings and the private file, then read everything again under the new rule.
+        if on && copyLessons { pending.insert(.lessons) }
+        flushNow(wait: true)
+        loadAll()
+    }
+
+    /// Keeps the Devotion scripts and quotes in the student folder (private) or in the planner folder (shared).
+    /// Files are copied across when the new place does not have them yet. Anything already there is kept.
+    @discardableResult
+    func setDevotionPrivate(_ on: Bool) -> String {
+        flushNow(wait: true)
+        db.setSetting(Database.privateDevotionKey, on ? "on" : "off")
+        flushNow(wait: true)
+        var next = folder
+        next.privateTables = on ? [.devotion, .quotes] : []
+        let fm = FileManager.default
+        var copied = 0, kept = 0
+        for t in [TableName.devotion, .quotes] {
+            let src = folder.fileURL(t), dst = next.fileURL(t)
+            if src.path == dst.path { continue }
+            if fm.fileExists(atPath: dst.path) { kept += 1; continue }
+            if fm.fileExists(atPath: src.path), (try? fm.copyItem(at: src, to: dst)) != nil { copied += 1 }
+        }
+        folder = next
+        loadAll()
+        if on { return "Devotion is now private. \(copied) file\(copied == 1 ? "" : "s") copied, \(kept) already there were kept." }
+        return "Devotion is shared again. \(copied) file\(copied == 1 ? "" : "s") copied, \(kept) already in the planner folder were kept."
+    }
+
     // MARK: Saving
 
     private func schedule(_ names: Set<TableName>) {
@@ -300,6 +405,18 @@ final class AppModel {
             if badLoads.contains(t.rawValue) {
                 self.showToast("\(t.rawValue).csv could not be read, so it was not overwritten.")
                 skippedUnreadable = true
+                continue
+            }
+            if t == .lessons {
+                // Lessons are saved in two files: the shared one, and the private one for private subjects.
+                let all = db.rows(.lessons)
+                let sharedRows = all.filter { !privateSubjects.contains($0.s("subject")) } + hiddenShared
+                let privateRows = all.filter { privateSubjects.contains($0.s("subject")) } + hiddenPrivate
+                jobs.append((.lessons, db.header(.lessons), sharedRows))
+                let privateFileThere = FileManager.default.fileExists(atPath: folder.fileURL(.lessonsprivate).path)
+                if !badLoads.contains(TableName.lessonsprivate.rawValue), !privateRows.isEmpty || privateFileThere {
+                    jobs.append((.lessonsprivate, db.header(.lessons), privateRows))
+                }
                 continue
             }
             jobs.append((t, db.header(t), db.rows(t)))

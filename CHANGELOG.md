@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7
+
+- Private subjects. In Settings, then Timetable, each subject now has a Private switch. When your planner folder is shared, the lessons for a private subject (Devotion, say) are saved in a file only you have, lessonsprivate.csv in your student folder, and the timetable slot stays shared. A colleague's own lessons for that subject are never touched, and switching a subject back to shared hides the private ones without deleting them. When you make a subject private that already has lessons, you can copy them across or start empty. The shared copies are left as they are.
+- Devotion scripts and quotes can be kept private too. In Settings, then Data, turn on Keep Devotion scripts and quotes private. They move to your student folder (copied across, with the shared files left alone) and colleagues no longer see or change them.
+- Start over, planner only, now also clears your private lessons.
+
 ## 1.6.2
 
 - The sidebar calendar now has a Week and Month switch. Week shows just the current week in one row (use the arrows to step through weeks), which leaves room for every menu item. Holocron remembers your choice, and on a shorter window a month shows as a week automatically.

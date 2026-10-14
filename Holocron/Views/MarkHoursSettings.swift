@@ -476,6 +476,8 @@ struct SettingsView: View {
     @State private var ntDate = todayISO()
     @State private var ntLabel = ""
     @State private var showStartOver = false
+    /// The subject being made private, while we ask whether to copy its current lessons across.
+    @State private var privatePrompt: String? = nil
 
     private var tab: SettingsTab { SettingsTab(rawValue: tabRaw) ?? .general }
 
@@ -588,6 +590,17 @@ struct SettingsView: View {
                         .frame(width: 140)
                         ColorPicker("", selection: colourBinding(i), supportsOpacity: false).labelsHidden()
                         SubjectChip(name: subjectRows[i].s("subject"))
+                        let name = subjectRows[i].s("subject")
+                        Toggle("Private", isOn: Binding(
+                            get: { model.isSubjectPrivate(name) },
+                            set: { on in
+                                if on && model.sharedLessonCount(name) > 0 { privatePrompt = name }
+                                else { model.setSubjectPrivate(name, on) }
+                            }))
+                            .toggleStyle(.switch)
+                            .controlSize(.small)
+                            .disabled(name.isEmpty)
+                            .help("Lessons for a private subject are saved in your own file and are not shared with colleagues")
                     }
                     .padding(.vertical, 6).padding(.horizontal, 12)
                     Divider()
@@ -595,6 +608,17 @@ struct SettingsView: View {
             }
             .background(Color.white)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .confirmationDialog("Make this subject private?", isPresented: Binding(
+                get: { privatePrompt != nil }, set: { if !$0 { privatePrompt = nil } }),
+                titleVisibility: .visible, presenting: privatePrompt) { name in
+                Button("Copy current lessons across") { model.setSubjectPrivate(name, true, copyLessons: true) }
+                Button("Start empty") { model.setSubjectPrivate(name, true) }
+                Button("Cancel", role: .cancel) { }
+            } message: { name in
+                Text("\(name) already has \(model.sharedLessonCount(name)) lessons in the planner. Copying puts them in your private file so you can carry on from there. Either way the shared copies are left as they are.")
+            }
+            Text("Private subjects keep their lessons in a file only you have. Colleagues sharing your planner folder still see the timetable slot, but not what you plan in it, and their own lessons for that subject are never touched. This only matters when the planner folder is shared.")
+                .font(.system(size: 12)).foregroundStyle(Color.ink3)
             Button("Add subject") {
                 db.append(.subjects, ["subject": "New subject", "kind": "teach", "colour": "#8A8F94"])
                 db.touch(.subjects)
@@ -720,6 +744,16 @@ struct SettingsView: View {
                         }
                     }
                 }
+                Toggle(isOn: Binding(get: { model.db.devotionIsPrivate },
+                                     set: { model.showToast(model.setDevotionPrivate($0)) })) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Keep Devotion scripts and quotes private").font(.system(size: 13, weight: .medium))
+                        Text("Saved in the student folder instead of the planner folder, so colleagues do not see or change them. Existing files are copied across and the shared copies are left alone.")
+                            .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                    }
+                }
+                .toggleStyle(.switch)
+                .disabled(model.folder.plannerURL == nil)
                 Text("Choosing a folder keeps any planner files already in it and copies across the ones it is missing. To share it, right-click the folder in Finder, choose Share, then Add People. Others choose the same folder here after accepting. Changes from colleagues appear when you come back to the app or press Reload.")
                     .font(.system(size: 12)).foregroundStyle(Color.ink3)
             }

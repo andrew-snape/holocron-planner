@@ -53,10 +53,10 @@ extension DataFolder {
             let clears: Bool
             switch scope {
             case .everything: clears = true
-            case .plannerOnly: clears = t.isPlanner
+            case .plannerOnly: clears = t.isPlanner || t == .lessonsprivate
             }
             // A shared planner folder is only ever disconnected, never emptied.
-            guard clears, !(t.isPlanner && shared) else { continue }
+            guard clears, !(t.isPlanner && shared && !privateTables.contains(t)) else { continue }
             let root = root(for: t)
             for name in [t.rawValue + ".csv", "." + t.rawValue + ".csv.icloud"] {
                 let f = root.appendingPathComponent(name)

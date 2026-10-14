@@ -6,6 +6,8 @@ enum TableName: String, CaseIterable {
     case students, subjects, periods, timetable, dayplan, lessons, assessments, rubrics
     case plannotes, wellbeing, behaviour, lessonnotes, dottl, terms, nonteaching, dayoverrides
     case devotion, quotes, units, todo, reportjudge, reportcomment
+    /// Lessons for subjects marked private. Same columns as lessons, but it lives in the student folder and is never shared.
+    case lessonsprivate
     /// Mac app only: key and value pairs such as which modules are switched off.
     case settings
 
@@ -28,7 +30,7 @@ enum TableName: String, CaseIterable {
         case .periods:       return ["period", "name", "start", "end"]
         case .timetable:     return ["week", "day", "period", "subject"]
         case .dayplan:       return ["date", "period", "subject"]
-        case .lessons:       return ["date", "period", "subject", "summary", "li", "sc", "tuning", "teaching", "independent", "reflection", "resources", "codes", "atl", "profile"]
+        case .lessons, .lessonsprivate: return ["date", "period", "subject", "summary", "li", "sc", "tuning", "teaching", "independent", "reflection", "resources", "codes", "atl", "profile"]
         case .assessments:   return ["id", "student_id", "date", "subject", "task", "result", "comment"]
         case .rubrics:       return ["rubric", "element", "order", "level", "descriptor"]
         case .plannotes:     return ["id", "student_id", "date", "type", "note"]

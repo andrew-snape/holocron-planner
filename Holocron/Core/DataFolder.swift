@@ -12,6 +12,9 @@ struct DataFolder {
     /// The planner folder: timetable, lessons, terms, units and devotions. Set this to a shared
     /// folder to sync the planner with other staff. When nil, everything lives in `url`.
     var plannerURL: URL? = nil
+    /// Planner tables kept in the student folder instead, because they are marked private
+    /// (the Devotion scripts and quotes).
+    var privateTables: Set<TableName> = []
 
     enum ReadResult {
         case ok(header: [String], rows: [Row])
@@ -21,7 +24,7 @@ struct DataFolder {
 
     /// The folder that holds a table.
     func root(for t: TableName) -> URL {
-        t.isPlanner ? (plannerURL ?? url) : url
+        t.isPlanner && !privateTables.contains(t) ? (plannerURL ?? url) : url
     }
 
     func fileURL(_ t: TableName) -> URL {
