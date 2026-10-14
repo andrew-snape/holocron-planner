@@ -29,14 +29,14 @@ struct HelpStartPage: View {
         HelpHeading("Set it up in five steps")
         HelpSteps([
             "**Choose where your data lives.** On first launch, pick **Use iCloud Drive / Holocron / data**, or choose another folder. A new folder starts with a typical school day and a list of subjects.",
-            "**Add your term dates.** Open **Settings**, then the **Calendar** tab. Week 1 of every term is Week A, so Holocron can show whether it is an A or B week.",
-            "**Check your periods and subjects.** In Settings, open the **Timetable** tab and make sure the bell times and subjects match your school day. Subjects marked as release are your specialist lessons.",
+            "**Add your term dates.** Open **Settings** with the gear button at the top right of the main window (or press Cmd+comma), then choose the **Calendar** tab. Week 1 of every term is Week A, so Holocron can show whether it is an A or B week.",
+            "**Check your periods and subjects.** In Settings, open the **Timetable** tab and make sure the bell times and subjects match your school day. Set specialist subjects, such as PE and French, to **Release** so they count as release time.",
             "**Build your A and B timetable.** Open **Week** and click a subject name in a slot. Choose **This date only** for a one-off change, or **Every A week** (or **Every B week**) to change the standing timetable.",
             "**Add lessons.** Type a short summary into the **Summary** box in any slot on the Week screen, or click a lesson on **Today** to open it with more room. A couple of sentences or a link is plenty.",
         ])
 
         HelpHeading("Where is my data?")
-        HelpPara("Choose **Help, then Open Data Folder**, or use the **Open Data Folder** button at the bottom of this window, to see your CSV files in Finder. The Loading data and CSV files page explains what each file holds and how to edit them.")
+        HelpPara("Choose **Help, then Open Data Folder**, or use the folder button at the bottom of this window, to see your CSV files in Finder. The **Loading data** page explains what each file holds and how to edit them.")
 
         HelpCallout(kind: .care, title: "Student privacy",
                     text: "Check your school's policy on where student information may be stored before putting real student details into iCloud Drive or any other service, including AI tools.")
@@ -59,7 +59,7 @@ struct HelpUsingPage: View {
         VStack(alignment: .leading, spacing: 12) {
         Group {
         HelpTitle("Using Holocron")
-        HelpPara("The sidebar on the left has every screen. The class name and the current term week (A or B) stay at the top.")
+        HelpPara("The sidebar on the left lists your screens, with the class name and the current term week (A or B) at the top. Settings opens in its own window from the gear button at the top right, or with Cmd+comma.")
 
         HelpHeading("Your screens")
         HelpBullets([
@@ -73,13 +73,13 @@ struct HelpUsingPage: View {
             "**Quick log:** pick several students from the photo grid and add one note to all of them.",
             "**Mark class:** mark the whole class on one task. Type a score or pick an achievement level.",
             "**Hours:** face to face time, release time and duties other than teaching and learning (DOTTL), by term and for the year. Wellbeing entries record which period was lost.",
-            "**Settings:** class name, which screens are switched on, periods, subjects, terms, non-teaching days, updates and your data folders.",
+            "**Settings:** tabs across the top for your class name, which screens are switched on, periods, subjects, terms, non-teaching days, updates and your data folders.",
         ])
 
         HelpHeading("Good to know")
         HelpBullets([
             "**Whole days can be different.** On **Today**, choose **Set day type** to mark a camp, carnival, excursion or pupil free day. The normal timetable steps aside for that day.",
-            "**Switch off what you do not use.** In Settings, then General, each screen except Today and Settings can be turned off.",
+            "**Switch off what you do not use.** In Settings, then General, every screen except Today can be turned off.",
             "**Saving is automatic.** Every change is written to your CSV files and a small confirmation appears. If a red banner says No data folder connected, nothing is saved until you reconnect a folder.",
             "**Sharing the planner.** In Settings, then Data, you can point the planner at a shared folder so colleagues use the same timetable. Student records stay in your private folder.",
             "**Updates.** Holocron checks GitHub when it opens. Choose **Holocron, then Check for Updates** at any time.",
@@ -127,6 +127,8 @@ struct HelpDataPage: View {
             "**Reload.** Back in Holocron press **Shift+Cmd+R** (File, then Reload from folder). Holocron also picks up changed files when you switch back to it.",
         ])
 
+        HelpCallout(kind: .info, title: "Using Numbers",
+                    text: "Numbers can change how dates and times are written when it exports. The first time, open the saved file in TextEdit and check that dates still look like `2026-10-14` and times like `09:30`. If they do not, use TextEdit for your edits instead.")
         HelpCallout(kind: .care, title: "One place at a time",
                     text: "Holocron writes your changes straight to the files. Avoid typing in Holocron while the same file is open for editing elsewhere, because whichever saves last wins.")
 
@@ -395,7 +397,7 @@ enum CSVGuide {
         case .students:
             return "One row per student. id must be unique and must never change, because other files refer to it. birthdate is yyyy-mm-dd. parents holds parent names only, never emails or phone numbers."
         case .subjects:
-            return "One row per subject. kind is teach, release (a specialist lesson) or dottl. colour is a hex code such as #34C759."
+            return "One row per subject. kind is teach (face to face teaching), release (a specialist lesson, counted as release time) or dottl. colour is a hex code such as #34C759."
         case .periods:
             return "The bell times for a school day. period is 1, 2, 3 and so on. start and end are 24 hour times such as 09:30."
         case .timetable:

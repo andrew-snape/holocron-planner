@@ -13,7 +13,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
         switch self {
         case .start: return "Getting started"
         case .using: return "Using Holocron"
-        case .data: return "Loading data and CSV files"
+        case .data: return "Loading data"
         case .ai: return "Entering data with AI"
         case .shortcuts: return "Keyboard shortcuts"
         }
@@ -111,13 +111,33 @@ struct HelpCommands: Commands {
 
 struct HelpView: View {
     @AppStorage(HelpTopic.storageKey) private var topicRaw = HelpTopic.start.rawValue
+    @State private var columns: NavigationSplitViewVisibility = .all
 
     private var topic: HelpTopic { HelpTopic(rawValue: topicRaw) ?? .start }
 
     var body: some View {
-        HStack(spacing: 0) {
-            sidebar
-            Divider()
+        NavigationSplitView(columnVisibility: $columns) {
+            VStack(spacing: 0) {
+                Text("HELP")
+                    .font(.system(size: 11, weight: .bold)).tracking(1.4).foregroundStyle(Color.appBlue)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 4)
+                // Same pattern as the main sidebar: a List bound to the selection, so the
+                // highlight always follows the page, including pages opened from the Help menu.
+                List(selection: Binding<HelpTopic?>(
+                    get: { HelpTopic(rawValue: topicRaw) ?? .start },
+                    set: { if let t = $0 { topicRaw = t.rawValue } })) {
+                    ForEach(HelpTopic.allCases) { t in
+                        Label(t.title, systemImage: t.symbol)
+                            .tag(t)
+                    }
+                }
+                .listStyle(.sidebar)
+                HelpOpenFolderButtons()
+                    .padding(12)
+            }
+            .navigationSplitViewColumnWidth(min: 210, ideal: 236, max: 290)
+        } detail: {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     HelpBody(topic: topic)
@@ -130,34 +150,6 @@ struct HelpView: View {
             .background(Color.appBG)
         }
         .frame(minWidth: 740, minHeight: 520)
-    }
-
-    private var sidebar: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("HELP")
-                .font(.system(size: 11, weight: .bold)).tracking(1.4).foregroundStyle(Color.appBlue)
-                .padding(.horizontal, 10).padding(.bottom, 8)
-            ForEach(HelpTopic.allCases) { t in
-                Button { topicRaw = t.rawValue } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: t.symbol).frame(width: 18)
-                        Text(t.title).font(.system(size: 13, weight: t == topic ? .semibold : .regular))
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.vertical, 6).padding(.horizontal, 10)
-                    .background(t == topic ? Color.appBlue.opacity(0.14) : Color.clear)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(t == topic ? Color.appBlue : Color.primary)
-            }
-            Spacer()
-            HelpOpenFolderButtons()
-        }
-        .padding(12)
-        .frame(width: 230)
-        .background(Color.white.opacity(0.6))
     }
 }
 
