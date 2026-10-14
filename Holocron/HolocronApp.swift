@@ -22,6 +22,7 @@ struct HolocronApp: App {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(after: .appInfo) {
                 Button("Check for Updates...") {
+                    UserDefaults.standard.set(SettingsTab.updates.rawValue, forKey: "settingsTab")
                     model.nav = .settings
                     model.updater.check(userInitiated: true)
                 }

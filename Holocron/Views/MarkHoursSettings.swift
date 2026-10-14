@@ -441,226 +441,282 @@ struct DeleteButton: View {
 
 // MARK: - Settings
 
+enum SettingsTab: String, CaseIterable, Identifiable {
+    case general, timetable, calendar, updates, data
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .general: return "General"
+        case .timetable: return "Timetable"
+        case .calendar: return "Calendar"
+        case .updates: return "Updates"
+        case .data: return "Data"
+        }
+    }
+}
+
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
+    @AppStorage("settingsTab") private var tabRaw = SettingsTab.general.rawValue
     @State private var ntDate = todayISO()
     @State private var ntLabel = ""
 
+    private var tab: SettingsTab { SettingsTab(rawValue: tabRaw) ?? .general }
+
     var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Settings").font(.system(size: 28, weight: .bold)).tracking(-0.5)
+            Picker("", selection: Binding(get: { tab }, set: { tabRaw = $0.rawValue })) {
+                ForEach(SettingsTab.allCases) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: 540)
+            ScrollView {
+                Group {
+                    switch tab {
+                    case .general: generalTab
+                    case .timetable: timetableTab
+                    case .calendar: calendarTab
+                    case .updates: UpdatesSettings()
+                    case .data: dataTab
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 24)
+            }
+            .id(tab)
+        }
+        .padding([.horizontal, .top], 24)
+        .frame(maxWidth: 860, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    // MARK: Tabs
+
+    @ViewBuilder private var generalTab: some View {
         let db = model.db
-        let subjectRows = db.rows(.subjects)
-        let termRows = db.rows(.terms)
-        let nt = db.rows(.nonteaching).sorted { $0.s("date") < $1.s("date") }
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Settings").font(.system(size: 28, weight: .bold)).tracking(-0.5)
+        VStack(alignment: .leading, spacing: 16) {
+            SectionTitle("Class")
+            HStack(spacing: 10) {
+                Text("Class name").font(.system(size: 13.5, weight: .medium))
+                Spacer()
+                TextField(Database.defaultClassName, text: Binding(get: { db.classNameSetting }, set: { db.setClassName($0) }))
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 160)
+            }
+            .padding(.vertical, 8).padding(.horizontal, 12)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            Text("Shown at the top of the sidebar and on student summaries and report packs.")
+                .font(.system(size: 12)).foregroundStyle(Color.ink3)
 
-                SectionTitle("Class")
-                HStack(spacing: 10) {
-                    Text("Class name").font(.system(size: 13.5, weight: .medium))
-                    Spacer()
-                    TextField(Database.defaultClassName, text: Binding(get: { db.classNameSetting }, set: { db.setClassName($0) }))
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 160)
-                }
-                .padding(.vertical, 8).padding(.horizontal, 12)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                Text("Shown at the top of the sidebar and on student summaries and report packs.")
-                    .font(.system(size: 12)).foregroundStyle(Color.ink3)
-
-                SectionTitle("Modules")
-                VStack(spacing: 0) {
-                    ForEach(NavItem.allCases.filter { $0.canDisable }) { item in
-                        HStack(spacing: 12) {
-                            Image(systemName: item.symbol).frame(width: 22).foregroundStyle(Color.ink2)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(item.title).font(.system(size: 13.5, weight: .medium))
-                                Text(item.blurb).font(.system(size: 12)).foregroundStyle(Color.ink2)
-                            }
-                            Spacer(minLength: 8)
-                            Toggle("", isOn: Binding(get: { model.isEnabled(item) },
-                                                     set: { model.setEnabled(item, $0) }))
-                                .toggleStyle(.switch)
-                                .labelsHidden()
+            SectionTitle("Modules")
+            VStack(spacing: 0) {
+                ForEach(NavItem.allCases.filter { $0.canDisable }) { item in
+                    HStack(spacing: 12) {
+                        Image(systemName: item.symbol).frame(width: 22).foregroundStyle(Color.ink2)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(item.title).font(.system(size: 13.5, weight: .medium))
+                            Text(item.blurb).font(.system(size: 12)).foregroundStyle(Color.ink2)
                         }
-                        .padding(.vertical, 8).padding(.horizontal, 12)
-                        Divider()
-                    }
-                }
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                Text("Switched-off modules disappear from the sidebar and the Go menu. Your data is kept, and Today and Settings always stay on.")
-                    .font(.system(size: 12)).foregroundStyle(Color.ink3)
-
-                SectionTitle("Periods")
-                VStack(spacing: 0) {
-                    ForEach(db.periods) { p in
-                        FlowLayout(spacing: 12) {
-                            TextField("", text: periodBinding(p.period, "name")).textFieldStyle(.roundedBorder).frame(width: 190)
-                            DatePicker("", selection: timeBinding(p.period, "start"), displayedComponents: .hourAndMinute).labelsHidden()
-                            Text("to").foregroundStyle(Color.ink2)
-                            DatePicker("", selection: timeBinding(p.period, "end"), displayedComponents: .hourAndMinute).labelsHidden()
-                            Text("\(p.minutes) min").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
-                        }
-                        .padding(.vertical, 6).padding(.horizontal, 12)
-                        Divider()
-                    }
-                }
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-
-                SectionTitle("Subjects")
-                VStack(spacing: 0) {
-                    ForEach(subjectRows.indices, id: \.self) { i in
-                        FlowLayout(spacing: 12) {
-                            TextField("", text: cellBinding(.subjects, i, "subject")).textFieldStyle(.roundedBorder).frame(width: 190)
-                            Picker("", selection: cellBinding(.subjects, i, "kind")) {
-                                Text("Face to face").tag("teach")
-                                Text("Release").tag("release")
-                                Text("DOTTL").tag("dottl")
-                            }
+                        Spacer(minLength: 8)
+                        Toggle("", isOn: Binding(get: { model.isEnabled(item) },
+                                                 set: { model.setEnabled(item, $0) }))
+                            .toggleStyle(.switch)
                             .labelsHidden()
-                            .frame(width: 140)
-                            ColorPicker("", selection: colourBinding(i), supportsOpacity: false).labelsHidden()
-                            SubjectChip(name: subjectRows[i].s("subject"))
-                        }
-                        .padding(.vertical, 6).padding(.horizontal, 12)
-                        Divider()
                     }
-                }
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                Button("Add subject") {
-                    db.append(.subjects, ["subject": "New subject", "kind": "teach", "colour": "#8A8F94"])
-                    db.touch(.subjects)
-                }
-
-                SectionTitle("Terms")
-                VStack(spacing: 0) {
-                    ForEach(termRows.indices, id: \.self) { i in
-                        FlowLayout(spacing: 12) {
-                            TextField("Year", text: cellBinding(.terms, i, "year")).textFieldStyle(.roundedBorder).frame(width: 70)
-                            TextField("Term", text: cellBinding(.terms, i, "term")).textFieldStyle(.roundedBorder).frame(width: 50)
-                            DatePicker("", selection: dateCellBinding(.terms, i, "start"), displayedComponents: .date).labelsHidden()
-                            Text("to").foregroundStyle(Color.ink2)
-                            DatePicker("", selection: dateCellBinding(.terms, i, "end"), displayedComponents: .date).labelsHidden()
-                            Text("\(weeksIn(termRows[i])) weeks").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
-                        }
-                        .padding(.vertical, 6).padding(.horizontal, 12)
-                        Divider()
-                    }
-                }
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                Button("Add term") {
-                    let last = db.termsSorted.last
-                    let y = last?.year ?? String(yearOf(todayISO()))
-                    let n = (Int(last?.term ?? "0") ?? 0) + 1
-                    let nextYear = n > 4 ? String((Int(y) ?? 2026) + 1) : y
-                    let nextTerm = n > 4 ? "1" : String(n)
-                    let start = last.map { addDays($0.end, 14) } ?? todayISO()
-                    db.append(.terms, ["year": nextYear, "term": nextTerm, "start": start, "end": addDays(start, 69)])
-                    db.touch(.terms)
-                }
-
-                SectionTitle("Non-teaching days")
-                VStack(alignment: .leading, spacing: 10) {
-                    FlowLayout(spacing: 12) {
-                        DateField(iso: $ntDate)
-                        LineField(label: "Reason", text: $ntLabel, placeholder: "Public holiday, pupil free day")
-                            .frame(width: 260)
-                    }
-                    Button("Add day") {
-                        guard !ntLabel.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-                        db.append(.nonteaching, ["date": ntDate, "label": ntLabel.trimmingCharacters(in: .whitespaces)])
-                        db.touch(.nonteaching)
-                        ntLabel = ""
-                    }
-                }
-                .card()
-                VStack(spacing: 0) {
-                    ForEach(nt, id: \Row.["date"]) { n in
-                        HStack(spacing: 12) {
-                            Text(dLong(n.s("date"))).frame(width: 120, alignment: .leading)
-                            Text(n.s("label")).foregroundStyle(Color.ink2)
-                            Spacer()
-                            DeleteButton {
-                                db.remove(.nonteaching, where: { $0.s("date") == n.s("date") })
-                                db.touch(.nonteaching)
-                            }
-                        }
-                        .font(.system(size: 13))
-                        .padding(.vertical, 7).padding(.horizontal, 12)
-                        Divider()
-                    }
-                }
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-
-                UpdatesSettings()
-
-                SectionTitle("Data")
-                Text("Everything is written straight to CSV files. You can edit them in Numbers and reload here. The data is split in two folders so the planner can be shared with other staff while student records stay with you.")
-                    .font(.system(size: 13)).foregroundStyle(Color.ink2)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "lock.fill").foregroundStyle(Color.ink2)
-                        Text("Student folder").font(.system(size: 14, weight: .semibold))
-                        TagLabel(text: "Private")
-                    }
-                    Text("Students, lesson notes, assessments, wellbeing, behaviour, reports, photos, your hours log, your to-do list and these settings.")
-                        .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
-                    Text(model.folder.url.path).font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
-                    HStack {
-                        Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([model.folder.url]) }
-                        Button("Change folder...") { model.showSetup = true }
-                    }
-                }
-                .card()
-
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "person.2.fill").foregroundStyle(Color.ink2)
-                        Text("Planner folder").font(.system(size: 14, weight: .semibold))
-                        TagLabel(text: model.folder.plannerURL == nil ? "Same as student folder" : "Separate",
-                                 fg: model.folder.plannerURL == nil ? Color.ink2 : Color.appGreen,
-                                 bg: model.folder.plannerURL == nil ? Color.black.opacity(0.06) : Color.appGreen.opacity(0.14))
-                    }
-                    Text("Timetable, lessons, terms, non-teaching days, subjects, periods, units, devotions, quotes and rubrics. Point this at a folder shared in iCloud Drive to sync the planner with colleagues.")
-                        .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
-                    Text((model.folder.plannerURL ?? model.folder.url).path)
-                        .font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
-                    HStack {
-                        Button("Choose planner folder...") {
-                            chooseFolder(title: "Choose the planner folder", create: true) { url in
-                                model.showToast(model.usePlannerFolder(url))
-                            }
-                        }
-                        if model.folder.plannerURL != nil {
-                            Button("Use the student folder for everything") { model.showToast(model.usePlannerFolder(nil)) }
-                            Button("Show in Finder") {
-                                if let u = model.folder.plannerURL { NSWorkspace.shared.activateFileViewerSelecting([u]) }
-                            }
-                        }
-                    }
-                    Text("Choosing a folder keeps any planner files already in it and copies across the ones it is missing. To share it, right-click the folder in Finder, choose Share, then Add People. Others choose the same folder here after accepting. Changes from colleagues appear when you come back to the app or press Reload.")
-                        .font(.system(size: 12)).foregroundStyle(Color.ink3)
-                }
-                .card()
-
-                HStack {
-                    Button("Reload from folders") {
-                        model.flushNow(wait: true)
-                        model.loadAll()
-                        model.showToast("Reloaded")
-                    }
-                    Text("Version \(AppModel.appVersion)").font(.system(size: 12)).foregroundStyle(Color.ink3)
+                    .padding(.vertical, 8).padding(.horizontal, 12)
+                    Divider()
                 }
             }
-            .padding(24)
-            .frame(maxWidth: 860, alignment: .leading)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            Text("Switched-off modules disappear from the sidebar and the Go menu. Your data is kept, and Today and Settings always stay on.")
+                .font(.system(size: 12)).foregroundStyle(Color.ink3)
+
+        }
+    }
+
+    @ViewBuilder private var timetableTab: some View {
+        let db = model.db
+        let subjectRows = db.rows(.subjects)
+        VStack(alignment: .leading, spacing: 16) {
+            SectionTitle("Periods")
+            VStack(spacing: 0) {
+                ForEach(db.periods) { p in
+                    FlowLayout(spacing: 12) {
+                        TextField("", text: periodBinding(p.period, "name")).textFieldStyle(.roundedBorder).frame(width: 190)
+                        DatePicker("", selection: timeBinding(p.period, "start"), displayedComponents: .hourAndMinute).labelsHidden()
+                        Text("to").foregroundStyle(Color.ink2)
+                        DatePicker("", selection: timeBinding(p.period, "end"), displayedComponents: .hourAndMinute).labelsHidden()
+                        Text("\(p.minutes) min").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    }
+                    .padding(.vertical, 6).padding(.horizontal, 12)
+                    Divider()
+                }
+            }
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            SectionTitle("Subjects")
+            VStack(spacing: 0) {
+                ForEach(subjectRows.indices, id: \.self) { i in
+                    FlowLayout(spacing: 12) {
+                        TextField("", text: cellBinding(.subjects, i, "subject")).textFieldStyle(.roundedBorder).frame(width: 190)
+                        Picker("", selection: cellBinding(.subjects, i, "kind")) {
+                            Text("Face to face").tag("teach")
+                            Text("Release").tag("release")
+                            Text("DOTTL").tag("dottl")
+                        }
+                        .labelsHidden()
+                        .frame(width: 140)
+                        ColorPicker("", selection: colourBinding(i), supportsOpacity: false).labelsHidden()
+                        SubjectChip(name: subjectRows[i].s("subject"))
+                    }
+                    .padding(.vertical, 6).padding(.horizontal, 12)
+                    Divider()
+                }
+            }
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            Button("Add subject") {
+                db.append(.subjects, ["subject": "New subject", "kind": "teach", "colour": "#8A8F94"])
+                db.touch(.subjects)
+            }
+
+        }
+    }
+
+    @ViewBuilder private var calendarTab: some View {
+        let db = model.db
+        let termRows = db.rows(.terms)
+        let nt = db.rows(.nonteaching).sorted { $0.s("date") < $1.s("date") }
+        VStack(alignment: .leading, spacing: 16) {
+            SectionTitle("Terms")
+            VStack(spacing: 0) {
+                ForEach(termRows.indices, id: \.self) { i in
+                    FlowLayout(spacing: 12) {
+                        TextField("Year", text: cellBinding(.terms, i, "year")).textFieldStyle(.roundedBorder).frame(width: 70)
+                        TextField("Term", text: cellBinding(.terms, i, "term")).textFieldStyle(.roundedBorder).frame(width: 50)
+                        DatePicker("", selection: dateCellBinding(.terms, i, "start"), displayedComponents: .date).labelsHidden()
+                        Text("to").foregroundStyle(Color.ink2)
+                        DatePicker("", selection: dateCellBinding(.terms, i, "end"), displayedComponents: .date).labelsHidden()
+                        Text("\(weeksIn(termRows[i])) weeks").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    }
+                    .padding(.vertical, 6).padding(.horizontal, 12)
+                    Divider()
+                }
+            }
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            Button("Add term") {
+                let last = db.termsSorted.last
+                let y = last?.year ?? String(yearOf(todayISO()))
+                let n = (Int(last?.term ?? "0") ?? 0) + 1
+                let nextYear = n > 4 ? String((Int(y) ?? 2026) + 1) : y
+                let nextTerm = n > 4 ? "1" : String(n)
+                let start = last.map { addDays($0.end, 14) } ?? todayISO()
+                db.append(.terms, ["year": nextYear, "term": nextTerm, "start": start, "end": addDays(start, 69)])
+                db.touch(.terms)
+            }
+
+            SectionTitle("Non-teaching days")
+            VStack(alignment: .leading, spacing: 10) {
+                FlowLayout(spacing: 12) {
+                    DateField(iso: $ntDate)
+                    LineField(label: "Reason", text: $ntLabel, placeholder: "Public holiday, pupil free day")
+                        .frame(width: 260)
+                }
+                Button("Add day") {
+                    guard !ntLabel.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+                    db.append(.nonteaching, ["date": ntDate, "label": ntLabel.trimmingCharacters(in: .whitespaces)])
+                    db.touch(.nonteaching)
+                    ntLabel = ""
+                }
+            }
+            .card()
+            VStack(spacing: 0) {
+                ForEach(nt, id: \Row.["date"]) { n in
+                    HStack(spacing: 12) {
+                        Text(dLong(n.s("date"))).frame(width: 120, alignment: .leading)
+                        Text(n.s("label")).foregroundStyle(Color.ink2)
+                        Spacer()
+                        DeleteButton {
+                            db.remove(.nonteaching, where: { $0.s("date") == n.s("date") })
+                            db.touch(.nonteaching)
+                        }
+                    }
+                    .font(.system(size: 13))
+                    .padding(.vertical, 7).padding(.horizontal, 12)
+                    Divider()
+                }
+            }
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+        }
+    }
+
+    @ViewBuilder private var dataTab: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SectionTitle("Data")
+            Text("Everything is written straight to CSV files. You can edit them in Numbers and reload here. The data is split in two folders so the planner can be shared with other staff while student records stay with you.")
+                .font(.system(size: 13)).foregroundStyle(Color.ink2)
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Image(systemName: "lock.fill").foregroundStyle(Color.ink2)
+                    Text("Student folder").font(.system(size: 14, weight: .semibold))
+                    TagLabel(text: "Private")
+                }
+                Text("Students, lesson notes, assessments, wellbeing, behaviour, reports, photos, your hours log, your to-do list and these settings.")
+                    .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                Text(model.folder.url.path).font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+                HStack {
+                    Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([model.folder.url]) }
+                    Button("Change folder...") { model.showSetup = true }
+                }
+            }
+            .card()
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Image(systemName: "person.2.fill").foregroundStyle(Color.ink2)
+                    Text("Planner folder").font(.system(size: 14, weight: .semibold))
+                    TagLabel(text: model.folder.plannerURL == nil ? "Same as student folder" : "Separate",
+                             fg: model.folder.plannerURL == nil ? Color.ink2 : Color.appGreen,
+                             bg: model.folder.plannerURL == nil ? Color.black.opacity(0.06) : Color.appGreen.opacity(0.14))
+                }
+                Text("Timetable, lessons, terms, non-teaching days, subjects, periods, units, devotions, quotes and rubrics. Point this at a folder shared in iCloud Drive to sync the planner with colleagues.")
+                    .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                Text((model.folder.plannerURL ?? model.folder.url).path)
+                    .font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+                HStack {
+                    Button("Choose planner folder...") {
+                        chooseFolder(title: "Choose the planner folder", create: true) { url in
+                            model.showToast(model.usePlannerFolder(url))
+                        }
+                    }
+                    if model.folder.plannerURL != nil {
+                        Button("Use the student folder for everything") { model.showToast(model.usePlannerFolder(nil)) }
+                        Button("Show in Finder") {
+                            if let u = model.folder.plannerURL { NSWorkspace.shared.activateFileViewerSelecting([u]) }
+                        }
+                    }
+                }
+                Text("Choosing a folder keeps any planner files already in it and copies across the ones it is missing. To share it, right-click the folder in Finder, choose Share, then Add People. Others choose the same folder here after accepting. Changes from colleagues appear when you come back to the app or press Reload.")
+                    .font(.system(size: 12)).foregroundStyle(Color.ink3)
+            }
+            .card()
+
+            HStack {
+                Button("Reload from folders") {
+                    model.flushNow(wait: true)
+                    model.loadAll()
+                    model.showToast("Reloaded")
+                }
+                Text("Version \(AppModel.appVersion)").font(.system(size: 12)).foregroundStyle(Color.ink3)
+            }
         }
     }
 
