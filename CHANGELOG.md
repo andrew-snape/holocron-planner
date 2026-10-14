@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5
+
+- New Print button on the Week screen, and File, then Print Week (Cmd+P). It lays the week out on one A4 landscape page, with the subject colours, lesson summaries, learning intentions (you can switch these off), camps, carnivals and days off, and opens it ready to print. Save as PDF (Shift+Cmd+P) keeps a copy instead.
+
 ## 1.4
 
 - New Start over button in Settings, then Data. Clear just the planner or everything and begin again with a typical school day and a list of subjects. Your old files are moved into a dated folder in Holocron archive, next to your data folder, never deleted. A shared planner folder is only disconnected, so colleagues keep their planner.

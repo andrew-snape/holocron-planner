@@ -11,7 +11,7 @@ Holocron keeps your fortnightly timetable, lesson summaries, student notes and t
 ## What it does
 
 - **Today**: every block of the day in a vertical list, with the current period highlighted, birthdays coming up, and a quote card.
-- **Week and Term**: plan a whole fortnight in a grid. Type straight into a slot, drag to swap lessons, change a slot for one day or for every cycle, and push or pull lessons when a day is lost.
+- **Week and Term**: plan a whole fortnight in a grid. Type straight into a slot, drag to swap lessons, change a slot for one day or for every cycle, push or pull lessons when a day is lost, and print the week on one A4 page or save it as a PDF.
 - **Class screen**: the lesson name, learning intention, success criteria and a timer, ready for the projector.
 - **Students**: a class list and a record for each student with notes, assessments, wellbeing, behaviour, plan notes and a report pack. Photos, birth dates and adjustments are kept on your Mac only.
 - **Quick log and Mark class**: log a note for several students at once, or mark the whole class on one task.
@@ -70,7 +70,7 @@ Every push to `main` and every pull request is also built on a Mac by GitHub Act
 
 ## Keyboard shortcuts
 
-Cmd+1 to Cmd+0 jump between screens (Today, Week, Class screen, Term, Units, Devotion, Students, Quick log, Mark class, Hours). Cmd+comma opens Settings. Shift+Cmd+R reloads from the folder.
+Cmd+1 to Cmd+0 jump between screens (Today, Week, Class screen, Term, Units, Devotion, Students, Quick log, Mark class, Hours). Cmd+comma opens Settings. Shift+Cmd+R reloads from the folder. On the Week screen, Cmd+P prints the week and Shift+Cmd+P saves it as a PDF.
 
 ## Publishing a release (for maintainers)
 

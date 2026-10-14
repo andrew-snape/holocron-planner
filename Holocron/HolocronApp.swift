@@ -35,6 +35,14 @@ struct HolocronApp: App {
                     }
                 }
             }
+            CommandGroup(replacing: .printItem) {
+                Button("Print Week...") { PrintWeek.open(model: model) }
+                    .keyboardShortcut("p", modifiers: .command)
+                    .disabled(model.nav != .week)
+                Button("Save Week as PDF...") { PrintWeek.save(model: model) }
+                    .keyboardShortcut("p", modifiers: [.command, .shift])
+                    .disabled(model.nav != .week)
+            }
             CommandGroup(after: .saveItem) {
                 Button("Reload from folder") {
                     model.flushNow(wait: true)

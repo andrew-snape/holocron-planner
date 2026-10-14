@@ -3,6 +3,7 @@ import SwiftUI
 struct WeekView: View {
     @Environment(AppModel.self) private var model
     @State private var viewport: CGFloat = 900
+    @AppStorage(PrintWeek.intentionsKey) private var printIntentions = true
 
     var body: some View {
         let db = model.db
@@ -28,6 +29,16 @@ struct WeekView: View {
                     Text("Type into a slot, click a subject to change it, drag to swap")
                         .font(.system(size: 12)).foregroundStyle(Color.ink3).lineLimit(1)
                     Spacer()
+                    Menu {
+                        Button("Print Week...") { PrintWeek.open(model: model) }
+                        Button("Save as PDF...") { PrintWeek.save(model: model) }
+                        Divider()
+                        Toggle("Include learning intentions", isOn: $printIntentions)
+                    } label: {
+                        Label("Print", systemImage: "printer")
+                    }
+                    .fixedSize()
+                    .help("Print this week on one A4 page, or save it as a PDF")
                     Picker("", selection: Binding(get: { model.weekFilter }, set: { model.weekFilter = $0 })) {
                         Text("All subjects").tag("")
                         ForEach(subjects, id: \.self) { Text($0).tag($0) }
