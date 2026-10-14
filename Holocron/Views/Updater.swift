@@ -310,6 +310,7 @@ struct UpdatesSettings: View {
                 LabeledContent("GitHub repository") {
                     TextField(Updater.defaultRepo, text: Binding(get: { u.repo }, set: { u.setRepo($0) }))
                         .textFieldStyle(.roundedBorder)
+                        .labelsHidden()
                         .frame(width: 240)
                         .autocorrectionDisabled()
                 }
@@ -341,7 +342,7 @@ struct UpdatesSettings: View {
                 }
             }
         }
-        .formStyle(.grouped)
+        .settingsForm()
     }
 
     @ViewBuilder

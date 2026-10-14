@@ -456,6 +456,16 @@ struct DeleteButton: View {
 
 // MARK: - Settings
 
+/// Settings forms sit on Holocron's grey background, with white rows like the rest of the app.
+extension View {
+    func settingsForm() -> some View {
+        self.formStyle(.grouped)
+            .scrollContentBackground(.hidden)
+            .background(Color.appBG)
+            .listRowBackground(Color.cardBG)
+    }
+}
+
 enum SettingsTab: String, CaseIterable, Identifiable {
     case general, timetable, calendar, updates, data
     var id: String { rawValue }
@@ -519,6 +529,7 @@ struct SettingsView: View {
                 LabeledContent("Class name") {
                     TextField(Database.defaultClassName, text: Binding(get: { db.classNameSetting }, set: { db.setClassName($0) }))
                         .textFieldStyle(.roundedBorder)
+                        .labelsHidden()
                         .frame(width: 200)
                 }
             } footer: {
@@ -540,7 +551,7 @@ struct SettingsView: View {
                 Text("Switched-off modules disappear from the sidebar and the Go menu. Your data is kept, and Today always stays on.")
             }
         }
-        .formStyle(.grouped)
+        .settingsForm()
     }
 
     @ViewBuilder private var timetableTab: some View {
@@ -552,6 +563,7 @@ struct SettingsView: View {
                     HStack(spacing: 8) {
                         TextField("Name", text: periodBinding(p.period, "name"))
                             .textFieldStyle(.roundedBorder)
+                        .labelsHidden()
                             .frame(width: 160)
                         Spacer()
                         DatePicker("Start", selection: timeBinding(p.period, "start"), displayedComponents: .hourAndMinute)
@@ -574,6 +586,7 @@ struct SettingsView: View {
                     HStack(spacing: 8) {
                         TextField("Subject", text: cellBinding(.subjects, i, "subject"))
                             .textFieldStyle(.roundedBorder)
+                        .labelsHidden()
                             .frame(width: 160)
                         Picker("Type", selection: cellBinding(.subjects, i, "kind")) {
                             Text("Face to face").tag("teach")
@@ -606,7 +619,7 @@ struct SettingsView: View {
                 Text("Private subjects keep their lessons in a file only you have. Colleagues sharing your planner folder still see the timetable slot, but not what you plan in it, and their own lessons for that subject are never touched. This only matters when the planner folder is shared.")
             }
         }
-        .formStyle(.grouped)
+        .settingsForm()
         .confirmationDialog("Make this subject private?", isPresented: Binding(
             get: { privatePrompt != nil }, set: { if !$0 { privatePrompt = nil } }),
             titleVisibility: .visible, presenting: privatePrompt) { name in
@@ -628,9 +641,11 @@ struct SettingsView: View {
                     HStack(spacing: 8) {
                         TextField("Year", text: cellBinding(.terms, i, "year"))
                             .textFieldStyle(.roundedBorder)
+                        .labelsHidden()
                             .frame(width: 70)
                         TextField("Term", text: cellBinding(.terms, i, "term"))
                             .textFieldStyle(.roundedBorder)
+                        .labelsHidden()
                             .frame(width: 50)
                         Spacer()
                         DatePicker("Start", selection: dateCellBinding(.terms, i, "start"), displayedComponents: .date)
@@ -676,6 +691,7 @@ struct SettingsView: View {
                         .labelsHidden()
                     TextField("Reason", text: $ntLabel, prompt: Text("Public holiday, pupil free day"))
                         .textFieldStyle(.roundedBorder)
+                        .labelsHidden()
                     Button("Add day") {
                         guard !ntLabel.trimmingCharacters(in: .whitespaces).isEmpty else { return }
                         db.append(.nonteaching, ["date": ntDate, "label": ntLabel.trimmingCharacters(in: .whitespaces)])
@@ -688,7 +704,7 @@ struct SettingsView: View {
                 Text("Non-teaching days")
             }
         }
-        .formStyle(.grouped)
+        .settingsForm()
     }
 
     @ViewBuilder private var dataTab: some View {
@@ -771,7 +787,7 @@ struct SettingsView: View {
                 }
             }
         }
-        .formStyle(.grouped)
+        .settingsForm()
         .sheet(isPresented: $showStartOver) { StartOverSheet() }
     }
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.8.6
+
+- Fixed the Class name field in Settings showing the class name twice, with only one copy editable. The label beside each settings field is now hidden, so only the box shows.
+- Settings forms now use Holocron's own grey background with white rows, instead of the system's default grey.
+
 ## 1.8.5
 
 - Settings has been reworked to follow the usual Mac layout. The five tabs (General, Timetable, Calendar, Updates and Data) sit in the window toolbar with icons, and each tab is a grouped form with labels on the left and controls on the right. Periods, subjects and terms now line up in columns.
