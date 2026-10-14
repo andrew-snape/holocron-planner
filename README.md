@@ -1,5 +1,7 @@
 # Holocron
 
+[![Latest release](https://img.shields.io/github/v/release/andrew-snape/holocron-planner)](../../releases/latest) [![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE) ![macOS 26+](https://img.shields.io/badge/macOS-26%2B-lightgrey.svg) ![Apple silicon](https://img.shields.io/badge/Apple%20silicon-arm64-lightgrey.svg)
+
 A classroom planner for primary school teachers, built as a native Mac app. It started as the planner for one Year 6 class in Victoria, Australia, and is shared here in case it helps other teachers. Light mode, Australian English, and a classic Mac look.
 
 Holocron keeps your fortnightly timetable, lesson summaries, student notes and teaching hours in plain CSV files that you own, so you can back them up, hand-edit them in Numbers, or share the planner part with colleagues.
@@ -22,7 +24,7 @@ macOS 26 or later on a Mac with Apple silicon.
 
 ## Install
 
-1. Download the latest `Holocron-x.y-mac.zip` from the [Releases page](../../releases).
+1. Download the latest `Holocron-x.y-mac.zip` from the [latest release](../../releases/latest). The [changelog](CHANGELOG.md) lists what changed in each version.
 2. Unzip it and drag Holocron into your Applications folder.
 3. The first time, macOS will not recognise the developer, because the app is not signed with a paid Apple Developer ID. Right-click Holocron, choose **Open**, then **Open** again. It opens normally after that.
 4. On first launch, Holocron offers to set up its data folder (see below). It starts you off with a typical school day and a list of subjects. Add your term dates under Settings, then Terms, and adjust the periods and subjects to suit your school.
@@ -66,9 +68,13 @@ Cmd+1 to Cmd+0 jump between screens (Today, Week, Class screen, Term, Units, Dev
 
 ## Publishing a release (for maintainers)
 
+Replace `X.Y` with the new version number (for example `1.3`).
+
 1. Commit your changes.
-2. Add a `## 1.2` section to `CHANGELOG.md`. Its bullets become the release notes.
-3. Run `scripts/release.sh 1.2`.
+2. Add a `## X.Y` section to `CHANGELOG.md`. Its bullets become the release notes.
+3. Commit the changelog, then run `scripts/release.sh X.Y`.
+
+The script needs a clean working tree, so commit everything first.
 
 With the GitHub CLI installed and signed in (`brew install gh`, then `gh auth login`) the script builds, zips, checksums, tags, pushes and creates the release. Without it, the script builds the files into a `dist` folder and prints the steps to publish them from GitHub Desktop and github.com. Either way, running copies of Holocron then offer the update.
 
