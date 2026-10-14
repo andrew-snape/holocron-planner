@@ -252,7 +252,7 @@ struct MiniCalendar: View {
             .frame(maxWidth: .infinity)
             .help(longDate(d))
         } else {
-            Color.clear.frame(maxWidth: .infinity, minHeight: 22)
+            Color.clear.frame(maxWidth: .infinity).frame(height: 22)
         }
     }
 

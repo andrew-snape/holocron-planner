@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.1
+
+- The small calendar in the sidebar now keeps every week the same height. The first and last weeks of a month, which have blank days, were stretching taller than the others.
+
 ## 1.6
 
 - New Copy lessons button on the Today screen (and Edit, then Copy Day as Markdown, Option+Cmd+C). It copies every lesson and time for the day you are looking at as Markdown, ready to paste into the school LMS for a relief teacher: each period with its times, subject, summary, learning intention, success criteria, lesson sequence, resources as links, curriculum codes, and the day's devotion on Circle Time. Student records are never included.
