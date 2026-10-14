@@ -1,6 +1,6 @@
 # Holocron
 
-[![Latest release](https://img.shields.io/github/v/release/andrew-snape/holocron-planner)](../../releases/latest) [![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE) ![macOS 26+](https://img.shields.io/badge/macOS-26%2B-lightgrey.svg) ![Apple silicon](https://img.shields.io/badge/Apple%20silicon-arm64-lightgrey.svg)
+[![Build](https://github.com/andrew-snape/holocron-planner/actions/workflows/build.yml/badge.svg)](https://github.com/andrew-snape/holocron-planner/actions/workflows/build.yml) [![Latest release](https://img.shields.io/github/v/release/andrew-snape/holocron-planner)](../../releases/latest) [![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE) ![macOS 26+](https://img.shields.io/badge/macOS-26%2B-lightgrey.svg) ![Apple silicon](https://img.shields.io/badge/Apple%20silicon-arm64-lightgrey.svg)
 
 A classroom planner for primary school teachers, built as a native Mac app. It started as the planner for one Year 6 class in Victoria, Australia, and is shared here in case it helps other teachers. Light mode, Australian English, and a classic Mac look.
 
@@ -54,6 +54,8 @@ Edit a CSV in Numbers or a text editor, then press Shift+Cmd+R to reload. Files 
 2. Press Cmd+R.
 
 The app uses a local (ad hoc) signature, so no developer account is needed. The sandbox is off so the app can reach your iCloud Drive folder. The project has no external dependencies.
+
+Every push to `main` and every pull request is also built on a Mac by GitHub Actions (`.github/workflows/build.yml`). The run checks that no CSV files or photos are in the repository, builds the Release app, checks its signature, and keeps the built app for a week under the run's Artifacts. A red cross next to a commit means the build broke.
 
 ### Make it yours
 

@@ -1,0 +1,65 @@
+# Builds Holocron on a real Mac for every push to main and every pull request.
+# A failed run shows a red cross on the commit in GitHub and GitHub emails you.
+
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Holocron
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v5
+
+      - name: Check that no planner or student data is in the repository
+        run: |
+          if git ls-files | grep -Ei '\.csv$|(^|/)photos/'; then
+            echo "::error::CSV files or photos are tracked. Planner and student data must never be committed."
+            exit 1
+          fi
+          echo "No CSV files or photos are tracked."
+
+      - name: Check the changelog has a section for this version
+        run: |
+          VERSION=$(grep -m1 -E 'MARKETING_VERSION = ' Holocron.xcodeproj/project.pbxproj | sed -E 's/.*= ([0-9.]+);/\1/')
+          echo "Version in the project: $VERSION"
+          grep -qx "## $VERSION" CHANGELOG.md || { echo "::warning::CHANGELOG.md has no '## $VERSION' section yet."; }
+
+      - name: Show the Xcode version
+        run: xcodebuild -version
+
+      - name: Build (Release, Apple silicon)
+        run: |
+          xcodebuild -quiet -project Holocron.xcodeproj -target Holocron -configuration Release \
+            SYMROOT="$RUNNER_TEMP/build" CODE_SIGN_IDENTITY=- build
+
+      - name: Check the built app
+        run: |
+          APP="$RUNNER_TEMP/build/Release/Holocron.app"
+          test -d "$APP" || { echo "::error::The app was not found after the build."; exit 1; }
+          echo "Version: $(defaults read "$APP/Contents/Info" CFBundleShortVersionString) (build $(defaults read "$APP/Contents/Info" CFBundleVersion))"
+          echo "Architectures: $(lipo -archs "$APP/Contents/MacOS/Holocron")"
+          codesign --verify --deep --strict "$APP"
+          ditto -c -k --keepParent --norsrc --noextattr --noqtn "$APP" "$RUNNER_TEMP/Holocron-ci-build.zip"
+
+      - name: Keep the build for a week
+        uses: actions/upload-artifact@v4
+        with:
+          name: Holocron-ci-build
+          path: ${{ runner.temp }}/Holocron-ci-build.zip
+          retention-days: 7
