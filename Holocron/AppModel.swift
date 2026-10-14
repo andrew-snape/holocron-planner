@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 import ImageIO
 
 enum NavItem: String, CaseIterable, Identifiable {
-    case today, week, term, units, devotion, classScreen, students, quick, assess, hours, settings
+    case today, week, term, units, devotion, classScreen, students, quick, assess, hours
 
     var id: String { rawValue }
 
@@ -21,7 +21,6 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .quick: return "Quick log"
         case .assess: return "Mark class"
         case .hours: return "Hours"
-        case .settings: return "Settings"
         }
     }
 
@@ -37,7 +36,6 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .quick: return "square.grid.2x2"
         case .assess: return "checkmark.square"
         case .hours: return "chart.bar"
-        case .settings: return "gearshape"
         }
     }
 }

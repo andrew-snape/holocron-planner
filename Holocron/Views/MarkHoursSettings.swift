@@ -483,7 +483,6 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Settings").font(.system(size: 28, weight: .bold)).tracking(-0.5)
             Picker("", selection: Binding(get: { tab }, set: { tabRaw = $0.rawValue })) {
                 ForEach(SettingsTab.allCases) { Text($0.title).tag($0) }
             }
@@ -507,6 +506,7 @@ struct SettingsView: View {
         }
         .padding([.horizontal, .top], 24)
         .frame(maxWidth: 860, maxHeight: .infinity, alignment: .topLeading)
+        .navigationTitle("Settings")
     }
 
     // MARK: Tabs
@@ -549,7 +549,7 @@ struct SettingsView: View {
             }
             .background(Color.white)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            Text("Switched-off modules disappear from the sidebar and the Go menu. Your data is kept, and Today and Settings always stay on.")
+            Text("Switched-off modules disappear from the sidebar and the Go menu. Your data is kept, and Today always stays on.")
                 .font(.system(size: 12)).foregroundStyle(Color.ink3)
 
         }

@@ -146,12 +146,101 @@ private func mdResource(_ line: String) -> String {
 // MARK: - Copy to the clipboard
 
 extension AppModel {
-    /// Puts the day's lessons and times on the clipboard as Markdown.
+    /// Puts the day's lessons and times on the clipboard as rich text (HTML and RTF), so they paste
+    /// with headings, bold labels, bullets and clickable links. Plain text is kept as a fallback.
     func copyDay(_ date: String) {
         guard db.runsNormally(date) else { showToast("No lessons on this day"); return }
         let md = db.dayMarkdown(date, includeDevotion: isEnabled(.devotion))
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(md, forType: .string)
-        showToast("Copied the day as Markdown")
+        let html = htmlFromMarkdown(md)
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(plainFromMarkdown(md), forType: .string)
+        pb.setString(html, forType: .html)
+        if let attr = try? NSAttributedString(
+            data: Data(html.utf8),
+            options: [.documentType: NSAttributedString.DocumentType.html,
+                      .characterEncoding: String.Encoding.utf8.rawValue],
+            documentAttributes: nil),
+           let rtf = try? attr.data(
+            from: NSRange(location: 0, length: attr.length),
+            documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]) {
+            pb.setData(rtf, forType: .rtf)
+        }
+        showToast("Copied the day as rich text")
     }
+}
+
+/// Converts the Markdown made by dayMarkdown into a plain HTML document.
+func htmlFromMarkdown(_ md: String) -> String {
+    var out: [String] = []
+    var inList = false
+    var inQuote = false
+
+    func closeBlocks() {
+        if inList { out.append("</ul>"); inList = false }
+        if inQuote { out.append("</blockquote>"); inQuote = false }
+    }
+
+    for raw in md.components(separatedBy: "\n") {
+        let line = raw.trimmingCharacters(in: .whitespaces)
+        if line.isEmpty { closeBlocks(); continue }
+
+        if line.hasPrefix("- ") {
+            if !inList { closeBlocks(); out.append("<ul>"); inList = true }
+            out.append("<li>\(mdInlineHTML(String(line.dropFirst(2))))</li>")
+            continue
+        }
+        if line.hasPrefix("> ") {
+            if !inQuote { closeBlocks(); out.append("<blockquote>"); inQuote = true }
+            out.append("<p>\(mdInlineHTML(String(line.dropFirst(2))))</p>")
+            continue
+        }
+
+        closeBlocks()
+        if line.hasPrefix("### ") {
+            out.append("<h3>\(mdInlineHTML(String(line.dropFirst(4))))</h3>")
+        } else if line.hasPrefix("## ") {
+            out.append("<h2>\(mdInlineHTML(String(line.dropFirst(3))))</h2>")
+        } else if line.hasPrefix("# ") {
+            out.append("<h1>\(mdInlineHTML(String(line.dropFirst(2))))</h1>")
+        } else {
+            out.append("<p>\(mdInlineHTML(line))</p>")
+        }
+    }
+    closeBlocks()
+
+    return "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body>\n"
+        + out.joined(separator: "\n") + "\n</body></html>"
+}
+
+/// Escapes one line of text and turns the Markdown inline marks (bold, italic, links) into HTML.
+private func mdInlineHTML(_ s: String) -> String {
+    var t = s.replacingOccurrences(of: "&", with: "&amp;")
+        .replacingOccurrences(of: "<", with: "&lt;")
+        .replacingOccurrences(of: ">", with: "&gt;")
+        .replacingOccurrences(of: "\"", with: "&quot;")
+    t = mdReplace(t, "\\[([^\\]]+)\\]\\(([^)\\s]+)\\)", "<a href=\"$2\">$1</a>")
+    t = mdReplace(t, "\\*\\*(.+?)\\*\\*", "<strong>$1</strong>")
+    t = mdReplace(t, "(?<![*\\w])\\*(?!\\s)(.+?)\\*", "<em>$1</em>")
+    return t
+}
+
+/// The same content as plain text, for apps that only take text: no symbols, links shown with their address.
+private func plainFromMarkdown(_ md: String) -> String {
+    md.components(separatedBy: "\n").map { line -> String in
+        var s = line
+        for p in ["### ", "## ", "# ", "> ", "- "] where s.hasPrefix(p) {
+            s = String(s.dropFirst(p.count))
+            break
+        }
+        s = mdReplace(s, "\\[([^\\]]+)\\]\\(([^)\\s]+)\\)", "$1 ($2)")
+        s = mdReplace(s, "\\*\\*(.+?)\\*\\*", "$1")
+        s = mdReplace(s, "(?<![*\\w])\\*(?!\\s)(.+?)\\*", "$1")
+        return s
+    }.joined(separator: "\n")
+}
+
+private func mdReplace(_ s: String, _ pattern: String, _ template: String) -> String {
+    guard let re = try? NSRegularExpression(pattern: pattern) else { return s }
+    return re.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: template)
 }

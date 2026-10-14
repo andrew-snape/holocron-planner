@@ -3,10 +3,10 @@ import SwiftUI
 // MARK: - Modules that can be switched off
 //
 // Stored in settings.csv as rows like "module_devotion,off". A missing row means the module is on.
-// Today and Settings always stay on.
+// Today always stays on.
 
 extension NavItem {
-    var canDisable: Bool { self != .today && self != .settings }
+    var canDisable: Bool { self != .today }
 
     var blurb: String {
         switch self {
@@ -20,7 +20,6 @@ extension NavItem {
         case .quick: return "Photo grid for fast notes"
         case .assess: return "Mark the whole class on one task"
         case .hours: return "Face to face, release and DOTTL"
-        case .settings: return "Periods, subjects, terms and data"
         }
     }
 }

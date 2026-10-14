@@ -20,23 +20,17 @@ struct HolocronApp: App {
         .defaultSize(width: 1280, height: 860)
         .commands {
             CommandGroup(replacing: .newItem) {}
-            CommandGroup(after: .appInfo) {
-                Button("Check for Updates...") {
-                    UserDefaults.standard.set(SettingsTab.updates.rawValue, forKey: "settingsTab")
-                    model.nav = .settings
-                    model.updater.check(userInitiated: true)
-                }
-            }
+            AppCommands(model: model)
             CommandMenu("Go") {
                 ForEach(Array(NavItem.allCases.enumerated()), id: \.element) { idx, item in
                     if model.isEnabled(item) {
                         Button(item.title) { model.nav = item }
-                            .keyboardShortcut(item == .settings ? KeyEquivalent(",") : KeyEquivalent(Character(String((idx + 1) % 10))), modifiers: .command)
+                            .keyboardShortcut(KeyEquivalent(Character(String((idx + 1) % 10))), modifiers: .command)
                     }
                 }
             }
             CommandGroup(after: .pasteboard) {
-                Button("Copy Day as Markdown") { model.copyDay(model.cursor) }
+                Button("Copy Day as Rich Text") { model.copyDay(model.cursor) }
                     .keyboardShortcut("c", modifiers: [.command, .option])
                     .disabled(model.nav != .today)
             }
@@ -56,6 +50,7 @@ struct HolocronApp: App {
                 }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
             }
+            HelpCommands(model: model)
         }
 
         WindowGroup("Class screen", id: "classscreen", for: ClassTarget.self) { $target in
@@ -67,5 +62,36 @@ struct HolocronApp: App {
             }
         }
         .defaultSize(width: 1180, height: 760)
+
+        Settings {
+            SettingsView()
+                .environment(model)
+                .preferredColorScheme(.light)
+                .frame(minWidth: 640, idealWidth: 720, minHeight: 480, idealHeight: 620)
+        }
+
+        Window("Holocron Help", id: "help") {
+            HelpView()
+                .environment(model)
+                .preferredColorScheme(.light)
+        }
+        .defaultSize(width: 920, height: 680)
+    }
+}
+
+
+/// Application menu items. Settings itself lives in the Settings scene, so Cmd+, and the app menu item come for free.
+struct AppCommands: Commands {
+    var model: AppModel
+    @Environment(\.openSettings) private var openSettings
+
+    var body: some Commands {
+        CommandGroup(after: .appInfo) {
+            Button("Check for Updates...") {
+                UserDefaults.standard.set(SettingsTab.updates.rawValue, forKey: "settingsTab")
+                openSettings()
+                model.updater.check(userInitiated: true)
+            }
+        }
     }
 }

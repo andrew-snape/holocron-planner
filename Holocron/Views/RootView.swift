@@ -55,6 +55,23 @@ struct RootView: View {
                 .environment(model)
                 .preferredColorScheme(.light)
         }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                SettingsButton()
+            }
+        }
+    }
+}
+
+/// The gear in the window toolbar. Opens the Settings window, the same one as Holocron, Settings (Cmd+,).
+struct SettingsButton: View {
+    @Environment(\.openSettings) private var openSettings
+
+    var body: some View {
+        Button { openSettings() } label: {
+            Label("Settings", systemImage: "gearshape")
+        }
+        .help("Settings (Cmd+,)")
     }
 }
 
@@ -73,7 +90,6 @@ struct DetailRouter: View {
         case .quick: QuickLogView()
         case .assess: MarkClassView()
         case .hours: HoursView()
-        case .settings: SettingsView()
         }
     }
 }
