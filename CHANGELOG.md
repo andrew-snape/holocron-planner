@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3
+
+- New app icon, matching the original Holocron web app, made for the macOS 26 icon style.
+
 ## 1.2.1
 
 - Settings is now split into tabs across the top (General, Timetable, Calendar, Updates and Data) instead of one long page.

@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/icon.png" width="128" height="128" alt="Holocron app icon"></p>
+
 # Holocron
 
 [![Build](https://github.com/andrew-snape/holocron-planner/actions/workflows/build.yml/badge.svg)](https://github.com/andrew-snape/holocron-planner/actions/workflows/build.yml) [![Latest release](https://img.shields.io/github/v/release/andrew-snape/holocron-planner)](../../releases/latest) [![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE) ![macOS 26+](https://img.shields.io/badge/macOS-26%2B-lightgrey.svg) ![Apple silicon](https://img.shields.io/badge/Apple%20silicon-arm64-lightgrey.svg)
