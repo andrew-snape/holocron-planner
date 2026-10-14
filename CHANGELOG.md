@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.8
+
+- The Class screen is now student friendly. The learning intention sits under We are learning to and the success criteria under I can. If a lesson already starts with those words (or WALT), they are trimmed so they do not appear twice. A lesson with no plan shows Get ready to learn!
+- New First, Then and Next steps on the Class screen. Choose Add First, Then, Next and type three short steps straight onto the screen. Click a step's heading to highlight the one the class is on. Steps are saved with the lesson in classsteps.csv in your student folder, so colleagues sharing the planner never see them.
+- A Now and Next strip along the bottom of the Class screen shows the current lesson and what follows, including Recess, Lunch and Home time.
+
 ## 1.8.7
 
 - Privacy settings are now in one place. Settings, then Data has a Privacy section with Devotion scripts and quotes, and a checkbox for each subject whose lessons you want to keep to yourself. The Private checkboxes have gone from the Timetable tab, and the section says when your planner is not shared, so the settings make no difference yet.

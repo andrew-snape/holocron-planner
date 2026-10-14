@@ -68,7 +68,7 @@ struct HelpUsingPage: View {
             "**Term:** an overview of one subject across the term.",
             "**Units:** your units of inquiry.",
             "**Devotion:** daily devotion and Circle Time scripts.",
-            "**Class screen:** the lesson name, learning intention, success criteria and a timer, ready for the projector. **Pop out** opens it in its own window.",
+            "**Class screen:** a student friendly view for the projector. It shows what we are learning (We are learning to), the success criteria (I can), First, Then and Next steps you can type straight onto the screen, what is on now and what comes next, and a timer. Click a step's heading to highlight the one the class is on. **Pop out** opens it in its own window.",
             "**Students:** the class list on the left and a record on the right, with tabs for notes, assessments, wellbeing, behaviour and plan notes, plus a report pack.",
             "**Quick log:** pick several students from the photo grid and add one note to all of them.",
             "**Mark class:** mark the whole class on one task. Type a score or pick an achievement level.",
@@ -387,6 +387,7 @@ enum CSVGuide {
         case .todo: return "Your to-do list"
         case .reportjudge: return "Report ratings for achievement and engagement"
         case .reportcomment: return "Report general comments"
+        case .classsteps: return "First, Then and Next steps typed on the Class screen"
         case .lessonsprivate, .settings: return ""
         }
     }
@@ -438,6 +439,8 @@ enum CSVGuide {
             return "Semester report ratings. achievement is one of: " + Lists.achievement.joined(separator: ", ") + ". engagement is one of: " + Lists.engagement.joined(separator: ", ") + ". Copy the pattern of an existing row."
         case .reportcomment:
             return "Semester report general comments. Copy the pattern of an existing row."
+        case .classsteps:
+            return "Steps typed on the Class screen for one lesson. date is yyyy-mm-dd and period matches periods.csv. first, then and next are short pieces of text. A lesson with no steps has no row."
         case .lessonsprivate, .settings:
             return ""
         }

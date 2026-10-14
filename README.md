@@ -13,7 +13,7 @@ Holocron keeps your fortnightly timetable, lesson summaries, student notes and t
 - **Today**: every block of the day in a vertical list, with the current period highlighted, birthdays coming up, and a quote card.
 - **Week and Term**: plan a whole fortnight in a grid. Type straight into a slot, drag to swap lessons, change a slot for one day or for every cycle, push or pull lessons when a day is lost, and print the week on one A4 page or save it as a PDF.
 - **Copy lessons**: copy a whole day (times, lessons and resources) as rich text to paste into your school LMS for a relief teacher.
-- **Class screen**: the lesson name, learning intention, success criteria and a timer, ready for the projector.
+- **Class screen**: a student friendly view for the projector, with We are learning to and I can, First, Then and Next steps typed straight onto the screen, a Now and Next strip, and a timer.
 - **Students**: a class list and a record for each student with notes, assessments, wellbeing, behaviour, plan notes and a report pack. Photos, birth dates and adjustments are kept on your Mac only.
 - **Quick log and Mark class**: log a note for several students at once, or mark the whole class on one task, typing a score or picking an achievement level.
 - **Hours**: face to face time, release time and duties other than teaching and learning, by term and for the year, including the period lost to wellbeing work.
@@ -24,6 +24,7 @@ The timetable runs on an A and B fortnightly cycle that restarts each term. Whol
 
 ## What's new
 
+- **1.8.8**: A student friendly Class screen, with We are learning to and I can, First, Then and Next steps you type on the screen, and a Now and Next strip.
 - **1.8.7**: Privacy for Devotion scripts and subject lessons now sits together in Settings, then Data, and the Settings text is tidier.
 - **1.8.6**: Fixed the duplicated Class name field in Settings, and matched the Settings colours to the rest of Holocron.
 - **1.8.5**: Settings is reorganised into toolbar tabs with grouped, aligned forms.

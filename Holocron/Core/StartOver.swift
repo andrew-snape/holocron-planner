@@ -53,7 +53,7 @@ extension DataFolder {
             let clears: Bool
             switch scope {
             case .everything: clears = true
-            case .plannerOnly: clears = t.isPlanner || t == .lessonsprivate
+            case .plannerOnly: clears = t.isPlanner || t == .lessonsprivate || t == .classsteps
             }
             // A shared planner folder is only ever disconnected, never emptied.
             guard clears, !(t.isPlanner && shared && !privateTables.contains(t)) else { continue }

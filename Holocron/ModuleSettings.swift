@@ -12,7 +12,7 @@ extension NavItem {
         switch self {
         case .today: return "The day at a glance"
         case .week: return "Plan the fortnight in a grid"
-        case .classScreen: return "Lesson name, learning intention, success criteria and a timer for the projector"
+        case .classScreen: return "A student friendly projector view with the learning intention, steps and a timer"
         case .term: return "Term overview for one subject"
         case .units: return "Units of inquiry"
         case .devotion: return "Daily devotion and Circle Time scripts"

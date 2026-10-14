@@ -110,7 +110,7 @@ struct ClassScreenModule: View {
         } else {
             VStack(alignment: .leading, spacing: 14) {
                 PageHeader("Class screen")
-                EmptyNote(title: "No lessons today", message: "The Class screen shows the learning intention, success criteria and a timer for a lesson. It appears on school days.")
+                EmptyNote(title: "No lessons today", message: "The Class screen shows what the class is learning, the steps to follow, what comes next and a timer. It appears on school days.")
                 Spacer()
             }
             .padding(24)
@@ -128,6 +128,10 @@ struct ClassScreenView: View {
     var embedded: Bool
     @State private var date: String
     @State private var pn: Int
+    /// Shows the First, Then, Next cards before anything has been typed in them.
+    @State private var stepsOpen = false
+    /// Which of First (1), Then (2) and Next (3) the class is on. 0 when none is picked.
+    @State private var activeStep = 0
 
     init(initial: ClassTarget, embedded: Bool = false) {
         self.initial = initial
@@ -149,11 +153,12 @@ struct ClassScreenView: View {
         let p = db.period(pn)
         let subj = db.plannedSubject(date, pn)
         let c = db.content(date, pn)
-        let sc = linesOf(c.sc)
+        let sc = linesOf(c.sc).map { KidWords.strip($0, KidWords.scLeads) }
         let tone = subj.isEmpty ? Tone(bar: RGB(142, 142, 147), tint: RGB(237, 237, 238), ink: RGB(99, 99, 103)) : db.tone(forSubject: subj)
         let ps = lessons
         let ix = ps.firstIndex(where: { $0.period == pn })
         let unit: Row? = subj == "TDL" ? db.unitOn(date) : nil
+        let showSteps = stepsOpen || db.classSteps(date, pn).contains { !$0.isEmpty }
 
         VStack(alignment: .leading, spacing: 0) {
             topBar(subj: subj, p: p, tone: tone, ps: ps, ix: ix)
@@ -172,15 +177,28 @@ struct ClassScreenView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
                         if !c.li.isEmpty {
-                            Text("LEARNING INTENTION").font(.system(size: 15, weight: .bold)).tracking(1).foregroundStyle(tone.inkColor)
-                            Text(c.li).font(.system(size: 50, weight: .bold)).tracking(-1)
+                            heading("We are learning to", tone)
+                            Text(KidWords.strip(c.li, KidWords.liLeads))
+                                .font(.system(size: 50, weight: .bold)).tracking(-1)
                         } else {
-                            Text("LESSON").font(.system(size: 15, weight: .bold)).tracking(1).foregroundStyle(tone.inkColor)
-                            Text(c.summary.isEmpty ? "No plan for this lesson yet" : c.summary)
+                            heading("Today", tone)
+                            Text(c.summary.isEmpty ? "Get ready to learn!" : c.summary)
                                 .font(.system(size: 44, weight: .bold)).tracking(-1)
                         }
+                        if showSteps {
+                            stepsRow(tone: tone)
+                                .padding(.top, 10)
+                        } else {
+                            Button { stepsOpen = true } label: {
+                                Label("Add First, Then, Next", systemImage: "list.number")
+                            }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.ink3)
+                            .help("Type three short steps for the class to follow")
+                        }
                         if !sc.isEmpty {
-                            Text("SUCCESS CRITERIA").font(.system(size: 15, weight: .bold)).tracking(1).foregroundStyle(tone.inkColor).padding(.top, 14)
+                            heading("I can", tone).padding(.top, 14)
                             VStack(alignment: .leading, spacing: 14) {
                                 ForEach(sc, id: \.self) { x in
                                     HStack(alignment: .top, spacing: 14) {
@@ -201,10 +219,77 @@ struct ClassScreenView: View {
                 }
                 .padding(.trailing, 4)
             }
+
+            nowNext(subj: subj, p: p, tone: tone)
+                .padding(.top, 14)
         }
         .padding(24)
         .background(Color.white)
         .onExitCommand { if !embedded { dismiss() } }
+        .onChange(of: pn) { stepsOpen = false; activeStep = 0 }
+        .onChange(of: date) { stepsOpen = false; activeStep = 0 }
+    }
+
+    private func heading(_ s: String, _ tone: Tone) -> some View {
+        Text(s).font(.system(size: 22, weight: .semibold, design: .rounded)).foregroundStyle(tone.inkColor)
+    }
+
+    // MARK: First, Then, Next
+
+    private func stepsRow(tone: Tone) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            ForEach(0..<3, id: \.self) { i in
+                StepCard(number: i + 1,
+                         label: ["First", "Then", "Next"][i],
+                         text: Binding(get: { model.db.classSteps(date, pn)[i] },
+                                       set: { model.db.setClassStep(date, pn, i, $0) }),
+                         tone: tone,
+                         active: activeStep == i + 1,
+                         onPick: { activeStep = activeStep == i + 1 ? 0 : i + 1 })
+            }
+        }
+    }
+
+    // MARK: Now and Next
+
+    @ViewBuilder
+    private func nowNext(subj: String, p: Period?, tone: Tone) -> some View {
+        if let p = p {
+            HStack(spacing: 14) {
+                pill(tag: "Now", title: subj.isEmpty ? p.name : subj, sub: "until " + fmtTime(p.end),
+                     tint: tone.tintColor, ink: tone.inkColor)
+                if let n = nextBlock(after: p) {
+                    Image(systemName: "arrow.right").font(.system(size: 22, weight: .bold)).foregroundStyle(Color.ink3)
+                    pill(tag: "Next", title: n.title, sub: "at " + fmtTime(n.time),
+                         tint: n.tone?.tintColor ?? Color.appBG, ink: n.tone?.inkColor ?? Color.primary)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    private func pill(tag: String, title: String, sub: String, tint: Color, ink: Color) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(tag.uppercased()).font(.system(size: 13, weight: .bold)).tracking(1).foregroundStyle(ink.opacity(0.8))
+            Text(title).font(.system(size: 26, weight: .bold)).foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.6)
+            Text(sub).font(.system(size: 18, weight: .medium)).foregroundStyle(Color.ink2).lineLimit(1)
+        }
+        .padding(.vertical, 12).padding(.horizontal, 18)
+        .background(tint)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    /// What follows a period: the next lesson, or Recess, Lunch or Home time when there is a gap.
+    private func nextBlock(after p: Period) -> (title: String, time: String, tone: Tone?)? {
+        let db = model.db
+        guard let end = hm(p.end) else { return nil }
+        let later = db.periods
+            .filter { (hm($0.start) ?? 0) >= end }
+            .sorted { (hm($0.start) ?? 0) < (hm($1.start) ?? 0) }
+        guard let q = later.first, let qs = hm(q.start) else { return ("Home time", p.end, nil) }
+        if qs - end >= 5 { return (end < 12 * 60 ? "Recess" : "Lunch", p.end, nil) }
+        let s = db.plannedSubject(date, q.period)
+        return (s.isEmpty ? q.name : s, q.start, s.isEmpty ? nil : db.tone(forSubject: s))
     }
 
     // MARK: Top bar
@@ -344,5 +429,105 @@ struct WorkCard: View {
         .frame(maxWidth: .infinity)
         .background(Color.appBG)
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+}
+
+
+// MARK: - First, Then, Next card
+
+struct StepCard: View {
+    var number: Int
+    var label: String
+    @Binding var text: String
+    var tone: Tone
+    var active: Bool
+    var onPick: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button(action: onPick) {
+                HStack(spacing: 8) {
+                    Text("\(number)")
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(active ? Color.white : tone.inkColor)
+                        .frame(width: 28, height: 28)
+                        .background(Circle().fill(active ? tone.barColor : Color.white))
+                    Text(label).font(.system(size: 22, weight: .bold)).foregroundStyle(tone.inkColor)
+                    Spacer(minLength: 0)
+                    if active {
+                        Text("NOW").font(.system(size: 12, weight: .bold)).tracking(1).foregroundStyle(tone.barColor)
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(active ? "Clear the highlight" : "Highlight this as the step the class is on")
+            TextField("Type a step", text: $text, axis: .vertical)
+                .textFieldStyle(.plain)
+                .font(.system(size: 26, weight: .semibold))
+                .lineLimit(1...4)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
+        .background(tone.tintColor)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .stroke(active ? tone.barColor : Color.clear, lineWidth: 3))
+    }
+}
+
+// MARK: - Student friendly wording
+
+/// The headings already say "We are learning to" and "I can", so the same words are trimmed
+/// from the start of the learning intention and each success criterion.
+enum KidWords {
+    static let liLeads = ["we are learning to", "we are learning", "learning intention:", "walt:", "walt", "li:", "to "]
+    static let scLeads = ["i can", "success criteria:", "sc:"]
+
+    static func strip(_ s: String, _ leads: [String]) -> String {
+        var t = s.trimmingCharacters(in: .whitespaces)
+        var changed = true
+        while changed {
+            changed = false
+            for l in leads where t.lowercased().hasPrefix(l) {
+                let after = t.dropFirst(l.count).first
+                // "I can" must not trim "I can't", and "walt" must not trim "Walter".
+                if l.last?.isLetter == true, let a = after, a.isLetter || a == "'" || a == "\u{2019}" { continue }
+                let rest = String(t.dropFirst(l.count)).trimmingCharacters(in: CharacterSet(charactersIn: " :.,-"))
+                if rest.isEmpty { return t }
+                t = rest
+                changed = true
+                break
+            }
+        }
+        return t
+    }
+}
+
+// MARK: - Steps storage
+
+extension Database {
+    /// The First, Then and Next steps typed on the Class screen for one lesson.
+    func classSteps(_ date: String, _ per: Int) -> [String] {
+        let r = rows(.classsteps).first { $0.s("date") == date && Int($0.s("period")) == per }
+        return ["first", "then", "next"].map { r?.s($0) ?? "" }
+    }
+
+    func setClassStep(_ date: String, _ per: Int, _ i: Int, _ value: String) {
+        let keys = ["first", "then", "next"]
+        guard keys.indices.contains(i) else { return }
+        let match: (Row) -> Bool = { $0.s("date") == date && Int($0.s("period")) == per }
+        if rows(.classsteps).contains(where: match) {
+            update(.classsteps, where: match) { $0[keys[i]] = value }
+            // A lesson whose steps are all cleared loses its row, so the file stays small.
+            if let r = rows(.classsteps).first(where: match), keys.allSatisfy({ r.s($0).isEmpty }) {
+                remove(.classsteps, where: match)
+            }
+        } else if !value.isEmpty {
+            var row: Row = ["date": date, "period": String(per), "first": "", "then": "", "next": ""]
+            row[keys[i]] = value
+            append(.classsteps, row)
+        }
+        touch(.classsteps)
     }
 }

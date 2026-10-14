@@ -8,6 +8,8 @@ enum TableName: String, CaseIterable {
     case devotion, quotes, units, todo, reportjudge, reportcomment
     /// Lessons for subjects marked private. Same columns as lessons, but it lives in the student folder and is never shared.
     case lessonsprivate
+    /// Mac app only: the First, Then and Next steps typed on the Class screen. Kept in the student folder.
+    case classsteps
     /// Mac app only: key and value pairs such as which modules are switched off.
     case settings
 
@@ -47,6 +49,7 @@ enum TableName: String, CaseIterable {
         case .todo:          return ["id", "text", "due", "done", "created"]
         case .reportjudge:   return ["id", "student_id", "sem", "subject", "achievement", "engagement"]
         case .reportcomment: return ["id", "student_id", "sem", "general"]
+        case .classsteps:    return ["date", "period", "first", "then", "next"]
         case .settings:      return ["key", "value"]
         }
     }
