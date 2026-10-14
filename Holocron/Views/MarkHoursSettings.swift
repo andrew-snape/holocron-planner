@@ -460,6 +460,7 @@ struct SettingsView: View {
     @AppStorage("settingsTab") private var tabRaw = SettingsTab.general.rawValue
     @State private var ntDate = todayISO()
     @State private var ntLabel = ""
+    @State private var showStartOver = false
 
     private var tab: SettingsTab { SettingsTab(rawValue: tabRaw) ?? .general }
 
@@ -708,6 +709,23 @@ struct SettingsView: View {
                     .font(.system(size: 12)).foregroundStyle(Color.ink3)
             }
             .card()
+
+            SectionTitle("Start over")
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Clear Holocron and begin again with a typical school day and a list of subjects. You can clear just the planner or everything. Your current files are moved into a dated folder in Holocron archive, next to your data folder. Nothing is deleted.")
+                    .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    Button("Start over...") { showStartOver = true }
+                    if DataFolder.isDirectory(model.folder.archiveRoot) {
+                        Button("Show archive in Finder") {
+                            NSWorkspace.shared.activateFileViewerSelecting([model.folder.archiveRoot])
+                        }
+                    }
+                }
+            }
+            .card()
+            .sheet(isPresented: $showStartOver) { StartOverSheet() }
 
             HStack {
                 Button("Reload from folders") {

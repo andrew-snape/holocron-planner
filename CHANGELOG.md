@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4
+
+- New Start over button in Settings, then Data. Clear just the planner or everything and begin again with a typical school day and a list of subjects. Your old files are moved into a dated folder in Holocron archive, next to your data folder, never deleted. A shared planner folder is only disconnected, so colleagues keep their planner.
+
 ## 1.3
 
 - New app icon, matching the original Holocron web app, made for the macOS 26 icon style.

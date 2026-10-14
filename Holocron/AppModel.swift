@@ -447,6 +447,52 @@ final class AppModel {
         return "Imported \(copied) files and \(photos) photos"
     }
 
+    // MARK: Start over
+
+    enum StartOverOutcome {
+        case done(archive: URL?, disconnectedShared: Bool)
+        case failed(String)
+    }
+
+    /// Clears Holocron so it begins again with the starter day and subjects. The current files are
+    /// moved into a dated folder in "Holocron archive" beside the data folder, never deleted. A
+    /// separate (often shared) planner folder is only disconnected, so colleagues keep their planner.
+    func startOver(_ scope: StartOverScope) -> StartOverOutcome {
+        flushNow(wait: true)
+        guard folder.exists() else {
+            return .failed("The data folder could not be found, so nothing was changed.")
+        }
+        let plan = folder.startOverPlan(scope)
+        switch plan.carryOut() {
+        case .failure(.archiveNotCreated):
+            return .failed("The archive folder could not be created next to your data folder, so nothing was changed.")
+        case .failure(.moveFailed(let name)):
+            return .failed("\(name) could not be moved, so everything was left as it was. Close any other app that has it open, then try again.")
+        case .success:
+            break
+        }
+        if plan.disconnectsSharedPlanner {
+            folder.plannerURL = nil
+            UserDefaults.standard.removeObject(forKey: AppModel.plannerKey)
+        }
+        try? folder.ensureExists()
+        if scope == .everything {
+            UserDefaults.standard.removeObject(forKey: "lastQuote")
+            imageCache.removeAll()
+            noPhoto.removeAll()
+            photoVersion += 1
+            selectedStudent = nil
+        }
+        weekMonday = nil
+        weekFilter = ""
+        devotionDate = nil
+        termKey = ""
+        termSubject = ""
+        lastLessonSubject = ""
+        loadAll()
+        return .done(archive: plan.moves.isEmpty ? nil : plan.archive, disconnectedShared: plan.disconnectsSharedPlanner)
+    }
+
     // MARK: Helpers used by several screens
 
     func termDefault() -> String {

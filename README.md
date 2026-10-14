@@ -48,6 +48,8 @@ The data is split in two folders:
 
 Edit a CSV in Numbers or a text editor, then press Shift+Cmd+R to reload. Files are written safely (to a temporary file, then swapped in), a file that cannot be read is never overwritten, and a warning shows if the data folder is not connected.
 
+To begin again, use **Start over** in Settings, then Data. You can clear just the planner (timetable, lessons, terms, subjects and so on) or everything. The current files are moved into a dated folder in `Holocron archive`, next to the data folder, so nothing is lost. A shared planner folder is only disconnected, never cleared.
+
 **Please check your school's policy** on where student information may be stored before putting any real student data into iCloud Drive or any other service. This repository contains no student data, and the project's `.gitignore` is set up to keep CSV files and photos out of it.
 
 ## Build it yourself
