@@ -24,6 +24,7 @@ The timetable runs on an A and B fortnightly cycle that restarts each term. Whol
 
 ## What's new
 
+- **1.8.5**: Settings is reorganised into toolbar tabs with grouped, aligned forms.
 - **1.8**: Settings moves to a gear button in the toolbar and opens in its own window, as in other Mac apps. Cmd+comma opens it too.
 - **1.7**: Subjects can be marked private when your planner folder is shared. Their lessons are then kept in your student folder, and colleagues never see or change them. Devotion scripts and quotes can be kept private in the same way.
 - **1.6.2**: A Week and Month switch on the sidebar calendar, and a reordered sidebar menu.

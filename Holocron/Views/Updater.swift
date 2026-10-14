@@ -302,26 +302,26 @@ struct UpdatesSettings: View {
 
     var body: some View {
         let u = model.updater
-        VStack(alignment: .leading, spacing: 10) {
-            SectionTitle("Updates")
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Text("Installed version").font(.system(size: 13.5, weight: .medium))
-                    Spacer()
-                    Text(Updater.currentVersion).font(.system(size: 13, design: .monospaced)).foregroundStyle(Color.ink2)
+        Form {
+            Section {
+                LabeledContent("Installed version") {
+                    Text(Updater.currentVersion).font(.callout.monospaced()).foregroundStyle(.secondary)
                 }
-                Divider()
-                HStack(spacing: 10) {
-                    Text("GitHub repository").font(.system(size: 13.5, weight: .medium))
-                    Spacer()
+                LabeledContent("GitHub repository") {
                     TextField(Updater.defaultRepo, text: Binding(get: { u.repo }, set: { u.setRepo($0) }))
                         .textFieldStyle(.roundedBorder)
-                        .frame(width: 260)
+                        .frame(width: 240)
                         .autocorrectionDisabled()
                 }
                 Toggle("Check for updates when Holocron opens", isOn: Binding(get: { u.autoCheck }, set: { u.setAutoCheck($0) }))
-                Divider()
-                HStack(spacing: 10) {
+            } header: {
+                Text("Updates")
+            } footer: {
+                Text("Updates come from the releases page of your GitHub repository. Installing quits Holocron, swaps in the new version and opens it again. Your data folders are never changed by an update.")
+            }
+
+            Section {
+                HStack {
                     Button("Check now") { u.check(userInitiated: true) }
                         .disabled(u.state == .checking)
                     if case .checking = u.state { ProgressView().controlSize(.small) }
@@ -334,14 +334,14 @@ struct UpdatesSettings: View {
                     }
                 }
                 if let info = u.pending, !info.notes.isEmpty {
-                    Text(info.notes).font(.system(size: 12)).foregroundStyle(Color.ink2).textSelection(.enabled)
+                    Text(info.notes)
+                        .font(.callout).foregroundStyle(.secondary)
+                        .textSelection(.enabled)
                         .lineLimit(14)
                 }
             }
-            .card()
-            Text("Updates come from the releases page of your GitHub repository. Installing quits Holocron, swaps in the new version and opens it again. Your data folders are never changed by an update.")
-                .font(.system(size: 12)).foregroundStyle(Color.ink3)
         }
+        .formStyle(.grouped)
     }
 
     @ViewBuilder

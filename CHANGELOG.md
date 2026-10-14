@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.5
+
+- Settings has been reworked to follow the usual Mac layout. The five tabs (General, Timetable, Calendar, Updates and Data) sit in the window toolbar with icons, and each tab is a grouped form with labels on the left and controls on the right. Periods, subjects and terms now line up in columns.
+- Subjects no longer show the coloured preview chip. The colour swatch is still there, and Private is a checkbox.
+- The Data tab is shorter: Student folder, Planner folder, Start over, and Reload with the version.
+
 ## 1.8
 
 - Settings now lives in the toolbar. A gear button sits at the right of the window, and Settings opens in its own window, as in other Mac apps. Cmd+comma and the app menu open the same window. Settings is no longer in the sidebar or the Go menu.

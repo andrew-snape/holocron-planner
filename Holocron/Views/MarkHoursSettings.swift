@@ -468,6 +468,15 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .data: return "Data"
         }
     }
+    var symbol: String {
+        switch self {
+        case .general: return "gearshape"
+        case .timetable: return "clock"
+        case .calendar: return "calendar"
+        case .updates: return "arrow.down.circle"
+        case .data: return "externaldrive"
+        }
+    }
 }
 
 struct SettingsView: View {
@@ -482,148 +491,130 @@ struct SettingsView: View {
     private var tab: SettingsTab { SettingsTab(rawValue: tabRaw) ?? .general }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Picker("", selection: Binding(get: { tab }, set: { tabRaw = $0.rawValue })) {
-                ForEach(SettingsTab.allCases) { Text($0.title).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(maxWidth: 540)
-            ScrollView {
-                Group {
-                    switch tab {
-                    case .general: generalTab
-                    case .timetable: timetableTab
-                    case .calendar: calendarTab
-                    case .updates: UpdatesSettings()
-                    case .data: dataTab
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.bottom, 24)
-            }
-            .id(tab)
+        TabView(selection: Binding(get: { tab }, set: { tabRaw = $0.rawValue })) {
+            generalTab
+                .tabItem { Label(SettingsTab.general.title, systemImage: SettingsTab.general.symbol) }
+                .tag(SettingsTab.general)
+            timetableTab
+                .tabItem { Label(SettingsTab.timetable.title, systemImage: SettingsTab.timetable.symbol) }
+                .tag(SettingsTab.timetable)
+            calendarTab
+                .tabItem { Label(SettingsTab.calendar.title, systemImage: SettingsTab.calendar.symbol) }
+                .tag(SettingsTab.calendar)
+            UpdatesSettings()
+                .tabItem { Label(SettingsTab.updates.title, systemImage: SettingsTab.updates.symbol) }
+                .tag(SettingsTab.updates)
+            dataTab
+                .tabItem { Label(SettingsTab.data.title, systemImage: SettingsTab.data.symbol) }
+                .tag(SettingsTab.data)
         }
-        .padding([.horizontal, .top], 24)
-        .frame(maxWidth: 860, maxHeight: .infinity, alignment: .topLeading)
-        .navigationTitle("Settings")
     }
 
     // MARK: Tabs
 
     @ViewBuilder private var generalTab: some View {
         let db = model.db
-        VStack(alignment: .leading, spacing: 16) {
-            SectionTitle("Class")
-            HStack(spacing: 10) {
-                Text("Class name").font(.system(size: 13.5, weight: .medium))
-                Spacer()
-                TextField(Database.defaultClassName, text: Binding(get: { db.classNameSetting }, set: { db.setClassName($0) }))
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 160)
-            }
-            .padding(.vertical, 8).padding(.horizontal, 12)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            Text("Shown at the top of the sidebar and on student summaries and report packs.")
-                .font(.system(size: 12)).foregroundStyle(Color.ink3)
-
-            SectionTitle("Modules")
-            VStack(spacing: 0) {
-                ForEach(NavItem.allCases.filter { $0.canDisable }) { item in
-                    HStack(spacing: 12) {
-                        Image(systemName: item.symbol).frame(width: 22).foregroundStyle(Color.ink2)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(item.title).font(.system(size: 13.5, weight: .medium))
-                            Text(item.blurb).font(.system(size: 12)).foregroundStyle(Color.ink2)
-                        }
-                        Spacer(minLength: 8)
-                        Toggle("", isOn: Binding(get: { model.isEnabled(item) },
-                                                 set: { model.setEnabled(item, $0) }))
-                            .toggleStyle(.switch)
-                            .labelsHidden()
-                    }
-                    .padding(.vertical, 8).padding(.horizontal, 12)
-                    Divider()
+        Form {
+            Section {
+                LabeledContent("Class name") {
+                    TextField(Database.defaultClassName, text: Binding(get: { db.classNameSetting }, set: { db.setClassName($0) }))
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 200)
                 }
+            } footer: {
+                Text("Shown at the top of the sidebar and on student summaries and report packs.")
             }
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            Text("Switched-off modules disappear from the sidebar and the Go menu. Your data is kept, and Today always stays on.")
-                .font(.system(size: 12)).foregroundStyle(Color.ink3)
 
+            Section {
+                ForEach(NavItem.allCases.filter { $0.canDisable }) { item in
+                    Toggle(isOn: Binding(get: { model.isEnabled(item) }, set: { model.setEnabled(item, $0) })) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Label(item.title, systemImage: item.symbol)
+                            Text(item.blurb).font(.callout).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            } header: {
+                Text("Modules")
+            } footer: {
+                Text("Switched-off modules disappear from the sidebar and the Go menu. Your data is kept, and Today always stays on.")
+            }
         }
+        .formStyle(.grouped)
     }
 
     @ViewBuilder private var timetableTab: some View {
         let db = model.db
         let subjectRows = db.rows(.subjects)
-        VStack(alignment: .leading, spacing: 16) {
-            SectionTitle("Periods")
-            VStack(spacing: 0) {
+        Form {
+            Section {
                 ForEach(db.periods) { p in
-                    FlowLayout(spacing: 12) {
-                        TextField("", text: periodBinding(p.period, "name")).textFieldStyle(.roundedBorder).frame(width: 190)
-                        DatePicker("", selection: timeBinding(p.period, "start"), displayedComponents: .hourAndMinute).labelsHidden()
-                        Text("to").foregroundStyle(Color.ink2)
-                        DatePicker("", selection: timeBinding(p.period, "end"), displayedComponents: .hourAndMinute).labelsHidden()
-                        Text("\(p.minutes) min").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    HStack(spacing: 8) {
+                        TextField("Name", text: periodBinding(p.period, "name"))
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 160)
+                        Spacer()
+                        DatePicker("Start", selection: timeBinding(p.period, "start"), displayedComponents: .hourAndMinute)
+                            .labelsHidden()
+                        Text("to").foregroundStyle(.secondary)
+                        DatePicker("End", selection: timeBinding(p.period, "end"), displayedComponents: .hourAndMinute)
+                            .labelsHidden()
+                        Text("\(p.minutes) min")
+                            .font(.callout).foregroundStyle(.secondary)
+                            .frame(width: 60, alignment: .trailing)
                     }
-                    .padding(.vertical, 6).padding(.horizontal, 12)
-                    Divider()
                 }
+            } header: {
+                Text("Periods")
             }
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-            SectionTitle("Subjects")
-            VStack(spacing: 0) {
+            Section {
                 ForEach(subjectRows.indices, id: \.self) { i in
-                    FlowLayout(spacing: 12) {
-                        TextField("", text: cellBinding(.subjects, i, "subject")).textFieldStyle(.roundedBorder).frame(width: 190)
-                        Picker("", selection: cellBinding(.subjects, i, "kind")) {
+                    let name = subjectRows[i].s("subject")
+                    HStack(spacing: 8) {
+                        TextField("Subject", text: cellBinding(.subjects, i, "subject"))
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 160)
+                        Picker("Type", selection: cellBinding(.subjects, i, "kind")) {
                             Text("Face to face").tag("teach")
                             Text("Release").tag("release")
                             Text("DOTTL").tag("dottl")
                         }
                         .labelsHidden()
-                        .frame(width: 140)
-                        ColorPicker("", selection: colourBinding(i), supportsOpacity: false).labelsHidden()
-                        SubjectChip(name: subjectRows[i].s("subject"))
-                        let name = subjectRows[i].s("subject")
+                        .frame(width: 130)
+                        ColorPicker("Colour", selection: colourBinding(i), supportsOpacity: false)
+                            .labelsHidden()
+                        Spacer()
                         Toggle("Private", isOn: Binding(
                             get: { model.isSubjectPrivate(name) },
                             set: { on in
                                 if on && model.sharedLessonCount(name) > 0 { privatePrompt = name }
                                 else { model.setSubjectPrivate(name, on) }
                             }))
-                            .toggleStyle(.switch)
-                            .controlSize(.small)
+                            .toggleStyle(.checkbox)
                             .disabled(name.isEmpty)
                             .help("Lessons for a private subject are saved in your own file and are not shared with colleagues")
                     }
-                    .padding(.vertical, 6).padding(.horizontal, 12)
-                    Divider()
                 }
+                Button("Add subject") {
+                    db.append(.subjects, ["subject": "New subject", "kind": "teach", "colour": "#8A8F94"])
+                    db.touch(.subjects)
+                }
+            } header: {
+                Text("Subjects")
+            } footer: {
+                Text("Private subjects keep their lessons in a file only you have. Colleagues sharing your planner folder still see the timetable slot, but not what you plan in it, and their own lessons for that subject are never touched. This only matters when the planner folder is shared.")
             }
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .confirmationDialog("Make this subject private?", isPresented: Binding(
-                get: { privatePrompt != nil }, set: { if !$0 { privatePrompt = nil } }),
-                titleVisibility: .visible, presenting: privatePrompt) { name in
-                Button("Copy current lessons across") { model.setSubjectPrivate(name, true, copyLessons: true) }
-                Button("Start empty") { model.setSubjectPrivate(name, true) }
-                Button("Cancel", role: .cancel) { }
-            } message: { name in
-                Text("\(name) already has \(model.sharedLessonCount(name)) lessons in the planner. Copying puts them in your private file so you can carry on from there. Either way the shared copies are left as they are.")
-            }
-            Text("Private subjects keep their lessons in a file only you have. Colleagues sharing your planner folder still see the timetable slot, but not what you plan in it, and their own lessons for that subject are never touched. This only matters when the planner folder is shared.")
-                .font(.system(size: 12)).foregroundStyle(Color.ink3)
-            Button("Add subject") {
-                db.append(.subjects, ["subject": "New subject", "kind": "teach", "colour": "#8A8F94"])
-                db.touch(.subjects)
-            }
-
+        }
+        .formStyle(.grouped)
+        .confirmationDialog("Make this subject private?", isPresented: Binding(
+            get: { privatePrompt != nil }, set: { if !$0 { privatePrompt = nil } }),
+            titleVisibility: .visible, presenting: privatePrompt) { name in
+            Button("Copy current lessons across") { model.setSubjectPrivate(name, true, copyLessons: true) }
+            Button("Start empty") { model.setSubjectPrivate(name, true) }
+            Button("Cancel", role: .cancel) { }
+        } message: { name in
+            Text("\(name) already has \(model.sharedLessonCount(name)) lessons in the planner. Copying puts them in your private file so you can carry on from there. Either way the shared copies are left as they are.")
         }
     }
 
@@ -631,106 +622,103 @@ struct SettingsView: View {
         let db = model.db
         let termRows = db.rows(.terms)
         let nt = db.rows(.nonteaching).sorted { $0.s("date") < $1.s("date") }
-        VStack(alignment: .leading, spacing: 16) {
-            SectionTitle("Terms")
-            VStack(spacing: 0) {
+        Form {
+            Section {
                 ForEach(termRows.indices, id: \.self) { i in
-                    FlowLayout(spacing: 12) {
-                        TextField("Year", text: cellBinding(.terms, i, "year")).textFieldStyle(.roundedBorder).frame(width: 70)
-                        TextField("Term", text: cellBinding(.terms, i, "term")).textFieldStyle(.roundedBorder).frame(width: 50)
-                        DatePicker("", selection: dateCellBinding(.terms, i, "start"), displayedComponents: .date).labelsHidden()
-                        Text("to").foregroundStyle(Color.ink2)
-                        DatePicker("", selection: dateCellBinding(.terms, i, "end"), displayedComponents: .date).labelsHidden()
-                        Text("\(weeksIn(termRows[i])) weeks").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    HStack(spacing: 8) {
+                        TextField("Year", text: cellBinding(.terms, i, "year"))
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 70)
+                        TextField("Term", text: cellBinding(.terms, i, "term"))
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 50)
+                        Spacer()
+                        DatePicker("Start", selection: dateCellBinding(.terms, i, "start"), displayedComponents: .date)
+                            .labelsHidden()
+                        Text("to").foregroundStyle(.secondary)
+                        DatePicker("End", selection: dateCellBinding(.terms, i, "end"), displayedComponents: .date)
+                            .labelsHidden()
+                        Text("\(weeksIn(termRows[i])) weeks")
+                            .font(.callout).foregroundStyle(.secondary)
+                            .frame(width: 70, alignment: .trailing)
                     }
-                    .padding(.vertical, 6).padding(.horizontal, 12)
-                    Divider()
                 }
-            }
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            Button("Add term") {
-                let last = db.termsSorted.last
-                let y = last?.year ?? String(yearOf(todayISO()))
-                let n = (Int(last?.term ?? "0") ?? 0) + 1
-                let nextYear = n > 4 ? String((Int(y) ?? 2026) + 1) : y
-                let nextTerm = n > 4 ? "1" : String(n)
-                let start = last.map { addDays($0.end, 14) } ?? todayISO()
-                db.append(.terms, ["year": nextYear, "term": nextTerm, "start": start, "end": addDays(start, 69)])
-                db.touch(.terms)
+                Button("Add term") {
+                    let last = db.termsSorted.last
+                    let y = last?.year ?? String(yearOf(todayISO()))
+                    let n = (Int(last?.term ?? "0") ?? 0) + 1
+                    let nextYear = n > 4 ? String((Int(y) ?? 2026) + 1) : y
+                    let nextTerm = n > 4 ? "1" : String(n)
+                    let start = last.map { addDays($0.end, 14) } ?? todayISO()
+                    db.append(.terms, ["year": nextYear, "term": nextTerm, "start": start, "end": addDays(start, 69)])
+                    db.touch(.terms)
+                }
+            } header: {
+                Text("Terms")
+            } footer: {
+                Text("Week 1 of every term is Week A, so Holocron can show whether it is an A or B week.")
             }
 
-            SectionTitle("Non-teaching days")
-            VStack(alignment: .leading, spacing: 10) {
-                FlowLayout(spacing: 12) {
-                    DateField(iso: $ntDate)
-                    LineField(label: "Reason", text: $ntLabel, placeholder: "Public holiday, pupil free day")
-                        .frame(width: 260)
-                }
-                Button("Add day") {
-                    guard !ntLabel.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-                    db.append(.nonteaching, ["date": ntDate, "label": ntLabel.trimmingCharacters(in: .whitespaces)])
-                    db.touch(.nonteaching)
-                    ntLabel = ""
-                }
-            }
-            .card()
-            VStack(spacing: 0) {
+            Section {
                 ForEach(nt, id: \Row.["date"]) { n in
-                    HStack(spacing: 12) {
-                        Text(dLong(n.s("date"))).frame(width: 120, alignment: .leading)
-                        Text(n.s("label")).foregroundStyle(Color.ink2)
+                    HStack {
+                        Text(dLong(n.s("date")))
+                        Text(n.s("label")).foregroundStyle(.secondary)
                         Spacer()
                         DeleteButton {
                             db.remove(.nonteaching, where: { $0.s("date") == n.s("date") })
                             db.touch(.nonteaching)
                         }
                     }
-                    .font(.system(size: 13))
-                    .padding(.vertical, 7).padding(.horizontal, 12)
-                    Divider()
                 }
+                HStack {
+                    DateField(iso: $ntDate)
+                        .labelsHidden()
+                    TextField("Reason", text: $ntLabel, prompt: Text("Public holiday, pupil free day"))
+                        .textFieldStyle(.roundedBorder)
+                    Button("Add day") {
+                        guard !ntLabel.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+                        db.append(.nonteaching, ["date": ntDate, "label": ntLabel.trimmingCharacters(in: .whitespaces)])
+                        db.touch(.nonteaching)
+                        ntLabel = ""
+                    }
+                    .disabled(ntLabel.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            } header: {
+                Text("Non-teaching days")
             }
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-
         }
+        .formStyle(.grouped)
     }
 
     @ViewBuilder private var dataTab: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SectionTitle("Data")
-            Text("Everything is written straight to CSV files. You can edit them in Numbers and reload here. The data is split in two folders so the planner can be shared with other staff while student records stay with you.")
-                .font(.system(size: 13)).foregroundStyle(Color.ink2)
-
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    Image(systemName: "lock.fill").foregroundStyle(Color.ink2)
-                    Text("Student folder").font(.system(size: 14, weight: .semibold))
-                    TagLabel(text: "Private")
+        Form {
+            Section {
+                LabeledContent("Folder") {
+                    Text(model.folder.url.path)
+                        .font(.callout.monospaced())
+                        .textSelection(.enabled)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
                 }
-                Text("Students, lesson notes, assessments, wellbeing, behaviour, reports, photos, your hours log, your to-do list and these settings.")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
-                Text(model.folder.url.path).font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
                 HStack {
                     Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([model.folder.url]) }
                     Button("Change folder...") { model.showSetup = true }
                 }
+            } header: {
+                Text("Student folder")
+            } footer: {
+                Text("Students, lesson notes, assessments, wellbeing, behaviour, reports, photos, your hours log, your to-do list and these settings.")
             }
-            .card()
 
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    Image(systemName: "person.2.fill").foregroundStyle(Color.ink2)
-                    Text("Planner folder").font(.system(size: 14, weight: .semibold))
-                    TagLabel(text: model.folder.plannerURL == nil ? "Same as student folder" : "Separate",
-                             fg: model.folder.plannerURL == nil ? Color.ink2 : Color.appGreen,
-                             bg: model.folder.plannerURL == nil ? Color.black.opacity(0.06) : Color.appGreen.opacity(0.14))
+            Section {
+                LabeledContent("Folder") {
+                    Text((model.folder.plannerURL ?? model.folder.url).path)
+                        .font(.callout.monospaced())
+                        .textSelection(.enabled)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
                 }
-                Text("Timetable, lessons, terms, non-teaching days, subjects, periods, units, devotions, quotes and rubrics. Point this at a folder shared in iCloud Drive to sync the planner with colleagues.")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
-                Text((model.folder.plannerURL ?? model.folder.url).path)
-                    .font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
                 HStack {
                     Button("Choose planner folder...") {
                         chooseFolder(title: "Choose the planner folder", create: true) { url in
@@ -744,47 +732,47 @@ struct SettingsView: View {
                         }
                     }
                 }
-                Toggle(isOn: Binding(get: { model.db.devotionIsPrivate },
-                                     set: { model.showToast(model.setDevotionPrivate($0)) })) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("Keep Devotion scripts and quotes private").font(.system(size: 13, weight: .medium))
-                        Text("Saved in the student folder instead of the planner folder, so colleagues do not see or change them. Existing files are copied across and the shared copies are left alone.")
-                            .font(.system(size: 12)).foregroundStyle(Color.ink2)
+            } header: {
+                Text("Planner folder")
+            } footer: {
+                Text("Timetable, lessons, terms, non-teaching days, subjects, periods, units, devotions, quotes and rubrics. Point this at a folder shared in iCloud Drive to sync the planner with colleagues. Choosing a folder keeps any planner files already in it and copies across the ones it is missing. To share it, right-click the folder in Finder, choose Share, then Add People. Changes from colleagues appear when you come back to the app or press Reload.")
+            }
+
+            Section {
+                Toggle("Keep Devotion scripts and quotes private", isOn: Binding(
+                    get: { model.db.devotionIsPrivate },
+                    set: { model.showToast(model.setDevotionPrivate($0)) }))
+                    .disabled(model.folder.plannerURL == nil)
+            } footer: {
+                Text("Saved in the student folder instead of the planner folder, so colleagues do not see or change them. Existing files are copied across and the shared copies are left alone.")
+            }
+
+            Section {
+                Button("Start over...") { showStartOver = true }
+                if DataFolder.isDirectory(model.folder.archiveRoot) {
+                    Button("Show archive in Finder") {
+                        NSWorkspace.shared.activateFileViewerSelecting([model.folder.archiveRoot])
                     }
                 }
-                .toggleStyle(.switch)
-                .disabled(model.folder.plannerURL == nil)
-                Text("Choosing a folder keeps any planner files already in it and copies across the ones it is missing. To share it, right-click the folder in Finder, choose Share, then Add People. Others choose the same folder here after accepting. Changes from colleagues appear when you come back to the app or press Reload.")
-                    .font(.system(size: 12)).foregroundStyle(Color.ink3)
-            }
-            .card()
-
-            SectionTitle("Start over")
-            VStack(alignment: .leading, spacing: 8) {
+            } header: {
+                Text("Start over")
+            } footer: {
                 Text("Clear Holocron and begin again with a typical school day and a list of subjects. You can clear just the planner or everything. Your current files are moved into a dated folder in Holocron archive, next to your data folder. Nothing is deleted.")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack {
-                    Button("Start over...") { showStartOver = true }
-                    if DataFolder.isDirectory(model.folder.archiveRoot) {
-                        Button("Show archive in Finder") {
-                            NSWorkspace.shared.activateFileViewerSelecting([model.folder.archiveRoot])
-                        }
-                    }
-                }
             }
-            .card()
-            .sheet(isPresented: $showStartOver) { StartOverSheet() }
 
-            HStack {
+            Section {
                 Button("Reload from folders") {
                     model.flushNow(wait: true)
                     model.loadAll()
                     model.showToast("Reloaded")
                 }
-                Text("Version \(AppModel.appVersion)").font(.system(size: 12)).foregroundStyle(Color.ink3)
+                LabeledContent("Version") {
+                    Text(AppModel.appVersion).font(.callout.monospaced()).foregroundStyle(.secondary)
+                }
             }
         }
+        .formStyle(.grouped)
+        .sheet(isPresented: $showStartOver) { StartOverSheet() }
     }
 
     // MARK: Binding helpers

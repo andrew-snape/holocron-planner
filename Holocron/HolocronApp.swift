@@ -67,7 +67,7 @@ struct HolocronApp: App {
             SettingsView()
                 .environment(model)
                 .preferredColorScheme(.light)
-                .frame(minWidth: 640, idealWidth: 720, minHeight: 480, idealHeight: 620)
+                .frame(minWidth: 540, idealWidth: 600, minHeight: 460, idealHeight: 620)
         }
 
         Window("Holocron Help", id: "help") {
