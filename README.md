@@ -24,6 +24,7 @@ The timetable runs on an A and B fortnightly cycle that restarts each term. Whol
 
 ## What's new
 
+- **1.8.7**: Privacy for Devotion scripts and subject lessons now sits together in Settings, then Data, and the Settings text is tidier.
 - **1.8.6**: Fixed the duplicated Class name field in Settings, and matched the Settings colours to the rest of Holocron.
 - **1.8.5**: Settings is reorganised into toolbar tabs with grouped, aligned forms.
 - **1.8**: Settings moves to a gear button in the toolbar and opens in its own window, as in other Mac apps. Cmd+comma opens it too.
