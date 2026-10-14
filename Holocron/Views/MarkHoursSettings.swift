@@ -563,7 +563,7 @@ struct SettingsView: View {
                     HStack(spacing: 8) {
                         TextField("Name", text: periodBinding(p.period, "name"))
                             .textFieldStyle(.roundedBorder)
-                        .labelsHidden()
+                            .labelsHidden()
                             .frame(width: 160)
                         Spacer()
                         DatePicker("Start", selection: timeBinding(p.period, "start"), displayedComponents: .hourAndMinute)
@@ -582,11 +582,10 @@ struct SettingsView: View {
 
             Section {
                 ForEach(subjectRows.indices, id: \.self) { i in
-                    let name = subjectRows[i].s("subject")
                     HStack(spacing: 8) {
                         TextField("Subject", text: cellBinding(.subjects, i, "subject"))
                             .textFieldStyle(.roundedBorder)
-                        .labelsHidden()
+                            .labelsHidden()
                             .frame(width: 160)
                         Picker("Type", selection: cellBinding(.subjects, i, "kind")) {
                             Text("Face to face").tag("teach")
@@ -598,15 +597,6 @@ struct SettingsView: View {
                         ColorPicker("Colour", selection: colourBinding(i), supportsOpacity: false)
                             .labelsHidden()
                         Spacer()
-                        Toggle("Private", isOn: Binding(
-                            get: { model.isSubjectPrivate(name) },
-                            set: { on in
-                                if on && model.sharedLessonCount(name) > 0 { privatePrompt = name }
-                                else { model.setSubjectPrivate(name, on) }
-                            }))
-                            .toggleStyle(.checkbox)
-                            .disabled(name.isEmpty)
-                            .help("Lessons for a private subject are saved in your own file and are not shared with colleagues")
                     }
                 }
                 Button("Add subject") {
@@ -616,19 +606,10 @@ struct SettingsView: View {
             } header: {
                 Text("Subjects")
             } footer: {
-                Text("Private subjects keep their lessons in a file only you have. Colleagues sharing your planner folder still see the timetable slot, but not what you plan in it, and their own lessons for that subject are never touched. This only matters when the planner folder is shared.")
+                Text("Release subjects are your specialist lessons and count as release time. To keep a subject's lessons to yourself, use Privacy on the Data tab.")
             }
         }
         .settingsForm()
-        .confirmationDialog("Make this subject private?", isPresented: Binding(
-            get: { privatePrompt != nil }, set: { if !$0 { privatePrompt = nil } }),
-            titleVisibility: .visible, presenting: privatePrompt) { name in
-            Button("Copy current lessons across") { model.setSubjectPrivate(name, true, copyLessons: true) }
-            Button("Start empty") { model.setSubjectPrivate(name, true) }
-            Button("Cancel", role: .cancel) { }
-        } message: { name in
-            Text("\(name) already has \(model.sharedLessonCount(name)) lessons in the planner. Copying puts them in your private file so you can carry on from there. Either way the shared copies are left as they are.")
-        }
     }
 
     @ViewBuilder private var calendarTab: some View {
@@ -639,14 +620,17 @@ struct SettingsView: View {
             Section {
                 ForEach(termRows.indices, id: \.self) { i in
                     HStack(spacing: 8) {
-                        TextField("Year", text: cellBinding(.terms, i, "year"))
-                            .textFieldStyle(.roundedBorder)
-                        .labelsHidden()
-                            .frame(width: 70)
+                        Text("Term").foregroundStyle(.secondary)
                         TextField("Term", text: cellBinding(.terms, i, "term"))
                             .textFieldStyle(.roundedBorder)
-                        .labelsHidden()
-                            .frame(width: 50)
+                            .labelsHidden()
+                            .multilineTextAlignment(.center)
+                            .frame(width: 36)
+                        TextField("Year", text: cellBinding(.terms, i, "year"))
+                            .textFieldStyle(.roundedBorder)
+                            .labelsHidden()
+                            .multilineTextAlignment(.center)
+                            .frame(width: 60)
                         Spacer()
                         DatePicker("Start", selection: dateCellBinding(.terms, i, "start"), displayedComponents: .date)
                             .labelsHidden()
@@ -687,7 +671,7 @@ struct SettingsView: View {
                     }
                 }
                 HStack {
-                    DateField(iso: $ntDate)
+                    DatePicker("Date", selection: isoBinding({ ntDate }, { ntDate = $0 }), displayedComponents: .date)
                         .labelsHidden()
                     TextField("Reason", text: $ntLabel, prompt: Text("Public holiday, pupil free day"))
                         .textFieldStyle(.roundedBorder)
@@ -708,11 +692,13 @@ struct SettingsView: View {
     }
 
     @ViewBuilder private var dataTab: some View {
+        let shared = model.folder.plannerURL != nil
+        let subjectNames = model.db.rows(.subjects).map { $0.s("subject") }.filter { !$0.isEmpty }
         Form {
             Section {
                 LabeledContent("Folder") {
                     Text(model.folder.url.path)
-                        .font(.callout.monospaced())
+                        .foregroundStyle(.secondary)
                         .textSelection(.enabled)
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -730,7 +716,7 @@ struct SettingsView: View {
             Section {
                 LabeledContent("Folder") {
                     Text((model.folder.plannerURL ?? model.folder.url).path)
-                        .font(.callout.monospaced())
+                        .foregroundStyle(.secondary)
                         .textSelection(.enabled)
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -755,12 +741,42 @@ struct SettingsView: View {
             }
 
             Section {
-                Toggle("Keep Devotion scripts and quotes private", isOn: Binding(
+                if !shared {
+                    Label("Your planner is not shared, so these make no difference until you choose a separate planner folder above.", systemImage: "info.circle")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                Toggle(isOn: Binding(
                     get: { model.db.devotionIsPrivate },
-                    set: { model.showToast(model.setDevotionPrivate($0)) }))
-                    .disabled(model.folder.plannerURL == nil)
+                    set: { model.showToast(model.setDevotionPrivate($0)) })) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Devotion scripts and quotes")
+                        Text("The scripts and quotes on the Devotion screen.")
+                            .font(.callout).foregroundStyle(.secondary)
+                    }
+                }
+                .disabled(!shared)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Subject lessons")
+                    Text("Tick a subject to keep the lessons you plan for it to yourself. Colleagues still see the slot on the timetable, and their own lessons are never touched.")
+                        .font(.callout).foregroundStyle(.secondary)
+                    FlowLayout(spacing: 14) {
+                        ForEach(subjectNames, id: \.self) { name in
+                            Toggle(name, isOn: Binding(
+                                get: { model.isSubjectPrivate(name) },
+                                set: { on in
+                                    if on && model.sharedLessonCount(name) > 0 { privatePrompt = name }
+                                    else { model.setSubjectPrivate(name, on) }
+                                }))
+                                .toggleStyle(.checkbox)
+                        }
+                    }
+                }
+                .padding(.vertical, 2)
+            } header: {
+                Text("Privacy")
             } footer: {
-                Text("Saved in the student folder instead of the planner folder, so colleagues do not see or change them. Existing files are copied across and the shared copies are left alone.")
+                Text("Private items are saved in your student folder instead of the shared planner folder, so colleagues do not see or change them. Existing files are copied across and the shared copies are left alone.")
             }
 
             Section {
@@ -783,12 +799,21 @@ struct SettingsView: View {
                     model.showToast("Reloaded")
                 }
                 LabeledContent("Version") {
-                    Text(AppModel.appVersion).font(.callout.monospaced()).foregroundStyle(.secondary)
+                    Text(AppModel.appVersion).foregroundStyle(.secondary)
                 }
             }
         }
         .settingsForm()
         .sheet(isPresented: $showStartOver) { StartOverSheet() }
+        .confirmationDialog("Make this subject private?", isPresented: Binding(
+            get: { privatePrompt != nil }, set: { if !$0 { privatePrompt = nil } }),
+            titleVisibility: .visible, presenting: privatePrompt) { name in
+            Button("Copy current lessons across") { model.setSubjectPrivate(name, true, copyLessons: true) }
+            Button("Start empty") { model.setSubjectPrivate(name, true) }
+            Button("Cancel", role: .cancel) { }
+        } message: { name in
+            Text("\(name) already has \(model.sharedLessonCount(name)) lessons in the planner. Copying puts them in your private file so you can carry on from there. Either way the shared copies are left as they are.")
+        }
     }
 
     // MARK: Binding helpers

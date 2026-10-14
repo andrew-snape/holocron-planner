@@ -305,18 +305,16 @@ struct UpdatesSettings: View {
         Form {
             Section {
                 LabeledContent("Installed version") {
-                    Text(Updater.currentVersion).font(.callout.monospaced()).foregroundStyle(.secondary)
+                    Text(Updater.currentVersion).foregroundStyle(.secondary)
                 }
                 LabeledContent("GitHub repository") {
                     TextField(Updater.defaultRepo, text: Binding(get: { u.repo }, set: { u.setRepo($0) }))
                         .textFieldStyle(.roundedBorder)
                         .labelsHidden()
-                        .frame(width: 240)
+                        .frame(width: 280)
                         .autocorrectionDisabled()
                 }
                 Toggle("Check for updates when Holocron opens", isOn: Binding(get: { u.autoCheck }, set: { u.setAutoCheck($0) }))
-            } header: {
-                Text("Updates")
             } footer: {
                 Text("Updates come from the releases page of your GitHub repository. Installing quits Holocron, swaps in the new version and opens it again. Your data folders are never changed by an update.")
             }

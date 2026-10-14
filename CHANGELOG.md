@@ -4,6 +4,8 @@
 
 - Fixed the Class name field in Settings showing the class name twice, with only one copy editable. The label beside each settings field is now hidden, so only the box shows.
 - Settings forms now use Holocron's own grey background with white rows, instead of the system's default grey.
+- Privacy settings are now in one place. Settings, then Data has a Privacy section with Devotion scripts and quotes, and a checkbox for each subject whose lessons you want to keep to yourself. The Private checkboxes have gone from the Timetable tab, and the section says when your planner is not shared, so the settings make no difference yet.
+- Tidier Settings text. The GitHub repository field is wider, versions and folder paths use the normal font, terms read as Term 1 2026, and the Non-teaching days date no longer has its own caption.
 
 ## 1.8.5
 
