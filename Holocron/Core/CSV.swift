@@ -7,12 +7,6 @@ extension Dictionary where Key == String, Value == String {
     func s(_ k: String) -> String { self[k] ?? "" }
 }
 
-/// One table: its columns (schema columns first, then any extras found in the file) and its rows.
-struct Table {
-    var header: [String]
-    var rows: [Row]
-}
-
 enum CSV {
     /// Parses CSV text. Quoted fields may contain commas, quotes ("") and line breaks.
     /// Returns the header (trimmed) and the rows. Rows where every field is empty are dropped.
@@ -89,25 +83,6 @@ enum CSV {
             endRecord()
         }
         return (header ?? [], rows)
-    }
-
-    /// True when a field has to be wrapped in quotes.
-    @inline(__always)
-    private static func needsQuotes(_ v: String) -> Bool {
-        var v = v
-        return v.withUTF8 { buf in
-            for byte in buf where byte == 0x2C || byte == 0x22 || byte == 0x0A || byte == 0x0D { return true }
-            return false
-        }
-    }
-
-    static func cell(_ v: String) -> String {
-        guard needsQuotes(v) else { return v }
-        return "\"" + v.replacingOccurrences(of: "\"", with: "\"\"") + "\""
-    }
-
-    static func write(header: [String], rows: [Row]) -> String {
-        String(decoding: writeData(header: header, rows: rows), as: UTF8.self)
     }
 
     /// The file's bytes, built directly so nothing is encoded twice on the way to disk.

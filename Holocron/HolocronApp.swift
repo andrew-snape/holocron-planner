@@ -43,11 +43,7 @@ struct HolocronApp: App {
                     .disabled(model.nav != .week)
             }
             CommandGroup(after: .saveItem) {
-                Button("Reload from folder") {
-                    model.flushNow(wait: true)
-                    model.loadAll()
-                    model.showToast("Reloaded from folder")
-                }
+                Button("Reload from folder") { model.reloadFromFolder() }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
             }
             HelpCommands(model: model)

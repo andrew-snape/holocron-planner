@@ -4,14 +4,11 @@ import Foundation
 /// so they sort and compare as text. All maths is integer calendar maths (no time zones).
 enum Cal {
     static let weekdayLong = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    static let weekdayInitials = ["M", "T", "W", "T", "F", "S", "S"]
     static let weekdayShort = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     static let monthShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     static let monthLong = ["January", "February", "March", "April", "May", "June", "July",
                             "August", "September", "October", "November", "December"]
-
-    /// Tests set this to pretend it is a particular day.
-    static var todayOverride: String? = nil
-    static var nowOverride: String? = nil   // "HH:mm"
 
     /// Days since 1970-01-01 for a civil date.
     static func daysFromCivil(_ y0: Int, _ m: Int, _ d: Int) -> Int {
@@ -85,22 +82,32 @@ enum Cal {
         let (y, m, d) = civilFromDays(n)
         return make(y, m, d)
     }
+
+    /// Today's year, month and day.
+    static var todayParts: (Int, Int, Int) { parts(todayISO()) ?? (1970, 1, 1) }
+
+    /// The longest run of days that loops over a date range will cover.
+    static let maxSpan = 800
+
+    /// Every date from `a` to `b`, counting in whole days so no date has to be read back from text each
+    /// step. Empty when either date cannot be read or `b` is before `a`.
+    static func dates(from a: String, through b: String, limit: Int = Cal.maxSpan) -> [String] {
+        guard let first = dayNumber(a), let last = dayNumber(b), first <= last else { return [] }
+        return (first...min(last, first + limit - 1)).map { fromDayNumber($0) }
+    }
 }
 
 func todayISO() -> String {
-    if let t = Cal.todayOverride { return t }
     let c = Calendar.current.dateComponents([.year, .month, .day], from: Date())
     return Cal.make(c.year ?? 1970, c.month ?? 1, c.day ?? 1)
 }
 
 func nowHHMM() -> String {
-    if let t = Cal.nowOverride { return t }
     let c = Calendar.current.dateComponents([.hour, .minute], from: Date())
     return String(format: "%02d:%02d", c.hour ?? 0, c.minute ?? 0)
 }
 
 func nowMinutes() -> Int {
-    if let o = Cal.nowOverride { return hm(o) ?? 0 }
     let c = Calendar.current.dateComponents([.hour, .minute], from: Date())
     return (c.hour ?? 0) * 60 + (c.minute ?? 0)
 }
@@ -180,11 +187,17 @@ func fmtTime(_ t: String) -> String {
     return "\(h12):" + (m < 10 ? "0" : "") + String(m) + " " + (h < 12 ? "am" : "pm")
 }
 
+/// Why a gap between two periods is shown: "Eating and recess", "Eating and lunch" or just "Eating".
+func breakLabel(from end: String, to next: String) -> String {
+    mins(end, next) >= 15 ? (end < "12:00" ? "Eating and recess" : "Eating and lunch") : "Eating"
+}
+
+private let idDigits = Array("0123456789abcdefghijklmnopqrstuvwxyz")
+
 /// Random short id.
 func uid() -> String {
     let ms = Int(Date().timeIntervalSince1970 * 1000)
-    let chars = Array("0123456789abcdefghijklmnopqrstuvwxyz")
     var tail = ""
-    for _ in 0..<4 { tail.append(chars[Int.random(in: 0..<36)]) }
+    for _ in 0..<4 { tail.append(idDigits[Int.random(in: 0..<idDigits.count)]) }
     return String(ms, radix: 36) + tail
 }

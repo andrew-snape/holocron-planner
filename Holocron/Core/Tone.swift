@@ -29,6 +29,9 @@ struct Tone: Equatable {
     var bar: RGB
     var tint: RGB
     var ink: RGB
+
+    /// Neutral grey, for a slot with no subject.
+    static let unset = Tone(bar: RGB(199, 199, 204), tint: RGB(242, 242, 247), ink: RGB(85, 85, 90))
 }
 
 enum ToneMaths {

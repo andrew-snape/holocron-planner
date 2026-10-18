@@ -89,7 +89,6 @@ func buildTerm(_ db: Database, _ t: Term, subject: String) -> TermBuild {
 
 struct TermView: View {
     @Environment(AppModel.self) private var model
-    @State private var viewport: CGFloat = 900
 
     var body: some View {
         let db = model.db
@@ -105,10 +104,10 @@ struct TermView: View {
             let key = ts.contains(where: { $0.id == model.termKey }) ? model.termKey : model.termDefault()
             let t = ts.first(where: { $0.id == key }) ?? ts[0]
             let ix = ts.firstIndex(where: { $0.id == t.id }) ?? 0
-            let subs = Array(Set(db.rows(.timetable).map { $0.s("subject") })).filter { db.canBump($0) }.sorted()
+            let subs = db.timetableSubjects.filter { db.canBump($0) }
             let subj = subs.contains(model.termSubject) ? model.termSubject : (subs.contains("Maths") ? "Maths" : (subs.first ?? ""))
             let b = buildTerm(db, t, subject: subj)
-            let tone = subj.isEmpty ? Tone(bar: RGB(142, 142, 147), tint: RGB(237, 237, 238), ink: RGB(99, 99, 103)) : db.tone(forSubject: subj)
+            let tone = subj.isEmpty ? Tone.unset : db.tone(forSubject: subj)
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack(alignment: .firstTextBaseline, spacing: 12) {
@@ -127,17 +126,29 @@ struct TermView: View {
                         .frame(width: 160)
                     }
                     TermStatBar(build: b, tone: tone)
-                    ScrollView(.horizontal, showsIndicators: true) {
-                        TermGrid(build: b, tone: tone, colW: max(150, (viewport - 20 - TermGrid.labelW - 4 * 5) / 5))
-                    }
-                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { viewport = $0 }
-                    .padding(10)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    TermGridScroller(build: b, tone: tone)
                 }
                 .padding(24)
             }
         }
+    }
+}
+
+/// The scrolling term grid. It tracks the window width itself, so resizing the window sizes the columns
+/// without building the whole term again.
+private struct TermGridScroller: View {
+    var build: TermBuild
+    var tone: Tone
+    @State private var viewport: CGFloat = 900
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: true) {
+            TermGrid(build: build, tone: tone, colW: max(150, (viewport - 20 - TermGrid.labelW - 4 * 5) / 5))
+        }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { viewport = $0 }
+        .padding(10)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
@@ -214,7 +225,7 @@ struct TermGrid: View {
                             Text("This week").font(.system(size: 10.5, weight: .semibold)).foregroundStyle(Color.appBlue)
                         }
                         if let u = w.unit {
-                            let ut = ToneMaths.tone(hex: PYP.themeHex(u.s("theme")))
+                            let ut = model.db.tone(forHex: PYP.themeHex(u.s("theme")))
                             Text(u.s("title")).font(.system(size: 10.5, weight: .semibold)).lineLimit(2)
                                 .foregroundStyle(ut.inkColor)
                                 .padding(.vertical, 2).padding(.horizontal, 6)
@@ -313,7 +324,7 @@ struct UnitsView: View {
                     Text("Units of inquiry").font(.system(size: 28, weight: .bold)).tracking(-0.5)
                     Text("\(us.count) unit\(us.count == 1 ? "" : "s")").font(.system(size: 13)).foregroundStyle(Color.ink2)
                     Spacer()
-                    Button("New unit") { model.sheet = .unit(id: "__new") }.buttonStyle(.borderedProminent)
+                    Button("New unit") { model.sheet = .unit(id: UnitSheet.newID) }.buttonStyle(.borderedProminent)
                 }
                 if us.isEmpty {
                     EmptyNote(title: "No units yet",
@@ -343,7 +354,7 @@ struct UnitCard: View {
         let thisMonday = mondayOf(today)
         let inThisWeek = !unit.s("start").isEmpty && !unit.s("end").isEmpty
             && unit.s("start") <= addDays(thisMonday, 4) && unit.s("end") >= thisMonday
-        let tone = ToneMaths.tone(hex: PYP.themeHex(unit.s("theme")))
+        let tone = db.tone(forHex: PYP.themeHex(unit.s("theme")))
         let stats = db.unitStats(unit)
         let lines = linesOf(unit.s("lines"))
         let key = listOf(unit.s("concepts"))
@@ -394,7 +405,7 @@ struct UnitCard: View {
     }
 
     private func sectionTitle(_ t: String) -> some View {
-        Text(t.uppercased()).font(.system(size: 10.5, weight: .bold)).tracking(0.5).foregroundStyle(Color.ink2).padding(.top, 4)
+        SectionLabel(t).padding(.top, 4)
     }
 
     @ViewBuilder
@@ -430,7 +441,8 @@ struct UnitSheet: View {
     @State private var armDelete = false
     @State private var error = ""
 
-    private var isNew: Bool { unitID == "__new" }
+    private var isNew: Bool { unitID == UnitSheet.newID }
+    static let newID = "__new"
 
     private func b(_ k: String) -> Binding<String> {
         Binding(get: { u[k] ?? "" }, set: { u[k] = $0 })

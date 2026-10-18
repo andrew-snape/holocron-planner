@@ -22,27 +22,22 @@ extension NavItem {
         case .hours: return "Face to face, release and DOTTL"
         }
     }
+
+    /// The settings.csv key that holds whether this module is on.
+    var settingKey: String { "module_" + rawValue }
 }
 
 extension AppModel {
     func isEnabled(_ n: NavItem) -> Bool {
         guard n.canDisable else { return true }
-        let v = db.rows(.settings).first(where: { $0.s("key") == "module_" + n.rawValue })?.s("value") ?? ""
-        return v.lowercased() != "off"
+        return (db.setting(n.settingKey) ?? "").lowercased() != "off"
     }
 
     var visibleNav: [NavItem] { NavItem.allCases.filter { isEnabled($0) } }
 
     func setEnabled(_ n: NavItem, _ on: Bool) {
         guard n.canDisable else { return }
-        let key = "module_" + n.rawValue
-        let value = on ? "on" : "off"
-        if db.rows(.settings).contains(where: { $0.s("key") == key }) {
-            db.update(.settings, where: { $0.s("key") == key }) { $0["value"] = value }
-        } else {
-            db.append(.settings, ["key": key, "value": value])
-        }
-        db.touch(.settings)
+        db.setSetting(n.settingKey, on ? "on" : "off")
         if !on && nav == n { nav = .today }
     }
 }

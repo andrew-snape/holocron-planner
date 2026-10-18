@@ -98,8 +98,7 @@ struct HelpCommands: Commands {
                 .disabled(!model.folder.plannerExists)
             }
             Button("Copy CSV Guide for AI") {
-                HelpActions.copy(CSVGuide.text)
-                model.showToast("CSV guide copied. Paste it into your AI chat.")
+                model.copyText(CSVGuide.text, toast: "CSV guide copied. Paste it into your AI chat.")
             }
             Divider()
             Button("Holocron on GitHub...") { NSWorkspace.shared.open(HelpActions.repoURL) }
@@ -171,13 +170,20 @@ struct HelpHeading: View {
     }
 }
 
+/// Help text with **bold**, *italic* and `code` marks turned into styling. Read straight from the
+/// string, so the text is never looked up as a localisation key.
+private func helpText(_ markdown: String) -> Text {
+    let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+    return Text((try? AttributedString(markdown: markdown, options: options)) ?? AttributedString(markdown))
+}
+
 /// A paragraph. Supports **bold** and `code` in the text.
 struct HelpPara: View {
     var text: String
     var secondary = false
     init(_ t: String, secondary: Bool = false) { text = t; self.secondary = secondary }
     var body: some View {
-        Text(LocalizedStringKey(text))
+        helpText(text)
             .font(.system(size: 13.5))
             .foregroundStyle(secondary ? Color.ink2 : Color.primary.opacity(0.88))
             .lineSpacing(3)
@@ -193,7 +199,7 @@ struct HelpBullets: View {
             ForEach(Array(items.enumerated()), id: \.offset) { _, t in
                 HStack(alignment: .firstTextBaseline, spacing: 9) {
                     Circle().fill(Color.appBlue).frame(width: 5, height: 5).offset(y: -1.5)
-                    Text(LocalizedStringKey(t))
+                    helpText(t)
                         .font(.system(size: 13.5)).foregroundStyle(Color.primary.opacity(0.88))
                         .lineSpacing(3).fixedSize(horizontal: false, vertical: true)
                 }
@@ -214,7 +220,7 @@ struct HelpSteps: View {
                         .foregroundStyle(Color.white)
                         .frame(width: 22, height: 22)
                         .background(Circle().fill(Color.appBlue))
-                    Text(LocalizedStringKey(t))
+                    helpText(t)
                         .font(.system(size: 13.5)).foregroundStyle(Color.primary.opacity(0.88))
                         .lineSpacing(3).fixedSize(horizontal: false, vertical: true)
                         .padding(.top, 2)
@@ -237,7 +243,7 @@ struct HelpCallout: View {
                 .padding(.top, 1)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title).font(.system(size: 13.5, weight: .semibold))
-                Text(LocalizedStringKey(text))
+                helpText(text)
                     .font(.system(size: 13)).foregroundStyle(Color.primary.opacity(0.85))
                     .lineSpacing(3).fixedSize(horizontal: false, vertical: true)
             }
@@ -264,8 +270,7 @@ struct HelpCode: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             Button(copied ? "Copied" : copyLabel) {
                 HelpActions.copy(text)
-                copied = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { copied = false }
+                flash($copied)
             }
             .controlSize(.small)
         }

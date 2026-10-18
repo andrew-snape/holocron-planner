@@ -33,6 +33,7 @@ struct StudentsView: View {
                     Spacer()
                     Button { model.sheet = .newStudent } label: { Image(systemName: "plus") }
                         .help("Add a student")
+                        .accessibilityLabel("Add a student")
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
@@ -68,6 +69,7 @@ struct StudentsView: View {
                 Spacer(minLength: 0)
                 Button { model.sheet = .newStudent } label: { Image(systemName: "plus") }
                     .help("Add a student")
+                    .accessibilityLabel("Add a student")
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
@@ -234,11 +236,7 @@ struct StudentDetail: View {
                 .buttonStyle(.borderedProminent)
             HStack {
                 Button("Change photo") { pickPhoto() }
-                Button("Copy as text") {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(model.db.timelineText(sid), forType: .string)
-                    model.showToast("Copied")
-                }
+                Button("Copy as text") { model.copyText(model.db.timelineText(sid)) }
             }
         }
         .fixedSize()
@@ -251,7 +249,6 @@ struct StudentDetail: View {
         p.allowsMultipleSelection = false
         if p.runModal() == .OK, let u = p.url {
             model.savePhoto(for: sid, from: u)
-            model.showToast("Photo saved")
         }
     }
 }
@@ -290,6 +287,7 @@ struct EntryCard: View {
                 }
                 .buttonStyle(.plain)
                 .help(armed ? "Click again to delete" : "Delete")
+                .accessibilityLabel(armed ? "Click again to delete" : "Delete")
             }
         }
         .padding(10)
@@ -356,9 +354,44 @@ struct SummaryTab: View {
     }
 }
 
+// MARK: - Log lists
+
+/// One student's entries from a log table, newest first, with an empty message when there are none.
+/// It sits apart from each tab's form, so typing in a form does not sort the whole table again.
+struct LogEntries<Card: View>: View {
+    @Environment(AppModel.self) private var model
+    var table: TableName
+    var sid: String
+    var emptyTitle: String
+    var emptyMessage: String
+    @ViewBuilder var card: (Row) -> Card
+
+    var body: some View {
+        let rows = model.db.logRows(table, student: sid)
+        ForEach(rows, id: \Row.["id"]) { x in card(x) }
+        if rows.isEmpty { EmptyNote(title: emptyTitle, message: emptyMessage) }
+    }
+}
+
 // MARK: - Lesson notes
 
 struct LessonNotesTab: View {
+    @Environment(AppModel.self) private var model
+    var sid: String
+
+    var body: some View {
+        LessonNoteForm(sid: sid)
+        LogEntries(table: .lessonnotes, sid: sid, emptyTitle: "No lesson notes",
+                   emptyMessage: "Quick notes you add here or from Quick log appear here.") { x in
+            EntryCard(date: x.s("date"), title: (x.s("subject").isEmpty ? "Lesson" : x.s("subject")) + " note",
+                      sub: fmtTime(x.s("time")), text: x.s("note"), tint: timelineTint("les")) {
+                model.db.deleteRow(.lessonnotes, id: x.s("id"))
+            }
+        }
+    }
+}
+
+private struct LessonNoteForm: View {
     @Environment(AppModel.self) private var model
     var sid: String
     @State private var subject = ""
@@ -366,37 +399,44 @@ struct LessonNotesTab: View {
 
     var body: some View {
         let db = model.db
-        let rows = db.rows(.lessonnotes).filter { $0.s("student_id") == sid }
-            .sorted { ($0.s("date") + $0.s("time")) > ($1.s("date") + $1.s("time")) }
         AddBox(title: "Add a lesson note (today)") {
             Picker("Subject", selection: $subject) {
                 Text("No subject").tag("")
-                ForEach(db.subjects.map { $0.subject }, id: \.self) { Text($0).tag($0) }
+                ForEach(db.subjectNames, id: \.self) { Text($0).tag($0) }
             }
             .frame(maxWidth: 260)
             NoteBox(label: "Note", text: $note, lines: 2)
             Button("Add note") {
-                let t = note.trimmingCharacters(in: .whitespacesAndNewlines)
+                let t = note.trimmed
                 guard !t.isEmpty else { return }
                 db.addLessonNote(students: [sid], subject: subject, note: t)
                 note = ""
-                model.showToast("Saved")
             }
-            .disabled(note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .disabled(note.trimmed.isEmpty)
         }
-        ForEach(rows, id: \Row.["id"]) { x in
-            EntryCard(date: x.s("date"), title: (x.s("subject").isEmpty ? "Lesson" : x.s("subject")) + " note",
-                      sub: fmtTime(x.s("time")), text: x.s("note"), tint: timelineTint("les")) {
-                db.deleteRow(.lessonnotes, id: x.s("id"))
-            }
-        }
-        if rows.isEmpty { EmptyNote(title: "No lesson notes", message: "Quick notes you add here or from Quick log appear here.") }
     }
 }
 
 // MARK: - Assessment
 
 struct AssessTab: View {
+    @Environment(AppModel.self) private var model
+    var sid: String
+
+    var body: some View {
+        AssessForm(sid: sid)
+        LogEntries(table: .assessments, sid: sid, emptyTitle: "No assessments",
+                   emptyMessage: "Add a task and a result above.") { x in
+            EntryCard(date: x.s("date"),
+                      title: (x.s("subject").isEmpty ? "" : x.s("subject") + ": ") + x.s("task"),
+                      badge: x.s("result"), text: x.s("comment"), tint: timelineTint("assess")) {
+                model.db.deleteRow(.assessments, id: x.s("id"))
+            }
+        }
+    }
+}
+
+private struct AssessForm: View {
     @Environment(AppModel.self) private var model
     var sid: String
     @State private var date = todayISO()
@@ -408,7 +448,6 @@ struct AssessTab: View {
 
     var body: some View {
         let db = model.db
-        let rows = db.rows(.assessments).filter { $0.s("student_id") == sid }.sorted { $0.s("date") > $1.s("date") }
         AddBox(title: "Add an assessment") {
             HStack(alignment: .bottom, spacing: 12) {
                 DateField(iso: $date)
@@ -416,7 +455,7 @@ struct AssessTab: View {
                     FieldLabel(text: "Subject")
                     Picker("", selection: $subject) {
                         Text("No subject").tag("")
-                        ForEach(db.subjects.map { $0.subject }, id: \.self) { Text($0).tag($0) }
+                        ForEach(db.subjectNames, id: \.self) { Text($0).tag($0) }
                     }
                     .labelsHidden()
                     .frame(width: 180)
@@ -440,18 +479,9 @@ struct AssessTab: View {
             Button("Add assessment") {
                 db.addAssessment(student: sid, date: date, subject: subject, task: task, result: result, comment: comment)
                 task = ""; result = ""; comment = ""
-                model.showToast("Saved")
             }
             .disabled(task.trimmingCharacters(in: .whitespaces).isEmpty && result.trimmingCharacters(in: .whitespaces).isEmpty)
         }
-        ForEach(rows, id: \Row.["id"]) { x in
-            EntryCard(date: x.s("date"),
-                      title: (x.s("subject").isEmpty ? "" : x.s("subject") + ": ") + x.s("task"),
-                      badge: x.s("result"), text: x.s("comment"), tint: timelineTint("assess")) {
-                db.deleteRow(.assessments, id: x.s("id"))
-            }
-        }
-        if rows.isEmpty { EmptyNote(title: "No assessments", message: "Add a task and a result above.") }
     }
 }
 
@@ -460,13 +490,28 @@ struct AssessTab: View {
 struct PlanNotesTab: View {
     @Environment(AppModel.self) private var model
     var sid: String
+
+    var body: some View {
+        PlanNoteForm(sid: sid)
+        LogEntries(table: .plannotes, sid: sid, emptyTitle: "No plan notes",
+                   emptyMessage: "ILP goals, SSG meetings and NCCD evidence go here.") { x in
+            EntryCard(date: x.s("date"), title: x.s("type").isEmpty ? "Plan note" : x.s("type"),
+                      text: x.s("note"), tint: timelineTint("plan")) {
+                model.db.deleteRow(.plannotes, id: x.s("id"))
+            }
+        }
+    }
+}
+
+private struct PlanNoteForm: View {
+    @Environment(AppModel.self) private var model
+    var sid: String
     @State private var date = todayISO()
     @State private var type = Lists.planNoteTypes[0]
     @State private var note = ""
 
     var body: some View {
         let db = model.db
-        let rows = db.rows(.plannotes).filter { $0.s("student_id") == sid }.sorted { $0.s("date") > $1.s("date") }
         AddBox(title: "Add a plan note") {
             HStack(alignment: .bottom, spacing: 12) {
                 DateField(iso: $date)
@@ -481,25 +526,33 @@ struct PlanNotesTab: View {
             }
             NoteBox(label: "Note", text: $note, lines: 3)
             Button("Add note") {
-                db.addPlanNote(student: sid, date: date, type: type, note: note.trimmingCharacters(in: .whitespacesAndNewlines))
+                db.addPlanNote(student: sid, date: date, type: type, note: note.trimmed)
                 note = ""
-                model.showToast("Saved")
             }
-            .disabled(note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .disabled(note.trimmed.isEmpty)
         }
-        ForEach(rows, id: \Row.["id"]) { x in
-            EntryCard(date: x.s("date"), title: x.s("type").isEmpty ? "Plan note" : x.s("type"),
-                      text: x.s("note"), tint: timelineTint("plan")) {
-                db.deleteRow(.plannotes, id: x.s("id"))
-            }
-        }
-        if rows.isEmpty { EmptyNote(title: "No plan notes", message: "ILP goals, SSG meetings and NCCD evidence go here.") }
     }
 }
 
 // MARK: - Wellbeing
 
 struct WellbeingTab: View {
+    @Environment(AppModel.self) private var model
+    var sid: String
+
+    var body: some View {
+        WellbeingForm(sid: sid)
+        LogEntries(table: .wellbeing, sid: sid, emptyTitle: "No wellbeing entries",
+                   emptyMessage: "Log the time and the period lost so it shows in your hours.") { x in
+            EntryCard(date: x.s("date"), title: "Wellbeing", sub: model.db.wellbeingDetail(x), text: x.s("note"),
+                      tint: timelineTint("well")) {
+                model.db.deleteRow(.wellbeing, id: x.s("id"))
+            }
+        }
+    }
+}
+
+private struct WellbeingForm: View {
     @Environment(AppModel.self) private var model
     var sid: String
     @State private var date = todayISO()
@@ -509,7 +562,6 @@ struct WellbeingTab: View {
 
     var body: some View {
         let db = model.db
-        let rows = db.rows(.wellbeing).filter { $0.s("student_id") == sid }.sorted { $0.s("date") > $1.s("date") }
         AddBox(title: "Add a wellbeing entry") {
             HStack(alignment: .bottom, spacing: 12) {
                 DateField(iso: $date)
@@ -530,25 +582,11 @@ struct WellbeingTab: View {
             NoteBox(label: "Note", text: $note, lines: 3)
             Button("Add entry") {
                 db.addWellbeing(students: [sid], date: date, periodLost: lost, minutes: Int(minutes) ?? 0,
-                                note: note.trimmingCharacters(in: .whitespacesAndNewlines))
+                                note: note.trimmed)
                 note = ""; minutes = ""; lost = ""
-                model.showToast("Saved")
             }
-            .disabled(note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .disabled(note.trimmed.isEmpty)
         }
-        ForEach(rows, id: \Row.["id"]) { x in
-            EntryCard(date: x.s("date"), title: "Wellbeing", sub: wellSub(x), text: x.s("note"), tint: timelineTint("well")) {
-                db.deleteRow(.wellbeing, id: x.s("id"))
-            }
-        }
-        if rows.isEmpty { EmptyNote(title: "No wellbeing entries", message: "Log the time and the period lost so it shows in your hours.") }
-    }
-
-    private func wellSub(_ x: Row) -> String {
-        var bits: [String] = []
-        if let m = Int(x.s("minutes")), m > 0 { bits.append("\(m) min") }
-        if let p = model.db.periods.first(where: { String($0.period) == x.s("period_lost") }) { bits.append("lost " + p.name) }
-        return bits.joined(separator: " · ")
     }
 }
 
@@ -557,28 +595,35 @@ struct WellbeingTab: View {
 struct BehaviourTab: View {
     @Environment(AppModel.self) private var model
     var sid: String
+
+    var body: some View {
+        BehaviourForm(sid: sid)
+        LogEntries(table: .behaviour, sid: sid, emptyTitle: "No behaviour entries",
+                   emptyMessage: "Each entry is a date and free text.") { x in
+            EntryCard(date: x.s("date"), title: "Behaviour", text: x.s("note"), tint: timelineTint("beh")) {
+                model.db.deleteRow(.behaviour, id: x.s("id"))
+            }
+        }
+    }
+}
+
+private struct BehaviourForm: View {
+    @Environment(AppModel.self) private var model
+    var sid: String
     @State private var date = todayISO()
     @State private var note = ""
 
     var body: some View {
         let db = model.db
-        let rows = db.rows(.behaviour).filter { $0.s("student_id") == sid }.sorted { $0.s("date") > $1.s("date") }
         AddBox(title: "Add a behaviour entry") {
             DateField(iso: $date)
             NoteBox(label: "What happened", text: $note, lines: 3)
             Button("Add entry") {
-                db.addBehaviour(students: [sid], date: date, note: note.trimmingCharacters(in: .whitespacesAndNewlines))
+                db.addBehaviour(students: [sid], date: date, note: note.trimmed)
                 note = ""
-                model.showToast("Saved")
             }
-            .disabled(note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .disabled(note.trimmed.isEmpty)
         }
-        ForEach(rows, id: \Row.["id"]) { x in
-            EntryCard(date: x.s("date"), title: "Behaviour", text: x.s("note"), tint: timelineTint("beh")) {
-                db.deleteRow(.behaviour, id: x.s("id"))
-            }
-        }
-        if rows.isEmpty { EmptyNote(title: "No behaviour entries", message: "Each entry is a date and free text.") }
     }
 }
 
@@ -652,7 +697,7 @@ struct ReportTab: View {
     }
 
     private func semOptions(_ current: String) -> [String] {
-        let y = Int(String(todayISO().prefix(4))) ?? 2026
+        let y = yearOf(todayISO())
         var out: [String] = []
         for yr in [y - 1, y, y + 1] {
             out.append("\(yr)-S1")
@@ -805,11 +850,7 @@ struct PackSheet: View {
                 .background(Color.white)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 HStack {
-                    Button("Copy") {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(text, forType: .string)
-                        model.showToast("Copied")
-                    }
+                    Button("Copy") { model.copyText(text) }
                     .buttonStyle(.borderedProminent)
                     Button("Save as text file...") { save(text, s) }
                     Button("Close") { dismiss() }
@@ -823,7 +864,11 @@ struct PackSheet: View {
         p.nameFieldStringValue = "\(s.fullName) pack.txt"
         p.allowedContentTypes = [.plainText]
         if p.runModal() == .OK, let u = p.url {
-            try? text.write(to: u, atomically: true, encoding: .utf8)
+            do {
+                try text.write(to: u, atomically: true, encoding: .utf8)
+            } catch {
+                model.showToast("Could not save the file")
+            }
         }
     }
 }
@@ -838,6 +883,7 @@ struct QuickLogView: View {
     var body: some View {
         let db = model.db
         let cols = [GridItem(.adaptive(minimum: 118, maximum: 150), spacing: 12)]
+        let counts = db.todaysEntryCounts()
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
@@ -856,7 +902,7 @@ struct QuickLogView: View {
                 }
                 LazyVGrid(columns: cols, spacing: 12) {
                     ForEach(db.roster) { s in
-                        tile(s)
+                        tile(s, today: counts[s.id] ?? 0)
                     }
                 }
             }
@@ -865,8 +911,7 @@ struct QuickLogView: View {
     }
 
     @ViewBuilder
-    private func tile(_ s: Student) -> some View {
-        let today = model.db.todaysEntries(s.id).count
+    private func tile(_ s: Student, today: Int) -> some View {
         let on = chosen.contains(s.id)
         Button {
             if selecting {
@@ -933,7 +978,7 @@ struct QuickLogSheet: View {
             if kind == .lesson {
                 Picker("Subject", selection: $subject) {
                     Text("No subject").tag("")
-                    ForEach(db.subjects.map { $0.subject }, id: \.self) { Text($0).tag($0) }
+                    ForEach(db.subjectNames, id: \.self) { Text($0).tag($0) }
                 }
                 .frame(maxWidth: 280)
             }
@@ -959,7 +1004,7 @@ struct QuickLogSheet: View {
                 Button("Save") { save() }
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
-                    .disabled(note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(note.trimmed.isEmpty)
                 Button("Cancel") { dismiss() }
             }
 
@@ -990,7 +1035,7 @@ struct QuickLogSheet: View {
     }
 
     private func save() {
-        let t = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let t = note.trimmed
         guard !t.isEmpty else { return }
         let db = model.db
         switch kind {

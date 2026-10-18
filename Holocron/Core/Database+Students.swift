@@ -1,7 +1,8 @@
 import Foundation
 
 struct TimelineItem: Identifiable {
-    let id = UUID()
+    /// Built from the row's own id, so a row keeps its identity from one redraw to the next.
+    var id: String
     var date: String
     var kind: String        // assess, plan, well, beh, les
     var head: String
@@ -11,7 +12,7 @@ struct TimelineItem: Identifiable {
 }
 
 struct ActivityItem: Identifiable {
-    let id = UUID()
+    var id: String
     var date: String
     var who: String
     var kind: String
@@ -107,6 +108,22 @@ extension Database {
         touch(.assessments)
     }
 
+    /// One student's rows from a log table, newest first.
+    func logRows(_ t: TableName, student sid: String) -> [Row] {
+        rows(t).filter { $0.s("student_id") == sid }
+            .sorted { ($0.s("date") + $0.s("time")) > ($1.s("date") + $1.s("time")) }
+    }
+
+    /// How many things have been logged today against each student, for the Quick log badges.
+    func todaysEntryCounts() -> [String: Int] {
+        let d = todayISO()
+        var out: [String: Int] = [:]
+        for t in [TableName.lessonnotes, .wellbeing, .behaviour] {
+            for x in rows(t) where x.s("date") == d { out[x.s("student_id"), default: 0] += 1 }
+        }
+        return out
+    }
+
     /// Everything logged against a student today, newest first.
     func todaysEntries(_ sid: String) -> [(time: String, kind: String, note: String)] {
         let d = todayISO()
@@ -125,50 +142,57 @@ extension Database {
 
     func recentActivity(limit: Int = 5) -> [ActivityItem] {
         var all: [ActivityItem] = []
-        for x in rows(.wellbeing) { all.append(ActivityItem(date: x.s("date"), who: x.s("student_id"), kind: "Wellbeing", text: x.s("note"))) }
-        for x in rows(.behaviour) { all.append(ActivityItem(date: x.s("date"), who: x.s("student_id"), kind: "Behaviour", text: x.s("note"))) }
+        var n = 0
+        func nid(_ k: String, _ x: Row) -> String { n += 1; return "\(k)-\(x.s("id"))-\(n)" }
+        for x in rows(.wellbeing) { all.append(ActivityItem(id: nid("well", x), date: x.s("date"), who: x.s("student_id"), kind: "Wellbeing", text: x.s("note"))) }
+        for x in rows(.behaviour) { all.append(ActivityItem(id: nid("beh", x), date: x.s("date"), who: x.s("student_id"), kind: "Behaviour", text: x.s("note"))) }
         for x in rows(.lessonnotes) {
-            all.append(ActivityItem(date: x.s("date"), who: x.s("student_id"),
+            all.append(ActivityItem(id: nid("les", x), date: x.s("date"), who: x.s("student_id"),
                                     kind: (x.s("subject").isEmpty ? "Lesson" : x.s("subject")) + " note", text: x.s("note")))
         }
         for x in rows(.plannotes) {
-            all.append(ActivityItem(date: x.s("date"), who: x.s("student_id"),
+            all.append(ActivityItem(id: nid("plan", x), date: x.s("date"), who: x.s("student_id"),
                                     kind: x.s("type").isEmpty ? "Plan note" : x.s("type"), text: x.s("note")))
         }
         for x in rows(.assessments) {
-            all.append(ActivityItem(date: x.s("date"), who: x.s("student_id"), kind: "Assessment",
+            all.append(ActivityItem(id: nid("assess", x), date: x.s("date"), who: x.s("student_id"), kind: "Assessment",
                                     text: x.s("task") + " · " + x.s("result")))
         }
         return Array(all.filter { !$0.date.isEmpty }.sorted { $0.date > $1.date }.prefix(limit))
+    }
+
+    /// "20 min · lost Period 2" for a wellbeing row.
+    func wellbeingDetail(_ x: Row) -> String {
+        var bits: [String] = []
+        if let m = Int(x.s("minutes")), m > 0 { bits.append("\(m) min") }
+        if let n = Int(x.s("period_lost")), let p = period(n) { bits.append("lost " + p.name) }
+        return bits.joined(separator: " · ")
     }
 
     // MARK: Timeline (one page per student)
 
     func timeline(_ id: String) -> [TimelineItem] {
         var out: [TimelineItem] = []
+        var n = 0
+        func nid(_ k: String, _ x: Row) -> String { n += 1; return "\(k)-\(x.s("id"))-\(n)" }
         for x in rows(.assessments) where x.s("student_id") == id {
-            out.append(TimelineItem(date: x.s("date"), kind: "assess",
+            out.append(TimelineItem(id: nid("assess", x), date: x.s("date"), kind: "assess",
                                     head: (x.s("subject").isEmpty ? "" : x.s("subject") + ": ") + x.s("task"),
                                     badge: x.s("result"), body: x.s("comment"), sub: ""))
         }
         for x in rows(.plannotes) where x.s("student_id") == id {
-            out.append(TimelineItem(date: x.s("date"), kind: "plan", head: x.s("type").isEmpty ? "Plan note" : x.s("type"),
+            out.append(TimelineItem(id: nid("plan", x), date: x.s("date"), kind: "plan", head: x.s("type").isEmpty ? "Plan note" : x.s("type"),
                                     badge: "", body: x.s("note"), sub: ""))
         }
         for x in rows(.wellbeing) where x.s("student_id") == id {
-            var bits: [String] = []
-            if let m = Int(x.s("minutes")), m > 0 { bits.append("\(m) min") }
-            if !x.s("period_lost").isEmpty {
-                bits.append("lost " + (periods.first(where: { String($0.period) == x.s("period_lost") })?.name ?? ""))
-            }
-            out.append(TimelineItem(date: x.s("date"), kind: "well", head: "Wellbeing", badge: "",
-                                    body: x.s("note"), sub: bits.joined(separator: " · ")))
+            out.append(TimelineItem(id: nid("well", x), date: x.s("date"), kind: "well", head: "Wellbeing", badge: "",
+                                    body: x.s("note"), sub: wellbeingDetail(x)))
         }
         for x in rows(.behaviour) where x.s("student_id") == id {
-            out.append(TimelineItem(date: x.s("date"), kind: "beh", head: "Behaviour", badge: "", body: x.s("note"), sub: ""))
+            out.append(TimelineItem(id: nid("beh", x), date: x.s("date"), kind: "beh", head: "Behaviour", badge: "", body: x.s("note"), sub: ""))
         }
         for x in rows(.lessonnotes) where x.s("student_id") == id {
-            out.append(TimelineItem(date: x.s("date"), kind: "les",
+            out.append(TimelineItem(id: nid("les", x), date: x.s("date"), kind: "les",
                                     head: (x.s("subject").isEmpty ? "Lesson" : x.s("subject")) + " note",
                                     badge: "", body: x.s("note"), sub: fmtTime(x.s("time"))))
         }
@@ -301,22 +325,25 @@ extension Database {
             dLong($0.s("date")) + "  " + $0.s("subject") + ": " + $0.s("task") + "  " + $0.s("result")
                 + ($0.s("comment").isEmpty ? "" : "  " + $0.s("comment"))
         }
-        return L.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        return L.joined(separator: "\n").trimmed
     }
 
     // MARK: Reports
 
+    /// Semester 2 starts in July. Before that the report is for semester 1.
+    static let semesterTwoStartMonth = 7
+
     func reportSem() -> String {
         let t = todayISO()
-        return String(t.prefix(4)) + ((Int(t.dropFirst(5).prefix(2)) ?? 1) >= 7 ? "-S2" : "-S1")
+        let month = Cal.parts(t)?.1 ?? 1
+        return String(t.prefix(4)) + (month >= Database.semesterTwoStartMonth ? "-S2" : "-S1")
     }
 
     var reportSubjects: [String] {
-        var seen: [String] = []
-        for s in subjects where s.kind == "teach" && !["Devotion", "Incursion/Excursion"].contains(s.subject) {
-            if !seen.contains(s.subject) { seen.append(s.subject) }
-        }
-        return seen
+        var seen = Set<String>()
+        return subjects.filter { s in
+            s.kind == "teach" && !["Devotion", "Incursion/Excursion"].contains(s.subject) && seen.insert(s.subject).inserted
+        }.map { $0.subject }
     }
 
     func judgement(_ sid: String, sem: String, subject: String) -> (achievement: String, engagement: String) {

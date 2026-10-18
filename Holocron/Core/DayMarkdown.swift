@@ -1,5 +1,4 @@
 import Foundation
-import AppKit
 
 // MARK: - A day as Markdown
 //
@@ -24,10 +23,8 @@ extension Database {
             out += lessonMarkdown(date, p, includeDevotion: includeDevotion)
             if idx + 1 < ps.count {
                 let next = ps[idx + 1]
-                let gap = mins(p.end, next.start)
-                if gap > 0 {
-                    let label = gap >= 15 ? (p.end < "12:00" ? "Eating and recess" : "Eating and lunch") : "Eating"
-                    out += ["", "*\(fmtTime(p.end)) to \(fmtTime(next.start)): \(label)*"]
+                if mins(p.end, next.start) > 0 {
+                    out += ["", "*\(fmtTime(p.end)) to \(fmtTime(next.start)): \(breakLabel(from: p.end, to: next.start))*"]
                 }
             }
         }
@@ -68,7 +65,7 @@ extension Database {
             for line in res { L.append("- " + mdResource(line)) }
         }
 
-        let codes = c.codes.split(whereSeparator: { $0 == "," || $0.isWhitespace }).map(String.init)
+        let codes = c.codeList
         if !codes.isEmpty { L += ["", "**Curriculum:** " + codes.joined(separator: ", ")] }
         let atl = listOf(c.atl), profile = listOf(c.profile)
         if !atl.isEmpty { L += ["", "**ATL skills:** " + atl.joined(separator: ", ")] }
@@ -129,44 +126,38 @@ private func mdStripBullet(_ s: String) -> String {
 
 /// A resource line is a label then a link ("Slides https://..."). Links become Markdown links.
 private func mdResource(_ line: String) -> String {
-    guard let r = line.range(of: "https?://\\S+", options: .regularExpression) else { return line }
-    var raw = String(line[r])
-    while let last = raw.last, ").,".contains(last) { raw.removeLast() }
-    var label = line.replacingCharacters(in: r, with: "")
-    label = label.trimmingCharacters(in: CharacterSet(charactersIn: " \t:|-\u{2013}"))
-    if label.isEmpty {
-        var host = URL(string: raw)?.host ?? raw
-        if host.hasPrefix("www.") { host.removeFirst(4) }
-        label = host
-    }
+    let r = LessonResource.parse(line)
+    guard !r.link.isEmpty else { return line }
+    var label = r.label.isEmpty ? (r.host.isEmpty ? r.link : r.host) : r.label
     label = label.replacingOccurrences(of: "[", with: "(").replacingOccurrences(of: "]", with: ")")
-    return "[\(label)](\(raw))"
+    return "[\(label)](\(r.link))"
 }
 
-// MARK: - Copy to the clipboard
+/// A resource line is a label then a link ("Slides https://..."). Used by the lesson plan and the Markdown copy.
+struct LessonResource {
+    /// The words around the link, or the whole line when it has no link.
+    var label: String
+    /// The web address, without trailing punctuation. Empty when the line has no link.
+    var link: String
 
-extension AppModel {
-    /// Puts the day's lessons and times on the clipboard as rich text (HTML and RTF), so they paste
-    /// with headings, bold labels, bullets and clickable links. Plain text is kept as a fallback.
-    func copyDay(_ date: String) {
-        guard db.runsNormally(date) else { showToast("No lessons on this day"); return }
-        let md = db.dayMarkdown(date, includeDevotion: isEnabled(.devotion))
-        let html = htmlFromMarkdown(md)
-        let pb = NSPasteboard.general
-        pb.clearContents()
-        pb.setString(plainFromMarkdown(md), forType: .string)
-        pb.setString(html, forType: .html)
-        if let attr = try? NSAttributedString(
-            data: Data(html.utf8),
-            options: [.documentType: NSAttributedString.DocumentType.html,
-                      .characterEncoding: String.Encoding.utf8.rawValue],
-            documentAttributes: nil),
-           let rtf = try? attr.data(
-            from: NSRange(location: 0, length: attr.length),
-            documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]) {
-            pb.setData(rtf, forType: .rtf)
+    var url: URL? { link.isEmpty ? nil : URL(string: link) }
+
+    /// The site name without "www.", or empty when there is no usable link.
+    var host: String {
+        var h = url?.host ?? ""
+        if h.hasPrefix("www.") { h.removeFirst(4) }
+        return h
+    }
+
+    static func parse(_ line: String) -> LessonResource {
+        guard let r = line.range(of: "https?://\\S+", options: .regularExpression) else {
+            return LessonResource(label: line, link: "")
         }
-        showToast("Copied the day as rich text")
+        var raw = String(line[r])
+        while let last = raw.last, ").,".contains(last) { raw.removeLast() }
+        let label = line.replacingCharacters(in: r, with: "")
+            .trimmingCharacters(in: CharacterSet(charactersIn: " \t:|-\u{2013}"))
+        return LessonResource(label: label, link: raw)
     }
 }
 
@@ -226,7 +217,7 @@ private func mdInlineHTML(_ s: String) -> String {
 }
 
 /// The same content as plain text, for apps that only take text: no symbols, links shown with their address.
-private func plainFromMarkdown(_ md: String) -> String {
+func plainFromMarkdown(_ md: String) -> String {
     md.components(separatedBy: "\n").map { line -> String in
         var s = line
         for p in ["### ", "## ", "# ", "> ", "- "] where s.hasPrefix(p) {
@@ -240,7 +231,18 @@ private func plainFromMarkdown(_ md: String) -> String {
     }.joined(separator: "\n")
 }
 
+/// Regular expressions already built, so a day with many lines does not compile the same one again and again.
+private nonisolated(unsafe) var regexCache: [String: NSRegularExpression] = [:]
+
 private func mdReplace(_ s: String, _ pattern: String, _ template: String) -> String {
-    guard let re = try? NSRegularExpression(pattern: pattern) else { return s }
+    let re: NSRegularExpression
+    if let known = regexCache[pattern] {
+        re = known
+    } else if let made = try? NSRegularExpression(pattern: pattern) {
+        regexCache[pattern] = made
+        re = made
+    } else {
+        return s
+    }
     return re.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: template)
 }

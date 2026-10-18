@@ -101,8 +101,7 @@ struct BreakRow: View {
     var from: String
     var to: String
     var body: some View {
-        let g = mins(from, to)
-        let label = g >= 15 ? (from < "12:00" ? "Eating and recess" : "Eating and lunch") : "Eating"
+        let label = breakLabel(from: from, to: to)
         HStack(spacing: 14) {
             Text("\(from) to \(to)").font(.system(size: 12.5, design: .rounded)).frame(width: 106, alignment: .leading)
             Text(label).font(.system(size: 12.5))
@@ -118,6 +117,8 @@ struct BlockRow: View {
     @Environment(AppModel.self) private var model
     var date: String
     var period: Period
+    /// Minutes since midnight when the date is today, otherwise nil.
+    var minutesNow: Int?
 
     var body: some View {
         let db = model.db
@@ -125,12 +126,11 @@ struct BlockRow: View {
         let subj = db.plannedSubject(date, pn)
         let moved = db.isMoved(date, pn)
         let info = db.subjectInfo(subj)
-        let tone = subj.isEmpty ? Tone(bar: RGB(199, 199, 204), tint: RGB(242, 242, 247), ink: RGB(85, 85, 90)) : db.tone(forSubject: subj)
+        let tone = subj.isEmpty ? Tone.unset : db.tone(forSubject: subj)
         let c = db.content(date, pn)
         let lesExists = db.lessonRow(date, pn) != nil
         let isNow: Bool = {
-            guard date == todayISO(), let a = hm(period.start), let b = hm(period.end) else { return false }
-            let n = nowMinutes()
+            guard let n = minutesNow, let a = hm(period.start), let b = hm(period.end) else { return false }
             return n >= a && n < b
         }()
         let showDevotion = model.isEnabled(.devotion) && (subj == "Circle Time" || c.summary.hasPrefix("Circle Time"))
@@ -300,7 +300,7 @@ struct TodoPanel: View {
     }
 
     private func add() {
-        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let t = text.trimmed
         guard !t.isEmpty else { return }
         var dueISO = ""
         if hasDue {
@@ -323,6 +323,7 @@ struct TodoPanel: View {
                     .foregroundStyle(done ? Color.appGreen : Color.ink3)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(done ? "Mark not done" : "Mark done")
             Text(x.s("text"))
                 .font(.system(size: 13.5))
                 .strikethrough(done)
@@ -334,6 +335,7 @@ struct TodoPanel: View {
             } label: { Image(systemName: "xmark").font(.system(size: 10)) }
                 .buttonStyle(.plain)
                 .foregroundStyle(Color.ink3)
+                .accessibilityLabel("Delete to-do")
         }
     }
 

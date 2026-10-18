@@ -57,7 +57,7 @@ final class Updater {
     }
 
     func setRepo(_ s: String) {
-        repo = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        repo = s.trimmed
         UserDefaults.standard.set(repo, forKey: Updater.repoKey)
     }
 
@@ -98,11 +98,12 @@ final class Updater {
             let (data, resp) = try await URLSession.shared.data(for: req)
             let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
             if code == 404 {
+                // A repository with no release yet is not worth nagging about when nobody asked.
                 state = userInitiated ? .failed("No release found at github.com/\(repo) yet. Check the name, and that the repository is public.") : .idle
                 return
             }
             guard code == 200 else {
-                state = userInitiated ? .failed("GitHub answered with code \(code). Try again later.") : .idle
+                state = .failed("GitHub answered with code \(code). Try again later.")
                 return
             }
             let rel = try GitHubRelease.decode(data)
@@ -116,7 +117,7 @@ final class Updater {
             }
             guard let zip = ReleasePick.zipAsset(rel), let zipURL = URL(string: zip.browserDownloadUrl),
                   ReleasePick.isTrustedDownload(zipURL, repo: repo) else {
-                state = userInitiated ? .failed("Version \(rel.version) exists, but it has no Holocron zip attached.") : .idle
+                state = .failed("Version \(rel.version) exists, but it has no Holocron zip attached.")
                 return
             }
             let sumURL = ReleasePick.checksumAsset(for: zip, in: rel)
@@ -128,7 +129,7 @@ final class Updater {
             bannerDismissed = false
             state = .available
         } catch {
-            state = userInitiated ? .failed("Could not reach GitHub. \(error.localizedDescription)") : .idle
+            state = .failed("Could not reach GitHub. \(error.localizedDescription)")
         }
     }
 

@@ -12,7 +12,7 @@ struct WeekView: View {
         let wk = db.weekLetter(mon) ?? "A"
         let tm = db.termOf(mon)
         let lead = tm.map { "Term \($0.term) Week \(db.termWeek(mon) ?? 0)" } ?? "Outside term"
-        let subjects = Array(Set(db.rows(.timetable).map { $0.s("subject") })).filter { !$0.isEmpty }.sorted()
+        let subjects = db.timetableSubjects
 
         let colWidth = max(150, (viewport - 20 - WeekGrid.labelW - 4 * 5) / 5)
         ScrollView {
@@ -101,8 +101,7 @@ struct WeekGrid: View {
                     }
                 }
                 if idx + 1 < ps.count, mins(p.end, ps[idx + 1].start) > 0 {
-                    let g = mins(p.end, ps[idx + 1].start)
-                    let label = g >= 15 ? (p.end < "12:00" ? "Eating and recess" : "Eating and lunch") : "Eating"
+                    let label = breakLabel(from: p.end, to: ps[idx + 1].start)
                     GridRow {
                         Text("\(p.end) to \(ps[idx + 1].start)")
                             .font(.system(size: 10.5, design: .rounded)).foregroundStyle(Color.ink3)
@@ -135,7 +134,7 @@ struct SlotCell: View {
         let subj = db.plannedSubject(date, pn, fallbackWeek: wk)
         let moved = db.isMoved(date, pn)
         let info = db.subjectInfo(subj)
-        let tone = subj.isEmpty ? Tone(bar: RGB(199, 199, 204), tint: RGB(242, 242, 247), ink: RGB(85, 85, 90)) : db.tone(forSubject: subj)
+        let tone = subj.isEmpty ? Tone.unset : db.tone(forSubject: subj)
         let dim = !model.weekFilter.isEmpty && subj != model.weekFilter
         let c = db.content(date, pn)
         let ref = SlotRef(week: wk, day: day, per: pn, date: date)

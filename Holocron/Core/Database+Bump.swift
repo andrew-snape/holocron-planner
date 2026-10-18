@@ -38,17 +38,11 @@ extension Database {
         let last = terms.map { $0.end }.max() ?? date
         let ps = periods
         var out: [(date: String, per: Int)] = []
-        var d = date
-        var n = 0
-        while d <= last && n < 800 {
-            if runsNormally(d) {
-                for p in ps {
-                    if d == date && p.period <= per { continue }
-                    if plannedSubject(d, p.period) == subject { out.append((d, p.period)) }
-                }
+        for d in Cal.dates(from: date, through: last) where runsNormally(d) {
+            for p in ps {
+                if d == date && p.period <= per { continue }
+                if plannedSubject(d, p.period) == subject { out.append((d, p.period)) }
             }
-            d = addDays(d, 1)
-            n += 1
         }
         return out
     }
@@ -84,9 +78,7 @@ extension Database {
     /// Applies the plans and returns a snapshot of lessons.csv so the move can be undone.
     func applyBump(_ plans: [BumpPlan]) -> [Row] {
         let snap = rows(.lessons)
-        for pl in plans {
-            for c in pl.changes { putContent(c.date, c.per, c.subject, c.to) }
-        }
+        putContents(plans.flatMap { $0.changes }.map { (date: $0.date, per: $0.per, subject: $0.subject, content: $0.to) })
         touch(.lessons)
         return snap
     }

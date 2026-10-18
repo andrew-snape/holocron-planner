@@ -7,11 +7,16 @@ enum VersionCompare {
     /// "1.10.0" is newer than "1.9". A leading "v" is ignored, missing parts count as 0, and any
     /// suffix such as "-beta" is ignored.
     static func parts(_ s: String) -> [Int] {
-        var t = s.trimmingCharacters(in: .whitespaces)
-        if t.hasPrefix("v") || t.hasPrefix("V") { t.removeFirst() }
-        return t.split(separator: ".").map { piece in
+        return stripV(s).split(separator: ".").map { piece in
             Int(piece.prefix(while: { $0.isNumber })) ?? 0
         }
+    }
+
+    /// The version text without spaces or a leading "v".
+    static func stripV(_ s: String) -> String {
+        var t = s.trimmingCharacters(in: .whitespaces)
+        if t.hasPrefix("v") || t.hasPrefix("V") { t.removeFirst() }
+        return t
     }
 
     static func isNewer(_ a: String, than b: String) -> Bool {
@@ -39,11 +44,7 @@ struct GitHubRelease: Decodable {
     var prerelease: Bool?
     var assets: [Asset]
 
-    var version: String {
-        var v = tagName.trimmingCharacters(in: .whitespaces)
-        if v.hasPrefix("v") || v.hasPrefix("V") { v.removeFirst() }
-        return v
-    }
+    var version: String { VersionCompare.stripV(tagName) }
 
     static func decode(_ data: Data) throws -> GitHubRelease {
         let d = JSONDecoder()

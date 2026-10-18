@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.8.11
+
+- Renaming a subject in Settings now follows through everywhere it is used: the timetable, one-off changes, lessons, results, notes, reports and its private setting. The new name is applied when you press return or click away.
+- Faster and smoother. Typing a lesson summary no longer rebuilds the subject, timetable and student lists, bumping or pushing a run of lessons is quicker, and the Hours, Term and Students screens no longer redo their sums on every keystroke.
+- Importing data now saves your pending changes first and swaps each file in safely, so a failed copy cannot lose the file it was replacing.
+- Fixed the Change photo button showing Photo saved twice, or after a failed save. Saving a student pack as a text file now reports a failure.
+- Update check problems now show in Settings, then Updates.
+- Tidier inside: shared code for reloading, copying and break labels, and Settings is now split into separate files.
+
 ## 1.8.10
 
 - The current week is now highlighted on Term, Units and Devotion. On the Term grid the week gets a This week tag and a soft blue tint, with today still in a stronger blue. A unit whose dates include this week shows a This week tag, and the devotion for this week is tagged too.

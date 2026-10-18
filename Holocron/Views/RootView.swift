@@ -141,7 +141,6 @@ struct SidebarView: View {
     @State private var height: CGFloat = 900
 
     var body: some View {
-        @Bindable var m = model
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 10) {
                 VStack(alignment: .leading, spacing: 1) {
@@ -219,11 +218,15 @@ struct MiniCalendar: View {
         let today = todayISO()
         VStack(spacing: 4) {
             HStack {
-                Button { shift(-1) } label: { Image(systemName: "chevron.left") }.buttonStyle(.plain)
+                Button { shift(-1) } label: { Image(systemName: "chevron.left") }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(showMonth ? "Previous month" : "Previous week")
                 Spacer()
                 Text(title).font(.system(size: 12.5, weight: .semibold))
                 Spacer()
-                Button { shift(1) } label: { Image(systemName: "chevron.right") }.buttonStyle(.plain)
+                Button { shift(1) } label: { Image(systemName: "chevron.right") }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(showMonth ? "Next month" : "Next week")
             }
             if !forceWeek {
                 Picker("", selection: $modeRaw) {
@@ -236,8 +239,8 @@ struct MiniCalendar: View {
                 .padding(.bottom, 2)
             }
             HStack(spacing: 0) {
-                ForEach(["M", "T", "W", "T", "F", "S", "S"].indices, id: \.self) { i in
-                    Text(["M", "T", "W", "T", "F", "S", "S"][i])
+                ForEach(Cal.weekdayInitials.indices, id: \.self) { i in
+                    Text(Cal.weekdayInitials[i])
                         .font(.system(size: 10, weight: .medium)).foregroundStyle(Color.ink3)
                         .frame(maxWidth: .infinity)
                 }
@@ -264,7 +267,7 @@ struct MiniCalendar: View {
 
     private var title: String {
         if showMonth {
-            let (y, mo, _) = Cal.parts(model.calMonth) ?? (2026, 1, 1)
+            let (y, mo, _) = Cal.parts(model.calMonth) ?? Cal.todayParts
             return "\(Cal.monthLong[mo - 1]) \(String(y))"
         }
         let first = weekStart
@@ -281,7 +284,7 @@ struct MiniCalendar: View {
 
     private func monthRows() -> [[String?]] {
         let first = model.calMonth
-        let (y, mo, _) = Cal.parts(first) ?? (2026, 1, 1)
+        let (y, mo, _) = Cal.parts(first) ?? Cal.todayParts
         let lead = dayIdx(first)
         let daysInMonth = Cal.civilFromDays(Cal.daysFromCivil(mo == 12 ? y + 1 : y, mo == 12 ? 1 : mo + 1, 1) - 1).2
         var c: [String?] = Array(repeating: nil, count: lead)
@@ -340,11 +343,7 @@ struct FolderStatus: View {
             if let p = model.folder.plannerURL {
                 Text("Planner: \(p.lastPathComponent)").font(.system(size: 11.5)).foregroundStyle(Color.ink3).lineLimit(1)
             }
-            Button("Reload from folder") {
-                model.flushNow(wait: true)
-                model.loadAll()
-                model.showToast("Reloaded from folder")
-            }
+            Button("Reload from folder") { model.reloadFromFolder() }
             .frame(maxWidth: .infinity)
             Text("v\(AppModel.appVersion)").font(.system(size: 10.5)).foregroundStyle(Color.ink3)
         }

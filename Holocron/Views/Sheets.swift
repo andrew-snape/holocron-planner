@@ -22,6 +22,7 @@ struct SheetFrame<Content: View>: View {
                     Image(systemName: "xmark.circle.fill").font(.system(size: 18)).foregroundStyle(Color.ink3)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Close")
                 .keyboardShortcut(.cancelAction)
             }
             .padding(.horizontal, 22)
@@ -62,7 +63,7 @@ struct ChangeSheet: View {
                 FieldLabel(text: "Subject")
                 Picker("", selection: $subject) {
                     Text("Not set").tag("")
-                    ForEach(db.subjects.map { $0.subject }, id: \.self) { Text($0).tag($0) }
+                    ForEach(db.subjectNames, id: \.self) { Text($0).tag($0) }
                 }
                 .labelsHidden()
             }
@@ -134,7 +135,11 @@ struct MoveSheet: View {
                 }
                 .buttonStyle(.borderedProminent)
                 if db.isMoved(date, per) {
-                    Button("Put back to normal") { db.clearDayPlan(date, per); dismiss() }
+                    Button("Put back to normal") {
+                        db.clearDayPlan(date, per)
+                        model.showToast("Put back to normal")
+                        dismiss()
+                    }
                 }
             }
         }
@@ -342,9 +347,9 @@ struct PlanSheet: View {
     @ViewBuilder
     private func readView(subj: String, c: LessonContent) -> some View {
         let db = model.db
-        let tone = subj.isEmpty ? Tone(bar: RGB(142, 142, 147), tint: RGB(237, 237, 238), ink: RGB(99, 99, 103)) : db.tone(forSubject: subj)
+        let tone = subj.isEmpty ? Tone.unset : db.tone(forSubject: subj)
         if subj == "TDL", let u = db.unitOn(date) {
-            let uTone = ToneMaths.tone(hex: PYP.themeHex(u.s("theme")))
+            let uTone = db.tone(forHex: PYP.themeHex(u.s("theme")))
             Text(u.s("title") + (u.s("central_idea").isEmpty ? "" : " · " + u.s("central_idea")))
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(uTone.inkColor)
@@ -356,7 +361,7 @@ struct PlanSheet: View {
         if !c.summary.isEmpty { Text(linkified(c.summary)).font(.system(size: 14)).textSelection(.enabled) }
         if !c.li.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
-                Text("LEARNING INTENTION").font(.system(size: 10.5, weight: .bold)).tracking(0.6).foregroundStyle(tone.inkColor)
+                SectionLabel("Learning intention", color: tone.inkColor)
                 Text(c.li).font(.system(size: 15, weight: .medium)).textSelection(.enabled)
             }
             .padding(14)
@@ -367,7 +372,7 @@ struct PlanSheet: View {
         let sc = linesOf(c.sc)
         if !sc.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
-                Text("SUCCESS CRITERIA").font(.system(size: 10.5, weight: .bold)).tracking(0.6).foregroundStyle(Color.ink2)
+                SectionLabel("Success criteria")
                 ForEach(sc, id: \.self) { x in
                     HStack(alignment: .top, spacing: 8) {
                         Image(systemName: "checkmark.circle").foregroundStyle(tone.barColor)
@@ -376,10 +381,10 @@ struct PlanSheet: View {
                 }
             }
         }
-        let steps = PlanSeq.all.filter { !c[$0.key].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        let steps = PlanSeq.all.filter { !c[$0.key].trimmed.isEmpty }
         if !steps.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                Text("LESSON SEQUENCE").font(.system(size: 10.5, weight: .bold)).tracking(0.6).foregroundStyle(Color.ink2)
+                SectionLabel("Lesson sequence")
                 ForEach(Array(steps.enumerated()), id: \.offset) { i, s in
                     HStack(alignment: .top, spacing: 10) {
                         Text("\(i + 1)").font(.system(size: 12, weight: .bold, design: .rounded))
@@ -396,20 +401,20 @@ struct PlanSheet: View {
         let res = linesOf(c.resources)
         if !res.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
-                Text("RESOURCES").font(.system(size: 10.5, weight: .bold)).tracking(0.6).foregroundStyle(Color.ink2)
+                SectionLabel("Resources")
                 ForEach(res, id: \.self) { line in ResourceRow(line: line) }
             }
         }
-        let codes = c.codes.split(whereSeparator: { $0 == "," || $0.isWhitespace }).map(String.init)
+        let codes = c.codeList
         if !codes.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
-                Text("CURRICULUM").font(.system(size: 10.5, weight: .bold)).tracking(0.6).foregroundStyle(Color.ink2)
+                SectionLabel("Curriculum")
                 ChipRow(items: codes)
             }
         }
         if !listOf(c.atl).isEmpty || !listOf(c.profile).isEmpty {
             VStack(alignment: .leading, spacing: 6) {
-                Text("PYP").font(.system(size: 10.5, weight: .bold)).tracking(0.6).foregroundStyle(Color.ink2)
+                SectionLabel("PYP")
                 ChipRow(items: listOf(c.atl) + listOf(c.profile), tinted: true)
             }
         }
@@ -452,7 +457,6 @@ struct PlanSheet: View {
                     n[f] = n[f].replacingOccurrences(of: "\\s+$", with: "", options: .regularExpression)
                 }
                 model.db.setContent(date, per, subj, n)
-                model.showToast("Saved")
                 if n.hasPlan { editing = false } else { dismiss() }
             }
             .buttonStyle(.borderedProminent)
@@ -517,7 +521,7 @@ struct ResourceRow: View {
     var line: String
 
     var body: some View {
-        let parsed = ResourceRow.parse(line)
+        let parsed = LessonResource.parse(line)
         if let url = parsed.url {
             Link(destination: url) {
                 HStack(spacing: 8) {
@@ -535,17 +539,5 @@ struct ResourceRow: View {
         } else {
             Text(line).font(.system(size: 13)).textSelection(.enabled)
         }
-    }
-
-    static func parse(_ line: String) -> (label: String, url: URL?, host: String) {
-        guard let r = line.range(of: "https?://\\S+", options: .regularExpression) else { return (line, nil, "") }
-        var raw = String(line[r])
-        while let last = raw.last, ").,".contains(last) { raw.removeLast() }
-        var label = line.replacingCharacters(in: r, with: "")
-        label = label.trimmingCharacters(in: CharacterSet(charactersIn: " \t:|-\u{2013}"))
-        let url = URL(string: raw)
-        var host = url?.host ?? ""
-        if host.hasPrefix("www.") { host.removeFirst(4) }
-        return (label, url, host)
     }
 }

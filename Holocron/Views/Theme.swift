@@ -29,7 +29,8 @@ extension Color {
     static let appBG = Color(red: 0.949, green: 0.949, blue: 0.969)
     static let cardBG = Color.white
     static let ink2 = Color(red: 0.43, green: 0.43, blue: 0.45)
-    static let ink3 = Color(red: 0.43, green: 0.43, blue: 0.46)
+    /// The same grey as ink2. The two were once a hair apart, which nobody could see.
+    static let ink3 = Color.ink2
     static let hairline = Color.black.opacity(0.08)
     static let appBlue = Color(red: 0.0, green: 0.443, blue: 0.89)
     static let appGreen = Color(red: 0.2, green: 0.62, blue: 0.35)
@@ -64,8 +65,7 @@ struct SubjectChip: View {
     var name: String
 
     var body: some View {
-        let tone = name.isEmpty ? Tone(bar: RGB(199, 199, 204), tint: RGB(242, 242, 247), ink: RGB(85, 85, 90))
-                                : model.db.tone(forSubject: name)
+        let tone = name.isEmpty ? Tone.unset : model.db.tone(forSubject: name)
         Text(name.isEmpty ? "Not set" : name)
             .font(.system(size: 12.5, weight: .semibold))
             .foregroundStyle(tone.inkColor)
@@ -352,20 +352,57 @@ func tintedBlock(_ tone: Tone, release: Bool) -> some View {
 struct Stripes: View {
     var color: Color
     var body: some View {
-        GeometryReader { geo in
-            Canvas { ctx, size in
-                let step: CGFloat = 14
-                var x: CGFloat = -size.height
-                while x < size.width + size.height {
-                    var p = Path()
-                    p.move(to: CGPoint(x: x, y: size.height))
-                    p.addLine(to: CGPoint(x: x + size.height, y: 0))
-                    ctx.stroke(p, with: .color(color), lineWidth: 5)
-                    x += step
-                }
+        Canvas { ctx, size in
+            let step: CGFloat = 14
+            var x: CGFloat = -size.height
+            while x < size.width + size.height {
+                var p = Path()
+                p.move(to: CGPoint(x: x, y: size.height))
+                p.addLine(to: CGPoint(x: x + size.height, y: 0))
+                ctx.stroke(p, with: .color(color), lineWidth: 5)
+                x += step
             }
-            .frame(width: geo.size.width, height: geo.size.height)
         }
         .allowsHitTesting(false)
+    }
+}
+
+// MARK: - Small helpers
+
+/// Turns a flag on for a moment, then off again. For "Copied" and "Reloaded" labels.
+@MainActor
+func flash(_ flag: Binding<Bool>, seconds: Double = 1.6) {
+    flag.wrappedValue = true
+    Task {
+        try? await Task.sleep(for: .seconds(seconds))
+        flag.wrappedValue = false
+    }
+}
+
+/// A small capitals heading above a block, such as LEARNING INTENTION.
+struct SectionLabel: View {
+    var text: String
+    var color: Color = .ink2
+    init(_ text: String, color: Color = .ink2) { self.text = text; self.color = color }
+
+    var body: some View {
+        Text(text.uppercased()).font(.system(size: 10.5, weight: .bold)).tracking(0.6).foregroundStyle(color)
+    }
+}
+
+/// A delete button that needs a second click, so a stray click does not remove anything.
+struct DeleteButton: View {
+    var action: () -> Void
+    @State private var armed = false
+
+    var body: some View {
+        Button {
+            if armed { action() } else { armed = true }
+        } label: {
+            Text(armed ? "Click again" : "Delete")
+                .font(.system(size: 12))
+                .foregroundStyle(armed ? Color.appRed : Color.ink2)
+        }
+        .buttonStyle(.plain)
     }
 }

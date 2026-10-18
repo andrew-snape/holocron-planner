@@ -27,17 +27,13 @@ extension Database {
     func rangeMinutes(_ from: String, _ to: String) -> Minutes {
         var o = Minutes()
         guard !from.isEmpty, !to.isEmpty, from <= to else { return o }
-        var d = from
-        var guardCount = 0
-        while d <= to && guardCount < 800 {
+        for d in Cal.dates(from: from, through: to) {
             let m = dayMinutes(d)
             if m.teach + m.release > 0 {
                 o.teach += m.teach
                 o.release += m.release
                 o.days += 1
             }
-            d = addDays(d, 1)
-            guardCount += 1
         }
         return o
     }

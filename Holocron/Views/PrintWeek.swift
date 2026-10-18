@@ -40,7 +40,7 @@ enum PrintWeek {
         return wrote
     }
 
-    static func fileName(_ model: AppModel, mon: String) -> String {
+    static func fileName(mon: String) -> String {
         "Week of \(mon).pdf"
     }
 
@@ -48,8 +48,10 @@ enum PrintWeek {
     static func open(model: AppModel) {
         let mon = model.shownMonday
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("Holocron print", isDirectory: true)
+        // Clear away pages printed earlier, so old copies do not pile up in the temporary folder.
+        try? FileManager.default.removeItem(at: dir)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let url = dir.appendingPathComponent(fileName(model, mon: mon))
+        let url = dir.appendingPathComponent(fileName(mon: mon))
         if makePDF(db: model.db, mon: mon, intentions: includeIntentions, to: url) {
             NSWorkspace.shared.open(url)
         } else {
@@ -62,7 +64,7 @@ enum PrintWeek {
         let mon = model.shownMonday
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.pdf]
-        panel.nameFieldStringValue = fileName(model, mon: mon)
+        panel.nameFieldStringValue = fileName(mon: mon)
         panel.canCreateDirectories = true
         guard panel.runModal() == .OK, let url = panel.url else { return }
         if makePDF(db: model.db, mon: mon, intentions: includeIntentions, to: url) {
@@ -105,13 +107,7 @@ struct PrintableWeek: View {
                 Text("\(shortDate(mon)) to \(shortDate(addDays(mon, 4))) \(String(yearOf(mon)))")
                     .font(.system(size: 11)).foregroundStyle(Color.ink2)
                 Spacer()
-                Text("Week \(wk)")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(wk == "B" ? Color.weekB : Color.appBlue)
-                    .padding(.vertical, 2)
-                    .padding(.horizontal, 10)
-                    .background(wk == "B" ? Color.weekBBG : Color.appBlue.opacity(0.12))
-                    .clipShape(Capsule())
+                WeekBadge(letter: wk)
             }
             .frame(height: headerH, alignment: .bottom)
 
@@ -207,10 +203,9 @@ private struct PrintCell: View {
     private var lesson: some View {
         let subj = db.plannedSubject(date, period.period, fallbackWeek: wk)
         let info = db.subjectInfo(subj)
-        let tone = subj.isEmpty ? Tone(bar: RGB(199, 199, 204), tint: RGB(242, 242, 247), ink: RGB(85, 85, 90))
-                                : db.tone(forSubject: subj)
+        let tone = subj.isEmpty ? Tone.unset : db.tone(forSubject: subj)
         let c = db.content(date, period.period)
-        let li = c.li.trimmingCharacters(in: .whitespacesAndNewlines)
+        let li = c.li.trimmed
         return VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 4) {
                 Circle().fill(tone.barColor).frame(width: 6, height: 6)

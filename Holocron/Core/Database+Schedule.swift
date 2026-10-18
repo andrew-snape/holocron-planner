@@ -163,9 +163,57 @@ extension Database {
         }
     }
 
+    /// Writes many lessons in one pass, for moves that touch a whole run of lessons. Doing them one at a
+    /// time rebuilt the lesson lookup after every change. Does not save; the caller touches `.lessons`.
+    func putContents(_ items: [(date: String, per: Int, subject: String, content: LessonContent)]) {
+        guard !items.isEmpty else { return }
+        var list = tables[TableName.lessons.rawValue] ?? []
+        var at: [SlotKey: [Int]] = [:]
+        for (i, r) in list.enumerated() {
+            if let p = Int(r.s("period")) { at[SlotKey(date: r.s("date"), per: p), default: []].append(i) }
+        }
+        var dropped = Set<Int>()
+        for item in items {
+            let key = SlotKey(date: item.date, per: item.per)
+            if item.content.isEmpty {
+                for i in at[key] ?? [] { dropped.insert(i) }
+                at[key] = nil
+            } else if let spots = at[key] {
+                for i in spots {
+                    list[i]["subject"] = item.subject
+                    for f in LessonContent.allFields { list[i][f] = item.content[f] }
+                }
+            } else {
+                var row: Row = ["date": item.date, "period": String(item.per), "subject": item.subject]
+                for f in LessonContent.allFields { row[f] = item.content[f] }
+                list.append(row)
+                at[key] = [list.count - 1]
+            }
+        }
+        if !dropped.isEmpty {
+            list = list.enumerated().filter { !dropped.contains($0.offset) }.map { $0.element }
+        }
+        setRows(.lessons, list)
+    }
+
     func setContent(_ date: String, _ per: Int, _ subject: String, _ c: LessonContent) {
         putContent(date, per, subject, c)
         touch(.lessons)
+    }
+
+    // MARK: Renaming a subject
+
+    /// Renames a subject in every table that refers to it by name. Does not touch the private
+    /// subject setting or the lessons held aside for other folders; `AppModel.renameSubject` does those.
+    func renameSubject(from old: String, to new: String) {
+        guard old != new else { return }
+        var changedTables = Set<TableName>()
+        for t in [TableName.subjects, .timetable, .dayplan, .lessons, .assessments, .lessonnotes, .reportjudge] {
+            var hit = false
+            update(t, where: { $0.s("subject") == old }) { $0["subject"] = new; hit = true }
+            if hit { changedTables.insert(t) }
+        }
+        touch(changedTables)
     }
 
     /// Only the summary changes; any fuller plan on the lesson is kept.
@@ -215,17 +263,11 @@ extension Database {
         }
         guard !start.isEmpty, !end.isEmpty, start <= end else { return s }
         let ps = periods
-        var d = start
-        var n = 0
-        while d <= end && n < 800 {
-            if runsNormally(d) {
-                for p in ps where plannedSubject(d, p.period) == "TDL" {
-                    s.tdl += 1
-                    if !content(d, p.period).isEmpty { s.planned += 1 }
-                }
+        for d in Cal.dates(from: start, through: end) where runsNormally(d) {
+            for p in ps where plannedSubject(d, p.period) == "TDL" {
+                s.tdl += 1
+                if !content(d, p.period).isEmpty { s.planned += 1 }
             }
-            d = addDays(d, 1)
-            n += 1
         }
         return s
     }

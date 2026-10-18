@@ -127,17 +127,27 @@ struct LessonContent: Equatable {
     }
 
     var isEmpty: Bool {
-        LessonContent.allFields.allSatisfy { self[$0].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        LessonContent.allFields.allSatisfy { self[$0].trimmed.isEmpty }
     }
 
     var hasPlan: Bool {
-        LessonContent.planFields.contains { !self[$0].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        LessonContent.planFields.contains { !self[$0].trimmed.isEmpty }
     }
 
     var status: PlanStatus {
         if hasPlan { return .plan }
-        return summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .empty : .summary
+        return summary.trimmed.isEmpty ? .empty : .summary
     }
+
+    /// The curriculum codes, split on commas and spaces.
+    var codeList: [String] {
+        codes.split(whereSeparator: { $0 == "," || $0.isWhitespace }).map(String.init)
+    }
+}
+
+extension String {
+    /// The text without spaces or line breaks at either end.
+    var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }
 }
 
 func linesOf(_ t: String) -> [String] {
@@ -152,9 +162,12 @@ func listOf(_ t: String) -> [String] {
 
 // MARK: - Web links in lesson text
 
+/// Built once. Making a detector is slow, and the Week screen asks for a link in every cell.
+private let linkDetector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+
 /// The first http or https link in some text, such as a lesson summary.
 func firstLink(in text: String) -> URL? {
-    guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else { return nil }
+    guard let detector = linkDetector, !text.isEmpty else { return nil }
     let range = NSRange(text.startIndex..., in: text)
     for match in detector.matches(in: text, options: [], range: range) {
         if let url = match.url, url.scheme == "http" || url.scheme == "https" { return url }
@@ -165,7 +178,7 @@ func firstLink(in text: String) -> URL? {
 /// The text with each web link made clickable, for read-only lines such as Today.
 func linkified(_ text: String) -> AttributedString {
     let attributed = NSMutableAttributedString(string: text)
-    if let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) {
+    if let detector = linkDetector {
         for match in detector.matches(in: text, options: [], range: NSRange(location: 0, length: attributed.length)) {
             if let url = match.url { attributed.addAttribute(.link, value: url, range: match.range) }
         }
@@ -176,8 +189,8 @@ func linkified(_ text: String) -> AttributedString {
 // MARK: - The database
 
 /// All of the planner's data, held as rows exactly as they sit in the CSV files.
-/// Every screen reads from here and every change goes through here, so the logic
-/// `plannedSubject` is the single source of truth for what is on.
+/// Every screen reads from here and every change goes through here, so the logic for what is on
+/// (see `plannedSubject`) lives in one place.
 ///
 /// Screens are told about changes one table at a time. Every read goes through `watch`, which makes
 /// SwiftUI remember "this view looked at the lessons table", and every change bumps that table's
@@ -207,7 +220,7 @@ final class Database {
     func watch(_ t: TableName) { _ = stamps[t]?.n }
 
     private func changed(_ t: TableName) {
-        cachedIndex = nil
+        lookup.invalidate(t)
         stamps[t]?.n &+= 1
     }
 
@@ -250,6 +263,15 @@ final class Database {
         changed(t)
     }
 
+    /// Changes one row by its position. For editing a table that is shown as a list of rows.
+    func updateRow(_ t: TableName, at index: Int, _ change: (inout Row) -> Void) {
+        let key = t.rawValue
+        guard var list = tables.removeValue(forKey: key) else { return }
+        if list.indices.contains(index) { change(&list[index]) }
+        tables[key] = list
+        changed(t)
+    }
+
     func remove(_ t: TableName, where match: (Row) -> Bool) {
         tables[t.rawValue]?.removeAll(where: match)
         changed(t)
@@ -260,103 +282,198 @@ final class Database {
     // Screens ask the same questions again and again (what is on in period 3 on this date, which
     // colour is Maths, who is this student). Answering each from a scan of the raw rows made the
     // Week, Term and Hours screens do thousands of string comparisons per redraw. The index holds
-    // dictionaries and sorted lists built once, on first use after a change, and thrown away
-    // whenever a table changes. It always keeps the first matching row, as the scans did.
+    // dictionaries and sorted lists built once, on first use. When a table changes, only the lists
+    // built from that table are thrown away, so typing in a lesson summary leaves the timetable,
+    // subjects and students lists alone. It always keeps the first matching row, as the scans did.
 
-    private var cachedIndex: Index?
+    private lazy var lookup = Index(database: self)
 
     /// The lookup index, after registering a read of `t`. Always name the table the answer comes from.
     func index(_ t: TableName) -> Index {
         watch(t)
-        if let i = cachedIndex { return i }
-        let i = Index(tables: tables)
-        cachedIndex = i
-        return i
+        return lookup
     }
 
     struct SlotKey: Hashable { var date: String; var per: Int }
     struct TimetableKey: Hashable { var week: String; var day: Int; var per: Int }
 
     final class Index {
-        private let tables: [String: [Row]]
-        init(tables: [String: [Row]]) { self.tables = tables }
+        private unowned let database: Database
+        init(database: Database) { self.database = database }
 
-        private func rows(_ t: TableName) -> [Row] { tables[t.rawValue] ?? [] }
+        private func rows(_ t: TableName) -> [Row] { database.tables[t.rawValue] ?? [] }
 
-        lazy var periods: [Period] = rows(.periods).compactMap { r in
-            guard let n = Int(r.s("period")) else { return nil }
-            return Period(period: n, name: r.s("name"), start: r.s("start"), end: r.s("end"))
-        }.sorted { $0.period < $1.period }
-
-        lazy var periodByNumber: [Int: Period] =
-            Dictionary(periods.map { ($0.period, $0) }, uniquingKeysWith: { first, _ in first })
-
-        lazy var subjects: [SubjectInfo] = rows(.subjects).map {
-            SubjectInfo(subject: $0.s("subject"), kind: $0.s("kind"), colour: $0.s("colour"))
+        /// Returns the stored value, or builds it and keeps it for next time.
+        private func cached<T>(_ slot: inout T?, _ make: () -> T) -> T {
+            if let v = slot { return v }
+            let v = make()
+            slot = v
+            return v
         }
 
-        lazy var subjectByName: [String: SubjectInfo] =
-            Dictionary(subjects.map { ($0.subject, $0) }, uniquingKeysWith: { first, _ in first })
+        private var _periods: [Period]?
+        private var _periodByNumber: [Int: Period]?
+        private var _subjects: [SubjectInfo]?
+        private var _subjectByName: [String: SubjectInfo]?
+        private var _terms: [Term]?
+        private var _termsSorted: [Term]?
+        private var _nonTeachingLabels: [String: String]?
+        private var _overrides: [String: Row]?
+        private var _dayPlan: [SlotKey: String]?
+        private var _timetable: [TimetableKey: String]?
+        private var _timetableSubjects: [String]?
+        private var _lessons: [SlotKey: Row]?
+        private var _students: [Student]?
+        private var _roster: [Student]?
+        private var _studentByID: [String: Student]?
+        private var _settings: [String: String]?
+        private var _privacy: (subjects: Set<String>, devotion: Bool)?
 
-        /// Colour maths (contrast search) done once per subject until the subjects change.
-        private var toneCache: [String: Tone] = [:]
-        func tone(forSubject name: String, colour: String) -> Tone {
-            if let t = toneCache[name] { return t }
-            let t = ToneMaths.tone(hex: colour)
-            toneCache[name] = t
+        /// Colour maths (contrast search) is a pure function of the colour, so it is kept for good.
+        private var toneByHex: [String: Tone] = [:]
+
+        /// Throws away the lists built from a table that has just changed.
+        func invalidate(_ t: TableName) {
+            switch t {
+            case .periods: _periods = nil; _periodByNumber = nil
+            case .subjects: _subjects = nil; _subjectByName = nil
+            case .terms: _terms = nil; _termsSorted = nil
+            case .nonteaching: _nonTeachingLabels = nil
+            case .dayoverrides: _overrides = nil
+            case .dayplan: _dayPlan = nil
+            case .timetable: _timetable = nil; _timetableSubjects = nil
+            case .lessons: _lessons = nil
+            case .students: _students = nil; _roster = nil; _studentByID = nil
+            case .settings: _settings = nil; _privacy = nil
+            default: break
+            }
+        }
+
+        var periods: [Period] {
+            cached(&_periods) {
+                rows(.periods).compactMap { r in
+                    guard let n = Int(r.s("period")) else { return nil }
+                    return Period(period: n, name: r.s("name"), start: r.s("start"), end: r.s("end"))
+                }.sorted { $0.period < $1.period }
+            }
+        }
+
+        var periodByNumber: [Int: Period] {
+            cached(&_periodByNumber) {
+                Dictionary(periods.map { ($0.period, $0) }, uniquingKeysWith: { first, _ in first })
+            }
+        }
+
+        var subjects: [SubjectInfo] {
+            cached(&_subjects) {
+                rows(.subjects).map {
+                    SubjectInfo(subject: $0.s("subject"), kind: $0.s("kind"), colour: $0.s("colour"))
+                }
+            }
+        }
+
+        var subjectByName: [String: SubjectInfo] {
+            cached(&_subjectByName) {
+                Dictionary(subjects.map { ($0.subject, $0) }, uniquingKeysWith: { first, _ in first })
+            }
+        }
+
+        func tone(forHex hex: String) -> Tone {
+            if let t = toneByHex[hex] { return t }
+            let t = ToneMaths.tone(hex: hex)
+            toneByHex[hex] = t
             return t
         }
 
-        lazy var terms: [Term] = rows(.terms).map {
-            Term(year: $0.s("year"), term: $0.s("term"), start: $0.s("start"), end: $0.s("end"))
+        var terms: [Term] {
+            cached(&_terms) {
+                rows(.terms).map {
+                    Term(year: $0.s("year"), term: $0.s("term"), start: $0.s("start"), end: $0.s("end"))
+                }
+            }
         }
 
-        lazy var termsSorted: [Term] = terms.sorted { $0.start < $1.start }
+        var termsSorted: [Term] { cached(&_termsSorted) { terms.sorted { $0.start < $1.start } } }
 
-        lazy var nonTeachingLabels: [String: String] =
-            Dictionary(rows(.nonteaching).map { ($0.s("date"), $0.s("label")) }, uniquingKeysWith: { first, _ in first })
-
-        lazy var overrides: [String: Row] =
-            Dictionary(rows(.dayoverrides).map { ($0.s("date"), $0) }, uniquingKeysWith: { first, _ in first })
-
-        lazy var dayPlan: [SlotKey: String] = {
-            var d: [SlotKey: String] = [:]
-            for r in rows(.dayplan) {
-                guard let p = Int(r.s("period")) else { continue }
-                let k = SlotKey(date: r.s("date"), per: p)
-                if d[k] == nil { d[k] = r.s("subject") }
+        var nonTeachingLabels: [String: String] {
+            cached(&_nonTeachingLabels) {
+                Dictionary(rows(.nonteaching).map { ($0.s("date"), $0.s("label")) }, uniquingKeysWith: { first, _ in first })
             }
-            return d
-        }()
-
-        lazy var timetable: [TimetableKey: String] = {
-            var d: [TimetableKey: String] = [:]
-            for r in rows(.timetable) {
-                guard let day = Int(r.s("day")), let p = Int(r.s("period")) else { continue }
-                let k = TimetableKey(week: r.s("week"), day: day, per: p)
-                if d[k] == nil { d[k] = r.s("subject") }
-            }
-            return d
-        }()
-
-        lazy var lessons: [SlotKey: Row] = {
-            var d: [SlotKey: Row] = [:]
-            for r in rows(.lessons) {
-                guard let p = Int(r.s("period")) else { continue }
-                let k = SlotKey(date: r.s("date"), per: p)
-                if d[k] == nil { d[k] = r }
-            }
-            return d
-        }()
-
-        lazy var students: [Student] = rows(.students).map { Student(row: $0) }
-
-        lazy var roster: [Student] = students.sorted {
-            $0.first.localizedCaseInsensitiveCompare($1.first) == .orderedAscending
         }
 
-        lazy var studentByID: [String: Student] =
-            Dictionary(students.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        var overrides: [String: Row] {
+            cached(&_overrides) {
+                Dictionary(rows(.dayoverrides).map { ($0.s("date"), $0) }, uniquingKeysWith: { first, _ in first })
+            }
+        }
+
+        var dayPlan: [SlotKey: String] {
+            cached(&_dayPlan) {
+                var d: [SlotKey: String] = [:]
+                for r in rows(.dayplan) {
+                    guard let p = Int(r.s("period")) else { continue }
+                    let k = SlotKey(date: r.s("date"), per: p)
+                    if d[k] == nil { d[k] = r.s("subject") }
+                }
+                return d
+            }
+        }
+
+        var timetable: [TimetableKey: String] {
+            cached(&_timetable) {
+                var d: [TimetableKey: String] = [:]
+                for r in rows(.timetable) {
+                    guard let day = Int(r.s("day")), let p = Int(r.s("period")) else { continue }
+                    let k = TimetableKey(week: r.s("week"), day: day, per: p)
+                    if d[k] == nil { d[k] = r.s("subject") }
+                }
+                return d
+            }
+        }
+
+        /// Every subject that appears in the timetable, sorted.
+        var timetableSubjects: [String] {
+            cached(&_timetableSubjects) {
+                Array(Set(rows(.timetable).map { $0.s("subject") })).filter { !$0.isEmpty }.sorted()
+            }
+        }
+
+        var lessons: [SlotKey: Row] {
+            cached(&_lessons) {
+                var d: [SlotKey: Row] = [:]
+                for r in rows(.lessons) {
+                    guard let p = Int(r.s("period")) else { continue }
+                    let k = SlotKey(date: r.s("date"), per: p)
+                    if d[k] == nil { d[k] = r }
+                }
+                return d
+            }
+        }
+
+        var students: [Student] { cached(&_students) { rows(.students).map { Student(row: $0) } } }
+
+        var roster: [Student] {
+            cached(&_roster) {
+                students.sorted { $0.first.localizedCaseInsensitiveCompare($1.first) == .orderedAscending }
+            }
+        }
+
+        var studentByID: [String: Student] {
+            cached(&_studentByID) {
+                Dictionary(students.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            }
+        }
+
+        /// settings.csv as key and value. The first row for a key wins.
+        var settings: [String: String] {
+            cached(&_settings) {
+                Dictionary(rows(.settings).map { ($0.s("key"), $0.s("value")) }, uniquingKeysWith: { first, _ in first })
+            }
+        }
+
+        var privacy: (subjects: Set<String>, devotion: Bool) {
+            cached(&_privacy) { Database.privacy(from: rows(.settings)) }
+        }
     }
 
     // MARK: Lookups
@@ -367,6 +484,9 @@ final class Database {
 
     var subjects: [SubjectInfo] { index(.subjects).subjects }
 
+    /// The names of every subject, in the order they are set up.
+    var subjectNames: [String] { subjects.map { $0.subject } }
+
     func subjectInfo(_ name: String) -> SubjectInfo {
         index(.subjects).subjectByName[name] ?? SubjectInfo(subject: name, kind: "teach", colour: "#8A8F94")
     }
@@ -374,12 +494,18 @@ final class Database {
     func tone(forSubject name: String) -> Tone {
         let ix = index(.subjects)
         let colour = ix.subjectByName[name]?.colour ?? "#8A8F94"
-        return ix.tone(forSubject: name, colour: colour)
+        return ix.tone(forHex: colour)
     }
+
+    /// The colours for a hex code, worked out once.
+    func tone(forHex hex: String) -> Tone { lookup.tone(forHex: hex) }
 
     var terms: [Term] { index(.terms).terms }
 
     var termsSorted: [Term] { index(.terms).termsSorted }
+
+    /// Subjects that appear in the timetable, sorted.
+    var timetableSubjects: [String] { index(.timetable).timetableSubjects }
 
     // MARK: Students
 

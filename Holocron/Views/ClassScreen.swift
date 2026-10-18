@@ -154,7 +154,7 @@ struct ClassScreenView: View {
         let subj = db.plannedSubject(date, pn)
         let c = db.content(date, pn)
         let sc = linesOf(c.sc).map { KidWords.strip($0, KidWords.scLeads) }
-        let tone = subj.isEmpty ? Tone(bar: RGB(142, 142, 147), tint: RGB(237, 237, 238), ink: RGB(99, 99, 103)) : db.tone(forSubject: subj)
+        let tone = subj.isEmpty ? Tone.unset : db.tone(forSubject: subj)
         let ps = lessons
         let ix = ps.firstIndex(where: { $0.period == pn })
         let unit: Row? = subj == "TDL" ? db.unitOn(date) : nil
@@ -168,7 +168,7 @@ struct ClassScreenView: View {
                 HStack(alignment: .top, spacing: 28) {
                     VStack(alignment: .leading, spacing: 18) {
                         if let u = unit {
-                            let ut = ToneMaths.tone(hex: PYP.themeHex(u.s("theme")))
+                            let ut = db.tone(forHex: PYP.themeHex(u.s("theme")))
                             Text(u.s("title") + (u.s("central_idea").isEmpty ? "" : " · " + u.s("central_idea")))
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundStyle(ut.inkColor)
@@ -226,8 +226,7 @@ struct ClassScreenView: View {
         .padding(24)
         .background(Color.white)
         .onExitCommand { if !embedded { dismiss() } }
-        .onChange(of: pn) { stepsOpen = false; activeStep = 0 }
-        .onChange(of: date) { stepsOpen = false; activeStep = 0 }
+        .onChange(of: ClassTarget(date: date, per: pn)) { stepsOpen = false; activeStep = 0 }
     }
 
     private func heading(_ s: String, _ tone: Tone) -> some View {
@@ -316,9 +315,11 @@ struct ClassScreenView: View {
             Button { if let i = ix, i > 0 { pn = ps[i - 1].period } } label: { Image(systemName: "chevron.left") }
                 .disabled((ix ?? 0) <= 0)
                 .help("Previous lesson")
+                .accessibilityLabel("Previous lesson")
             Button { if let i = ix, i < ps.count - 1 { pn = ps[i + 1].period } } label: { Image(systemName: "chevron.right") }
                 .disabled(ix == nil || (ix ?? 0) >= ps.count - 1)
                 .help("Next lesson")
+                .accessibilityLabel("Next lesson")
             if embedded {
                 Button("Pop out") { openWindow(id: "classscreen", value: ClassTarget(date: date, per: pn)) }
                     .help("Open on its own window for the projector")

@@ -187,20 +187,60 @@ final class AppModel {
         flushNow(wait: true)
         var next = folder
         next.plannerURL = url
-        let fm = FileManager.default
-        var copied = 0, kept = 0
-        for t in TableName.allCases where t.isPlanner {
-            let dst = next.fileURL(t), src = folder.fileURL(t)
-            if dst.path == src.path { continue }
-            if fm.fileExists(atPath: dst.path) { kept += 1; continue }
-            if fm.fileExists(atPath: src.path), (try? fm.copyItem(at: src, to: dst)) != nil { copied += 1 }
-        }
+        let (copied, kept) = copyMissingFiles(TableName.allCases.filter { $0.isPlanner }, from: folder, to: next)
         folder = next
         if let u = url { UserDefaults.standard.set(u.path, forKey: AppModel.plannerKey) }
         else { UserDefaults.standard.removeObject(forKey: AppModel.plannerKey) }
         loadAll()
         if url == nil { return "Planner files are back in the student folder" }
         return "Planner folder connected. \(copied) file\(copied == 1 ? "" : "s") copied in, \(kept) already there were kept."
+    }
+
+    /// Copies each table's file to where `to` keeps it, unless something is already there. Returns how many
+    /// files were copied and how many were already in place and so kept.
+    private func copyMissingFiles(_ tables: [TableName], from: DataFolder, to: DataFolder) -> (copied: Int, kept: Int) {
+        let fm = FileManager.default
+        var copied = 0, kept = 0
+        for t in tables {
+            let src = from.fileURL(t), dst = to.fileURL(t)
+            if src.path == dst.path { continue }
+            if fm.fileExists(atPath: dst.path) { kept += 1; continue }
+            if fm.fileExists(atPath: src.path), (try? fm.copyItem(at: src, to: dst)) != nil { copied += 1 }
+        }
+        return (copied, kept)
+    }
+
+    /// Saves anything waiting, then reads every file again.
+    func reloadFromFolder(toast: String? = "Reloaded from folder") {
+        flushNow(wait: true)
+        loadAll()
+        if let toast { showToast(toast) }
+    }
+
+    /// Puts text on the clipboard and says so.
+    func copyText(_ text: String, toast: String = "Copied") {
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(text, forType: .string)
+        showToast(toast)
+    }
+
+    /// Renames a subject everywhere: the timetable, lessons (including the ones kept aside in the other
+    /// file), results, notes and the private subject setting.
+    func renameSubject(from old: String, to newName: String) {
+        let new = newName.trimmed
+        guard !new.isEmpty, new != old, !db.subjects.contains(where: { $0.subject == new }) else { return }
+        let wasPrivate = isSubjectPrivate(old)
+        for i in hiddenShared.indices where hiddenShared[i].s("subject") == old { hiddenShared[i]["subject"] = new }
+        for i in hiddenPrivate.indices where hiddenPrivate[i].s("subject") == old { hiddenPrivate[i]["subject"] = new }
+        if wasPrivate {
+            privateSubjects.remove(old)
+            privateSubjects.insert(new)
+            db.setSetting(Database.privateSubjectPrefix + old, "off")
+            db.setSetting(Database.privateSubjectPrefix + new, "on")
+        }
+        db.renameSubject(from: old, to: new)
+        pending.insert(.lessons)
     }
 
     func useFolder(_ url: URL, createIfNeeded: Bool) {
@@ -228,7 +268,7 @@ final class AppModel {
         badLoads.removeAll()
         if force { fileSigs.removeAll() }
         var messages: [String] = []
-        var ok = folder.exists()
+        let folderThere = folder.exists()
         readPrivacy()
         for t in TableName.allCases {
             // Private lessons are read together with the shared ones, below.
@@ -248,7 +288,7 @@ final class AppModel {
                 let starter = Starter.rows(for: t)
                 db.load(t, header: t.header, rows: t == .lessons ? mergeLessons(shared: starter, messages: &messages) : starter)
                 fileSigs[t] = nil
-                if ok {
+                if folderThere {
                     try? folder.write(t, header: t.header, rows: starter)
                     fileSigs[t] = folder.signature(t)
                 }
@@ -258,11 +298,10 @@ final class AppModel {
                 messages.append(msg)
             }
         }
-        if !folder.exists() { ok = false }
-        folderOK = ok && badLoads.isEmpty
-        if !folder.exists() { folderMessage = missingMessage(folder) }
+        folderOK = folderThere && badLoads.isEmpty
+        if !folderThere { folderMessage = missingMessage(folder) }
         else { folderMessage = messages.isEmpty ? "" : messages.joined(separator: ". ") }
-        if db.termsSorted.isEmpty == false && termKey.isEmpty { termKey = termDefault() }
+        if !db.termsSorted.isEmpty && termKey.isEmpty { termKey = termDefault() }
 
         // A photo that was missing may have arrived from iCloud since.
         if !force, !noPhoto.isEmpty {
@@ -329,7 +368,7 @@ final class AppModel {
     /// How many lessons the shared file holds for a subject.
     func sharedLessonCount(_ subject: String) -> Int {
         guard !isSubjectPrivate(subject) else { return 0 }
-        return db.rows(.lessons).filter { $0.s("subject") == subject }.count
+        return db.rows(.lessons).count(where: { $0.s("subject") == subject })
     }
 
     func isSubjectPrivate(_ subject: String) -> Bool { db.isPrivateSubject(subject) }
@@ -340,8 +379,8 @@ final class AppModel {
         flushNow(wait: true)
         if on && copyLessons {
             let existing = db.rows(.lessons).filter { $0.s("subject") == subject }
-            let have = Set(hiddenPrivate.filter { $0.s("subject") == subject }.map { $0.s("date") + "|" + $0.s("period") })
-            hiddenPrivate += existing.filter { !have.contains($0.s("date") + "|" + $0.s("period")) }
+            let have = Set(hiddenPrivate.filter { $0.s("subject") == subject }.map { Database.SlotKey(date: $0.s("date"), per: Int($0.s("period")) ?? 0) })
+            hiddenPrivate += existing.filter { !have.contains(Database.SlotKey(date: $0.s("date"), per: Int($0.s("period")) ?? 0)) }
         }
         db.setSetting(Database.privateSubjectPrefix + subject, on ? "on" : "off")
         // Save the settings and the private file, then read everything again under the new rule.
@@ -359,14 +398,7 @@ final class AppModel {
         flushNow(wait: true)
         var next = folder
         next.privateTables = on ? [.devotion, .quotes] : []
-        let fm = FileManager.default
-        var copied = 0, kept = 0
-        for t in [TableName.devotion, .quotes] {
-            let src = folder.fileURL(t), dst = next.fileURL(t)
-            if src.path == dst.path { continue }
-            if fm.fileExists(atPath: dst.path) { kept += 1; continue }
-            if fm.fileExists(atPath: src.path), (try? fm.copyItem(at: src, to: dst)) != nil { copied += 1 }
-        }
+        let (copied, kept) = copyMissingFiles([.devotion, .quotes], from: folder, to: next)
         folder = next
         loadAll()
         if on { return "Devotion is now private. \(copied) file\(copied == 1 ? "" : "s") copied, \(kept) already there were kept." }
@@ -496,7 +528,7 @@ final class AppModel {
             return
         }
         do {
-            try? FileManager.default.createDirectory(at: folder.photosURL, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: folder.photosURL, withIntermediateDirectories: true)
             try data.write(to: folder.photoURL(id), options: .atomic)
             imageCache[id] = nil
             noPhoto.remove(id)
@@ -531,6 +563,7 @@ final class AppModel {
 
     /// Copies every CSV (and photos) from another folder into the current one.
     func importData(from source: URL) -> String {
+        flushNow(wait: true)
         let fm = FileManager.default
         var copied = 0
         for t in TableName.allCases {
@@ -538,8 +571,15 @@ final class AppModel {
             guard fm.fileExists(atPath: src.path) else { continue }
             let dst = folder.fileURL(t)
             do {
-                if fm.fileExists(atPath: dst.path) { try fm.removeItem(at: dst) }
-                try fm.copyItem(at: src, to: dst)
+                if fm.fileExists(atPath: dst.path) {
+                    // Copy beside the old file first, then swap, so a failed copy never loses the old one.
+                    let temp = dst.deletingLastPathComponent().appendingPathComponent(".import-" + dst.lastPathComponent)
+                    try? fm.removeItem(at: temp)
+                    try fm.copyItem(at: src, to: temp)
+                    _ = try fm.replaceItemAt(dst, withItemAt: temp)
+                } else {
+                    try fm.copyItem(at: src, to: dst)
+                }
                 copied += 1
             } catch {
                 return "Could not copy \(t.rawValue).csv"
@@ -625,9 +665,11 @@ final class AppModel {
     }
 
     func quote() -> Row? {
-        let pool = db.rows(.quotes).filter { !$0.s("quote").isEmpty }
+        let all = db.rows(.quotes)
+        // Most redraws just want the quote already on show, so look for it before building a list.
+        if let k = quoteKey, let q = all.first(where: { $0.s("date") == k && !$0.s("quote").isEmpty }) { return q }
+        let pool = all.filter { !$0.s("quote").isEmpty }
         guard !pool.isEmpty else { return nil }
-        if let k = quoteKey, let q = pool.first(where: { $0.s("date") == k }) { return q }
         let last = UserDefaults.standard.string(forKey: "lastQuote")
         let opts = pool.count > 1 ? pool.filter { $0.s("date") != last } : pool
         guard let q = opts.randomElement() else { return nil }

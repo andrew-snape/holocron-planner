@@ -4,27 +4,36 @@ import Foundation
 
 extension Database {
     static let defaultClassName = "6AS"
+    static let classNameKey = "class_name"
+
+    /// The value saved for a settings key, or nil when there is no row for it.
+    func setting(_ key: String) -> String? {
+        index(.settings).settings[key]
+    }
+
+    /// Saves a settings value, adding the row when the key is new.
+    func setSetting(_ key: String, _ value: String) {
+        if setting(key) != nil {
+            update(.settings, where: { $0.s("key") == key }) { $0["value"] = value }
+        } else {
+            append(.settings, ["key": key, "value": value])
+        }
+        touch(.settings)
+    }
 
     /// What is typed in Settings, which may be empty (the default name is then shown).
     var classNameSetting: String {
-        rows(.settings).first(where: { $0.s("key") == "class_name" })?.s("value") ?? ""
+        setting(Database.classNameKey) ?? ""
     }
 
     /// The class name shown in the sidebar and on exported student summaries.
     var className: String {
-        let v = rows(.settings).first(where: { $0.s("key") == "class_name" })?.s("value")
-            .trimmingCharacters(in: .whitespaces) ?? ""
+        let v = classNameSetting.trimmingCharacters(in: .whitespaces)
         return v.isEmpty ? Database.defaultClassName : v
     }
 
     func setClassName(_ name: String) {
-        let key = "class_name"
-        if rows(.settings).contains(where: { $0.s("key") == key }) {
-            update(.settings, where: { $0.s("key") == key }) { $0["value"] = name }
-        } else {
-            append(.settings, ["key": key, "value": name])
-        }
-        touch(.settings)
+        setSetting(Database.classNameKey, name)
     }
 }
 
@@ -50,17 +59,8 @@ extension Database {
     }
 
     func isPrivateSubject(_ name: String) -> Bool {
-        Database.privacy(from: rows(.settings)).subjects.contains(name)
+        index(.settings).privacy.subjects.contains(name)
     }
 
-    var devotionIsPrivate: Bool { Database.privacy(from: rows(.settings)).devotion }
-
-    func setSetting(_ key: String, _ value: String) {
-        if rows(.settings).contains(where: { $0.s("key") == key }) {
-            update(.settings, where: { $0.s("key") == key }) { $0["value"] = value }
-        } else {
-            append(.settings, ["key": key, "value": value])
-        }
-        touch(.settings)
-    }
+    var devotionIsPrivate: Bool { index(.settings).privacy.devotion }
 }
