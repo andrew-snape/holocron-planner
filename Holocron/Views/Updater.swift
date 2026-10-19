@@ -15,7 +15,7 @@ final class Updater {
         var notes: String
         var pageURL: URL
         var zipURL: URL
-        var checksumURL: URL?
+        var checksumURL: URL
     }
 
     enum State: Equatable {
@@ -32,16 +32,15 @@ final class Updater {
     var pending: Info? = nil
     /// Hides the banner until the next launch.
     var bannerDismissed = false
-    private(set) var repo: String
+    let repo = Updater.defaultRepo
     private(set) var autoCheck: Bool
     private(set) var lastChecked: Date?
 
     /// Set by the app: save everything to disk before quitting for an update.
     @ObservationIgnored var prepareToQuit: () -> Void = {}
 
-    /// Where this copy of Holocron looks for new versions until a different repository is typed in Settings.
+    /// Where Holocron looks for new versions. It is fixed, so updates only ever come from this repository.
     static let defaultRepo = "andrew-snape/holocron-planner"
-    static let repoKey = "updateRepo"
     static let autoKey = "updateAutoCheck"
     static let lastKey = "updateLastChecked"
 
@@ -51,14 +50,8 @@ final class Updater {
 
     init() {
         let d = UserDefaults.standard
-        repo = d.string(forKey: Updater.repoKey) ?? Updater.defaultRepo
         autoCheck = d.object(forKey: Updater.autoKey) as? Bool ?? true
         lastChecked = d.object(forKey: Updater.lastKey) as? Date
-    }
-
-    func setRepo(_ s: String) {
-        repo = s.trimmed
-        UserDefaults.standard.set(repo, forKey: Updater.repoKey)
     }
 
     func setAutoCheck(_ on: Bool) {
@@ -86,7 +79,7 @@ final class Updater {
     @MainActor
     private func runCheck(userInitiated: Bool) async {
         guard repoIsValid else {
-            if userInitiated { state = .failed("Enter your GitHub repository first, for example yourname/holocron-planner.") }
+            if userInitiated { state = .failed("The update repository name is not valid.") }
             return
         }
         state = .checking
@@ -120,9 +113,13 @@ final class Updater {
                 state = .failed("Version \(rel.version) exists, but it has no Holocron zip attached.")
                 return
             }
-            let sumURL = ReleasePick.checksumAsset(for: zip, in: rel)
-                .flatMap { URL(string: $0.browserDownloadUrl) }
-                .flatMap { ReleasePick.isTrustedDownload($0, repo: repo) ? $0 : nil }
+            // An update without a published checksum is never offered.
+            guard let sumURL = ReleasePick.checksumAsset(for: zip, in: rel)
+                .flatMap({ URL(string: $0.browserDownloadUrl) })
+                .flatMap({ ReleasePick.isTrustedDownload($0, repo: repo) ? $0 : nil }) else {
+                state = .failed("Version \(rel.version) exists, but it has no checksum file, so it cannot be installed safely.")
+                return
+            }
             pending = Info(version: rel.version, notes: rel.body ?? "",
                            pageURL: URL(string: rel.htmlUrl) ?? URL(string: "https://github.com/\(repo)/releases")!,
                            zipURL: zipURL, checksumURL: sumURL)
@@ -165,15 +162,13 @@ final class Updater {
             let (tmp, resp) = try await URLSession.shared.download(from: info.zipURL)
             guard (resp as? HTTPURLResponse)?.statusCode == 200 else { throw InstallError(message: "The download did not complete.") }
 
-            if let sumURL = info.checksumURL {
-                state = .working("Checking the download")
-                let (sumData, _) = try await URLSession.shared.data(from: sumURL)
-                guard let want = ReleasePick.parseChecksum(String(decoding: sumData, as: UTF8.self)) else {
-                    throw InstallError(message: "The checksum file could not be read.")
-                }
-                let got = try Updater.sha256(of: tmp)
-                guard got == want else { throw InstallError(message: "The download did not match its checksum, so it was not installed.") }
+            state = .working("Checking the download")
+            let (sumData, _) = try await URLSession.shared.data(from: info.checksumURL)
+            guard let want = ReleasePick.parseChecksum(String(decoding: sumData, as: UTF8.self)) else {
+                throw InstallError(message: "The checksum file could not be read.")
             }
+            let got = try Updater.sha256(of: tmp)
+            guard got == want else { throw InstallError(message: "The download did not match its checksum, so it was not installed.") }
 
             state = .working("Installing")
             try FileManager.default.createDirectory(at: stage, withIntermediateDirectories: true)
@@ -308,16 +303,9 @@ struct UpdatesSettings: View {
                 LabeledContent("Installed version") {
                     Text(Updater.currentVersion).foregroundStyle(.secondary)
                 }
-                LabeledContent("GitHub repository") {
-                    TextField(Updater.defaultRepo, text: Binding(get: { u.repo }, set: { u.setRepo($0) }))
-                        .textFieldStyle(.roundedBorder)
-                        .labelsHidden()
-                        .frame(width: 280)
-                        .autocorrectionDisabled()
-                }
                 Toggle("Check for updates when Holocron opens", isOn: Binding(get: { u.autoCheck }, set: { u.setAutoCheck($0) }))
             } footer: {
-                Text("Updates come from the releases page of your GitHub repository. Installing quits Holocron, swaps in the new version and opens it again. Your data folders are never changed by an update.")
+                Text("Updates come from the releases page on GitHub. Installing quits Holocron, swaps in the new version and opens it again. Your data folders are never changed by an update.")
             }
 
             Section {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.8.12
+
+- Safer updates. Holocron now only installs an update if the release includes its checksum file, and the download is checked against it before anything is replaced.
+- Updates always come from the official Holocron releases page. The GitHub repository field in Settings, then Updates has been removed.
+
 ## 1.8.11
 
 - Renaming a subject in Settings now follows through everywhere it is used: the timetable, one-off changes, lessons, results, notes, reports and its private setting. The new name is applied when you press return or click away.
