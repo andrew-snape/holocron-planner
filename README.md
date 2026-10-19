@@ -24,6 +24,8 @@ The timetable runs on an A and B fortnightly cycle that restarts each term. Whol
 
 ## What's new
 
+- **1.8.12**: Safer updates. An update is only installed if the release has a checksum file, and updates always come from the official releases page.
+- **1.8.11**: Renaming a subject follows through everywhere it is used, screens are faster, imports are safer, and update check problems show in Settings.
 - **1.8.10**: The Term grid highlights the current week.
 - **1.8.9**: First, Then and Next steps move below I can on the Class screen.
 - **1.8.8**: A student friendly Class screen, with We are learning to and I can, First, Then and Next steps you type on the screen, and a Now and Next strip.
@@ -50,7 +52,9 @@ macOS 26 or later on a Mac with Apple silicon.
 
 ## Updates
 
-Holocron checks this repository's Releases page when it opens (at most every six hours) and shows a banner when a newer version exists. **Install and restart** downloads it, checks it against its published checksum, swaps it in and reopens the app. You can also use Settings, then Updates, or the Holocron menu, then Check for Updates. If you fork the project, type your own `owner/repository` in Settings, then Updates.
+Holocron checks this repository's Releases page when it opens (at most every six hours) and shows a banner when a newer version exists. **Install and restart** downloads it, checks it against its published checksum, swaps it in and reopens the app. You can also use Settings, then Updates, or the Holocron menu, then Check for Updates. A release without a checksum file is never offered.
+
+Updates always come from this repository. If you fork the project, change `defaultRepo` in `Holocron/Views/Updater.swift` to your own `owner/repository` before building.
 
 Updates never touch your data, which lives in its own folders.
 
@@ -99,9 +103,9 @@ Replace `X.Y` with the new version number (for example `1.3`).
 
 The script needs a clean working tree, so commit everything first.
 
-With the GitHub CLI installed and signed in (`brew install gh`, then `gh auth login`) the script builds, zips, checksums, tags, pushes and creates the release. Without it, the script builds the files into a `dist` folder and prints the steps to publish them from GitHub Desktop and github.com. Either way, running copies of Holocron then offer the update.
+With the GitHub CLI installed and signed in (`brew install gh`, then `gh auth login`) the script builds, zips, checksums, tags, pushes and creates the release. Without it, the script builds the files into a `dist` folder and prints the steps to publish them from GitHub Desktop and github.com. Either way, running copies of Holocron then offer the update. If you publish by hand, attach both the `.zip` and its `.sha256` file, because the updater ignores a release that has no checksum.
 
-The updater only downloads from this repository's release files over HTTPS, requires a matching checksum when one is published, and checks that the new app is Holocron, is newer, and has an intact code signature. The old app is kept until the new one is in place and is put back if anything goes wrong.
+The updater only downloads from this repository's release files over HTTPS, requires a published checksum that matches the download, and checks that the new app is Holocron, is newer, and has an intact code signature. The old app is kept until the new one is in place and is put back if anything goes wrong.
 
 ## Performance notes
 
