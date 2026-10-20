@@ -357,6 +357,7 @@ struct SetupSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var message = ""
     @State private var importSource: URL? = nil
+    @State private var importTarget: DataFolder? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -389,7 +390,11 @@ struct SetupSheet: View {
 
             Button {
                 chooseFolder(title: "Choose the folder to import from", create: false) { url in
-                    if !model.folder.exists() { model.useFolder(DataFolder.defaultURL(), createIfNeeded: true) }
+                    // Nothing is created until Import is pressed. If the current folder is not there,
+                    // the standard iCloud folder is the one that will be made.
+                    importTarget = model.folder.exists()
+                        ? model.folder
+                        : DataFolder(url: DataFolder.defaultURL(), plannerURL: model.folder.plannerURL)
                     importSource = url
                 }
             } label: {
@@ -410,7 +415,7 @@ struct SetupSheet: View {
         .frame(width: 520)
         .sheet(isPresented: Binding(get: { importSource != nil }, set: { if !$0 { importSource = nil } }),
                onDismiss: { if model.folderOK { dismiss() } }) {
-            if let importSource { ImportSheet(source: importSource) }
+            if let importSource { ImportSheet(source: importSource, target: importTarget) }
         }
     }
 }

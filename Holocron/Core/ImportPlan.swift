@@ -108,7 +108,15 @@ extension DataFolder {
             }
             let dst = fileURL(t)
             var current: Int? = nil
-            if fm.fileExists(atPath: dst.path) { current = ArchivePlan.rowCount(dst) }
+            if fm.fileExists(atPath: dst.path) {
+                current = ArchivePlan.rowCount(dst)
+            } else if fm.fileExists(atPath: dst.deletingLastPathComponent().appendingPathComponent("." + name + ".icloud").path) {
+                // The file you would replace is in iCloud but not on this Mac yet. Replacing it now
+                // could lose it, so wait for the download.
+                try? fm.startDownloadingUbiquitousItem(at: dst)
+                problems.append("\(name) in your own folder is still downloading from iCloud. Try again in a moment.")
+                continue
+            }
             items.append(.init(table: t, from: src, to: dst, incomingRows: parsed.rows.count, currentRows: current))
         }
 
@@ -117,9 +125,21 @@ extension DataFolder {
             let dir = source.appendingPathComponent("photos", isDirectory: true)
             photos = ((try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? [])
                 .filter { $0.pathExtension.lowercased() == "jpg" }
+            let stubs = DataFolder.photoStubs(in: dir, fm: fm)
+            if !stubs.isEmpty {
+                for u in stubs { try? fm.startDownloadingUbiquitousItem(at: u) }
+                problems.append("\(stubs.count) photo\(stubs.count == 1 ? " is" : "s are") still downloading from iCloud in that folder. Try again in a moment.")
+            }
+            let mine = DataFolder.photoStubs(in: photosURL, fm: fm)
+            if !mine.isEmpty {
+                for u in mine { try? fm.startDownloadingUbiquitousItem(at: u) }
+                problems.append("\(mine.count) photo\(mine.count == 1 ? " is" : "s are") still downloading from iCloud in your own photos folder. Try again in a moment.")
+            }
         }
         if items.isEmpty && photos.isEmpty && problems.isEmpty {
-            problems.append("There is nothing from Holocron in that folder to import.")
+            problems.append(leftOut.isEmpty
+                ? "There is nothing from Holocron in that folder to import."
+                : "Your planner folder is shared, so its files were left out. Tick Also replace the shared planner files to bring them in.")
         }
         return ImportPlan(source: source, scope: scope, items: items, photos: photos, photosDestination: photosURL,
                           backup: backup, sharedPlannerLeftOut: leftOut, problems: problems)
@@ -130,12 +150,21 @@ extension ImportPlan {
     enum Failure: Error, Equatable {
         case notReady
         case backupFailed(String)
+        /// The data folder (or one inside it) could not be created.
+        case destinationNotCreated(String)
         /// A file could not be copied in. Everything already swapped in was put back.
         case copyFailed(String)
+        /// A file could not be copied in, and these files could not be put back. The originals
+        /// are in the Before import folder.
+        case rollbackIncomplete(failed: [String], backup: URL)
     }
 
     func carryOut(fm: FileManager = .default) -> Result<ImportSummary, Failure> {
         guard canRun else { return .failure(.notReady) }
+        for dir in Set(items.map { $0.to.deletingLastPathComponent() }) {
+            do { try fm.createDirectory(at: dir, withIntermediateDirectories: true) }
+            catch { return .failure(.destinationNotCreated(dir.path)) }
+        }
 
         // 1. Keep a copy of every file that is about to be replaced.
         var madeBackup = false
@@ -155,7 +184,7 @@ extension ImportPlan {
                 if madeBackup { try? fm.removeItem(at: backup) }
                 return .failure(.backupFailed(name))
             }
-            guard ArchivePlan.size(it.to, fm) == ArchivePlan.size(b, fm) else {
+            guard ArchivePlan.sameSize(it.to, b, fm) else {
                 try? fm.removeItem(at: backup)
                 return .failure(.backupFailed(name))
             }
@@ -177,8 +206,8 @@ extension ImportPlan {
                 done.append(it)
             } catch {
                 try? fm.removeItem(at: temp)
-                rollBack(done, fm)
-                return .failure(.copyFailed(name))
+                let stuck = rollBack(done, fm)
+                return .failure(stuck.isEmpty ? .copyFailed(name) : .rollbackIncomplete(failed: stuck, backup: backup))
             }
         }
 
@@ -199,7 +228,9 @@ extension ImportPlan {
                         try fm.copyItem(at: src, to: temp)
                         _ = try fm.replaceItemAt(dst, withItemAt: temp)
                     } else {
-                        try fm.copyItem(at: src, to: dst)
+                        try? fm.removeItem(at: temp)
+                        try fm.copyItem(at: src, to: temp)
+                        try fm.moveItem(at: temp, to: dst)
                     }
                     photoCount += 1
                 } catch {
@@ -213,19 +244,26 @@ extension ImportPlan {
     }
 
     /// Puts back the files already swapped in: the old copy from the backup, or no file at all
-    /// where there was none before.
-    private func rollBack(_ done: [Item], _ fm: FileManager) {
+    /// where there was none before. Returns the names of any files that could not be put back.
+    private func rollBack(_ done: [Item], _ fm: FileManager) -> [String] {
+        var stuck: [String] = []
         for it in done.reversed() {
-            let b = backup.appendingPathComponent(it.to.lastPathComponent)
+            let name = it.to.lastPathComponent
+            let b = backup.appendingPathComponent(name)
             if fm.fileExists(atPath: b.path) {
-                let temp = it.to.deletingLastPathComponent().appendingPathComponent(".restore-" + it.to.lastPathComponent)
+                let temp = it.to.deletingLastPathComponent().appendingPathComponent(".restore-" + name)
                 try? fm.removeItem(at: temp)
-                if (try? fm.copyItem(at: b, to: temp)) != nil {
-                    _ = try? fm.replaceItemAt(it.to, withItemAt: temp)
+                do {
+                    try fm.copyItem(at: b, to: temp)
+                    _ = try fm.replaceItemAt(it.to, withItemAt: temp)
+                } catch {
+                    try? fm.removeItem(at: temp)
+                    stuck.append(name)
                 }
             } else {
-                try? fm.removeItem(at: it.to)
+                do { try fm.removeItem(at: it.to) } catch { stuck.append(name) }
             }
         }
+        return stuck
     }
 }

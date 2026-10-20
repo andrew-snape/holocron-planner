@@ -56,9 +56,25 @@ extension DataFolder {
                 waiting.append(name)
             }
         }
+        let stubs = DataFolder.photoStubs(in: photosURL, fm: fm)
+        if !stubs.isEmpty {
+            for u in stubs { try? fm.startDownloadingUbiquitousItem(at: u) }
+            waiting.append(stubs.count == 1 ? "1 photo" : "\(stubs.count) photos")
+        }
         let photos = DataFolder.isDirectory(photosURL) ? photosURL : nil
         return ArchivePlan(archive: archive, label: clean, copies: copies, photosFrom: photos,
                            sharedPlannerLeftOut: leftOut, waitingOnICloud: waiting)
+    }
+}
+
+extension DataFolder {
+    /// Photos that are in iCloud but not yet downloaded here. They show up as ".1234.jpg.icloud".
+    /// The returned URLs are the real photo names, which is what a download request needs.
+    static func photoStubs(in dir: URL, fm: FileManager = .default) -> [URL] {
+        ((try? fm.contentsOfDirectory(atPath: dir.path)) ?? []).compactMap { name in
+            guard name.hasPrefix("."), name.lowercased().hasSuffix(".jpg.icloud") else { return nil }
+            return dir.appendingPathComponent(String(name.dropFirst().dropLast(".icloud".count)))
+        }
     }
 }
 
@@ -72,32 +88,38 @@ extension ArchivePlan {
     }
 
     /// Copies the files, checks every copy, and writes a README that lists what is inside.
-    /// On any failure the new archive folder is removed again.
+    /// The archive is built in a hidden folder beside the final one and only given its real name
+    /// when it is complete, so a crash or quit part-way never leaves something that looks finished.
+    /// On any failure the half-made folder is removed again.
     func carryOut(version: String, now: Date = Date(), calendar: Calendar = .current,
                   fm: FileManager = .default) -> Result<ArchiveSummary, Failure> {
         guard waitingOnICloud.isEmpty else { return .failure(.waitingOnICloud(waitingOnICloud)) }
         guard !isEmpty else { return .failure(.nothingToCopy) }
+        let parent = archive.deletingLastPathComponent()
+        let staging = StartOverPlan.uniqueFolder(in: parent, named: "." + archive.lastPathComponent + ".making", fm: fm)
         do {
-            try fm.createDirectory(at: archive, withIntermediateDirectories: true)
+            try fm.createDirectory(at: parent, withIntermediateDirectories: true)
+            try fm.createDirectory(at: staging, withIntermediateDirectories: false)
         } catch {
             return .failure(.archiveNotCreated(archive.path))
         }
         func abandon(_ f: Failure) -> Result<ArchiveSummary, Failure> {
-            try? fm.removeItem(at: archive)
+            try? fm.removeItem(at: staging)
             return .failure(f)
         }
 
         var counts: [(name: String, rows: Int)] = []
         for c in copies {
             let name = c.from.lastPathComponent
-            do { try fm.copyItem(at: c.from, to: c.to) } catch { return abandon(.copyFailed(name)) }
-            guard ArchivePlan.size(c.from, fm) == ArchivePlan.size(c.to, fm) else { return abandon(.checkFailed(name)) }
-            counts.append((name, ArchivePlan.rowCount(c.to)))
+            let dst = staging.appendingPathComponent(name)
+            do { try fm.copyItem(at: c.from, to: dst) } catch { return abandon(.copyFailed(name)) }
+            guard ArchivePlan.sameSize(c.from, dst, fm) else { return abandon(.checkFailed(name)) }
+            counts.append((name, ArchivePlan.rowCount(dst)))
         }
 
         var photoCount = 0
         if let src = photosFrom {
-            let dst = archive.appendingPathComponent("photos", isDirectory: true)
+            let dst = staging.appendingPathComponent("photos", isDirectory: true)
             do { try fm.copyItem(at: src, to: dst) } catch { return abandon(.copyFailed("photos")) }
             photoCount = ArchivePlan.jpgCount(dst, fm)
             guard photoCount == ArchivePlan.jpgCount(src, fm) else { return abandon(.checkFailed("photos")) }
@@ -127,11 +149,15 @@ extension ArchivePlan {
         ]
         do {
             try Data((lines.joined(separator: "\n") + "\n").utf8)
-                .write(to: archive.appendingPathComponent("README.txt"), options: .atomic)
+                .write(to: staging.appendingPathComponent("README.txt"), options: .atomic)
         } catch {
             return abandon(.copyFailed("README.txt"))
         }
-        return .success(ArchiveSummary(archive: archive, tables: counts, photos: photoCount))
+
+        // Last step: give it its real name. If that name was taken meanwhile, number it.
+        let final = StartOverPlan.uniqueFolder(in: parent, named: archive.lastPathComponent, fm: fm)
+        do { try fm.moveItem(at: staging, to: final) } catch { return abandon(.archiveNotCreated(final.path)) }
+        return .success(ArchiveSummary(archive: final, tables: counts, photos: photoCount))
     }
 
     /// A label that is safe to use as a folder name.
@@ -143,6 +169,12 @@ extension ArchivePlan {
 
     static func size(_ u: URL, _ fm: FileManager) -> Int? {
         (try? fm.attributesOfItem(atPath: u.path))?[.size] as? Int
+    }
+
+    /// True only when both sizes could be read and they match.
+    static func sameSize(_ a: URL, _ b: URL, _ fm: FileManager) -> Bool {
+        guard let x = size(a, fm), let y = size(b, fm) else { return false }
+        return x == y
     }
 
     static func rowCount(_ u: URL) -> Int {

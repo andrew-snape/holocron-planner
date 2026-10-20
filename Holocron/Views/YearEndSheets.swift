@@ -30,6 +30,7 @@ struct ArchiveYearSheet: View {
         }
         .padding(24)
         .frame(width: 500)
+        .interactiveDismissDisabled(working)
         .onAppear {
             if label.isEmpty { label = model.archiveYearGuess }
             refresh()
@@ -72,7 +73,7 @@ struct ArchiveYearSheet: View {
                 }
                 .card()
                 if !plan.waitingOnICloud.isEmpty {
-                    Label("\(plan.waitingOnICloud.joined(separator: ", ")) is still downloading from iCloud. Try again in a moment.",
+                    Label("Still downloading from iCloud: \(plan.waitingOnICloud.joined(separator: ", ")). Try again in a moment.",
                           systemImage: "icloud.and.arrow.down")
                         .font(.system(size: 12.5)).foregroundStyle(Color.appAmber)
                         .fixedSize(horizontal: false, vertical: true)
@@ -86,7 +87,7 @@ struct ArchiveYearSheet: View {
             HStack {
                 if working { ProgressView().controlSize(.small) }
                 Spacer()
-                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction).disabled(working)
                 Button("Make archive") { run() }
                     .buttonStyle(.borderedProminent)
                     .disabled(working || (plan?.canRun != true))
@@ -134,7 +135,7 @@ struct ArchiveYearSheet: View {
     private func message(_ f: ArchivePlan.Failure) -> String {
         switch f {
         case .nothingToCopy: return "There are no files to copy yet."
-        case .waitingOnICloud(let names): return "\(names.joined(separator: ", ")) is still downloading from iCloud. Try again in a moment."
+        case .waitingOnICloud(let names): return "Still downloading from iCloud: \(names.joined(separator: ", ")). Try again in a moment."
         case .archiveNotCreated: return "The archive folder could not be created next to your data folder."
         case .copyFailed(let n): return "\(n) could not be copied. Close any other app that has it open, then try again."
         case .checkFailed(let n): return "The copy of \(n) did not match the original, so the archive was removed."
@@ -150,7 +151,11 @@ struct ImportSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     var source: URL
+    /// Set on first run, when the data folder has not been created yet. It is created only when
+    /// Import is pressed.
+    var target: DataFolder? = nil
     @State private var scope: ImportScope = .everything
+    @State private var working = false
     @State private var includeShared = false
     @State private var plan: ImportPlan? = nil
     @State private var outcome: AppModel.ImportOutcome? = nil
@@ -163,11 +168,24 @@ struct ImportSheet: View {
         }
         .padding(24)
         .frame(width: 520)
+        .interactiveDismissDisabled(working)
         .onAppear { refresh() }
     }
 
     private func refresh() {
-        plan = model.importPlan(from: source, scope: scope, includeSharedPlanner: includeShared)
+        plan = model.importPlan(from: source, scope: scope, includeSharedPlanner: includeShared, into: target)
+    }
+
+    private func run(_ p: ImportPlan) {
+        model.prepareImport()
+        working = true
+        Task.detached {
+            let r = p.carryOut()
+            await MainActor.run {
+                working = false
+                outcome = model.finishImport(r, into: target)
+            }
+        }
     }
 
     private var form: some View {
@@ -228,11 +246,12 @@ struct ImportSheet: View {
             }
 
             HStack {
+                if working { ProgressView().controlSize(.small) }
                 Spacer()
-                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
-                Button("Import") { if let plan { outcome = model.importData(plan) } }
+                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction).disabled(working)
+                Button("Import") { if let plan { run(plan) } }
                     .buttonStyle(.borderedProminent)
-                    .disabled(plan?.canRun != true)
+                    .disabled(working || plan?.canRun != true)
             }
         }
     }

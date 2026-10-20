@@ -567,27 +567,41 @@ final class AppModel {
     }
 
     /// Works out what importing from another data folder would do. Nothing is changed.
-    func importPlan(from source: URL, scope: ImportScope, includeSharedPlanner: Bool) -> ImportPlan {
+    /// `target` is the folder to import into when it is not the one in use yet (first-run setup).
+    func importPlan(from source: URL, scope: ImportScope, includeSharedPlanner: Bool, into target: DataFolder? = nil) -> ImportPlan {
         flushNow(wait: true)
-        return folder.importPlan(from: source, scope: scope, includeSharedPlanner: includeSharedPlanner)
+        return (target ?? folder).importPlan(from: source, scope: scope, includeSharedPlanner: includeSharedPlanner)
     }
 
-    /// Brings in the files from another data folder. Every file it replaces is first copied into a
-    /// dated "Before import" folder in Holocron archive, and if anything fails it is all put back.
-    func importData(_ plan: ImportPlan) -> ImportOutcome {
-        flushNow(wait: true)
-        switch plan.carryOut() {
+    /// Call on the main thread before running `plan.carryOut()` off it, so pending edits are on disk.
+    func prepareImport() { flushNow(wait: true) }
+
+    /// Takes the result of `plan.carryOut()`, reloads from the folder and says what happened.
+    /// Every file an import replaces is first copied into a dated "Before import" folder in
+    /// Holocron archive, and if anything fails it is all put back.
+    func finishImport(_ result: Result<ImportSummary, ImportPlan.Failure>, into target: DataFolder? = nil) -> ImportOutcome {
+        switch result {
         case .failure(.notReady):
             return .failed("There is nothing to import from that folder, so nothing was changed.")
         case .failure(.backupFailed(let name)):
             return .failed("A safety copy of \(name) could not be made, so nothing was changed.")
+        case .failure(.destinationNotCreated(let path)):
+            return .failed("The folder \(path) could not be created, so nothing was changed. Check that iCloud Drive is available.")
         case .failure(.copyFailed(let name)):
+            loadAll()
             return .failed("\(name) could not be copied, so everything was put back as it was. Close any other app that has it open, then try again.")
+        case .failure(.rollbackIncomplete(let failed, let backup)):
+            loadAll()
+            return .failed("\(failed.joined(separator: ", ")) could not be put back after a problem. Your original files are safe in \(backup.path). Copy them back into your data folder and press Shift+Cmd+R.")
         case .success(let summary):
             imageCache.removeAll()
             noPhoto.removeAll()
             photoVersion += 1
-            loadAll()
+            if let t = target, t.url != folder.url {
+                useFolder(t.url, createIfNeeded: false)
+            } else {
+                loadAll()
+            }
             return .done(summary)
         }
     }
