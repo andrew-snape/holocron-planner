@@ -356,6 +356,7 @@ struct SetupSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State private var message = ""
+    @State private var importSource: URL? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -389,13 +390,12 @@ struct SetupSheet: View {
             Button {
                 chooseFolder(title: "Choose the folder to import from", create: false) { url in
                     if !model.folder.exists() { model.useFolder(DataFolder.defaultURL(), createIfNeeded: true) }
-                    message = model.importData(from: url)
-                    if model.folderOK { dismiss() }
+                    importSource = url
                 }
             } label: {
                 Label("Import my existing planner data...", systemImage: "square.and.arrow.down")
             }
-            Text("Pick an existing Holocron data folder. Its CSV files and photos are copied across.")
+            Text("Pick an existing Holocron data folder. You see what it will bring in, and anything it replaces is kept first in Holocron archive.")
                 .font(.system(size: 12)).foregroundStyle(Color.ink3)
 
             if !message.isEmpty {
@@ -408,6 +408,10 @@ struct SetupSheet: View {
         }
         .padding(24)
         .frame(width: 520)
+        .sheet(isPresented: Binding(get: { importSource != nil }, set: { if !$0 { importSource = nil } }),
+               onDismiss: { if model.folderOK { dismiss() } }) {
+            if let importSource { ImportSheet(source: importSource) }
+        }
     }
 }
 

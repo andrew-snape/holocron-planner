@@ -42,6 +42,8 @@ struct SettingsView: View {
     @State private var ntDate = todayISO()
     @State private var ntLabel = ""
     @State private var showStartOver = false
+    @State private var showArchive = false
+    @State private var importSource: URL? = nil
     /// The subject being made private, while we ask whether to copy its current lessons across.
     @State private var privatePrompt: String? = nil
 
@@ -328,6 +330,17 @@ struct SettingsView: View {
             }
 
             Section {
+                Button("Archive this year...") { showArchive = true }
+                Button("Import from folder...") {
+                    chooseFolder(title: "Choose the folder to import from", create: false) { importSource = $0 }
+                }
+            } header: {
+                Text("Year end")
+            } footer: {
+                Text("Archive this year makes a complete copy of your data in Holocron archive and changes nothing. Import from folder brings in students or the planner from another Holocron data folder, such as an archive. You see what it replaces first, and the replaced files are kept.")
+            }
+
+            Section {
                 Button("Start over...") { showStartOver = true }
                 if DataFolder.isDirectory(model.folder.archiveRoot) {
                     Button("Show archive in Finder") {
@@ -349,6 +362,10 @@ struct SettingsView: View {
         }
         .settingsForm()
         .sheet(isPresented: $showStartOver) { StartOverSheet() }
+        .sheet(isPresented: $showArchive) { ArchiveYearSheet() }
+        .sheet(isPresented: Binding(get: { importSource != nil }, set: { if !$0 { importSource = nil } })) {
+            if let importSource { ImportSheet(source: importSource) }
+        }
         .confirmationDialog("Make this subject private?", isPresented: Binding(
             get: { privatePrompt != nil }, set: { if !$0 { privatePrompt = nil } }),
             titleVisibility: .visible, presenting: privatePrompt) { name in

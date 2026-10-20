@@ -561,45 +561,48 @@ final class AppModel {
 
     // MARK: Import from another planner data folder
 
-    /// Copies every CSV (and photos) from another folder into the current one.
-    func importData(from source: URL) -> String {
+    enum ImportOutcome {
+        case done(ImportSummary)
+        case failed(String)
+    }
+
+    /// Works out what importing from another data folder would do. Nothing is changed.
+    func importPlan(from source: URL, scope: ImportScope, includeSharedPlanner: Bool) -> ImportPlan {
         flushNow(wait: true)
-        let fm = FileManager.default
-        var copied = 0
-        for t in TableName.allCases {
-            let src = source.appendingPathComponent(t.rawValue + ".csv")
-            guard fm.fileExists(atPath: src.path) else { continue }
-            let dst = folder.fileURL(t)
-            do {
-                if fm.fileExists(atPath: dst.path) {
-                    // Copy beside the old file first, then swap, so a failed copy never loses the old one.
-                    let temp = dst.deletingLastPathComponent().appendingPathComponent(".import-" + dst.lastPathComponent)
-                    try? fm.removeItem(at: temp)
-                    try fm.copyItem(at: src, to: temp)
-                    _ = try fm.replaceItemAt(dst, withItemAt: temp)
-                } else {
-                    try fm.copyItem(at: src, to: dst)
-                }
-                copied += 1
-            } catch {
-                return "Could not copy \(t.rawValue).csv"
-            }
+        return folder.importPlan(from: source, scope: scope, includeSharedPlanner: includeSharedPlanner)
+    }
+
+    /// Brings in the files from another data folder. Every file it replaces is first copied into a
+    /// dated "Before import" folder in Holocron archive, and if anything fails it is all put back.
+    func importData(_ plan: ImportPlan) -> ImportOutcome {
+        flushNow(wait: true)
+        switch plan.carryOut() {
+        case .failure(.notReady):
+            return .failed("There is nothing to import from that folder, so nothing was changed.")
+        case .failure(.backupFailed(let name)):
+            return .failed("A safety copy of \(name) could not be made, so nothing was changed.")
+        case .failure(.copyFailed(let name)):
+            return .failed("\(name) could not be copied, so everything was put back as it was. Close any other app that has it open, then try again.")
+        case .success(let summary):
+            imageCache.removeAll()
+            noPhoto.removeAll()
+            photoVersion += 1
+            loadAll()
+            return .done(summary)
         }
-        let srcPhotos = source.appendingPathComponent("photos", isDirectory: true)
-        var photos = 0
-        if let files = try? fm.contentsOfDirectory(at: srcPhotos, includingPropertiesForKeys: nil) {
-            try? fm.createDirectory(at: folder.photosURL, withIntermediateDirectories: true)
-            for f in files where f.pathExtension.lowercased() == "jpg" {
-                let dst = folder.photosURL.appendingPathComponent(f.lastPathComponent)
-                try? fm.removeItem(at: dst)
-                if (try? fm.copyItem(at: f, to: dst)) != nil { photos += 1 }
-            }
-        }
-        imageCache.removeAll()
-        noPhoto.removeAll()
-        photoVersion += 1
-        loadAll()
-        return "Imported \(copied) files and \(photos) photos"
+    }
+
+    // MARK: Year end archive
+
+    /// Works out what a year end archive would copy. Nothing is changed.
+    func archivePlan(label: String, includeSharedPlanner: Bool) -> ArchivePlan {
+        flushNow(wait: true)
+        return folder.yearArchivePlan(label: label, includeSharedPlanner: includeSharedPlanner)
+    }
+
+    /// The year to suggest for an archive: the year of the latest term, else this year.
+    var archiveYearGuess: String {
+        db.termsSorted.last?.year ?? String(yearOf(todayISO()))
     }
 
     // MARK: Start over
