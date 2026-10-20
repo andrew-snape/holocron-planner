@@ -1,6 +1,13 @@
 import SwiftUI
+import Charts
 
 // MARK: - Hours
+
+struct DottlTypeTotal: Identifiable {
+    var type: String
+    var minutes: Int
+    var id: String { type }
+}
 
 struct TermHours: Identifiable {
     var term: Term
@@ -57,6 +64,11 @@ struct HoursView: View {
                 }
                 .background(Color.white)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                if !dtSorted.isEmpty {
+                    SectionTitle("DOTTL by type this term")
+                    DottlChart(items: dtSorted.map { DottlTypeTotal(type: $0.key, minutes: $0.value) })
+                }
 
                 SectionTitle("DOTTL log")
                 DottlForm()
@@ -132,6 +144,64 @@ struct HoursView: View {
             .padding(.horizontal, 12)
             Divider()
         }
+    }
+}
+
+/// Horizontal bars of logged DOTTL time by type. Each type always gets the same colour (picked from
+/// the app palette by a stable hash of its name), and every bar is also labelled by type and value.
+private struct DottlChart: View {
+    var items: [DottlTypeTotal]
+
+    var body: some View {
+        let total = items.reduce(0) { $0 + $1.minutes }
+        let peak = items.map(\.minutes).max() ?? 0
+        let top = items.max { $0.minutes < $1.minutes }
+        VStack(alignment: .leading, spacing: 8) {
+            Chart(items) { item in
+                BarMark(
+                    x: .value("Hours", Double(item.minutes) / 60),
+                    y: .value("Type", item.type)
+                )
+                .foregroundStyle(Color.appBlue)
+                .annotation(position: .trailing, alignment: .leading) {
+                    Text(hrs(item.minutes) + " hrs")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.ink2)
+                }
+                .accessibilityLabel(item.type)
+                .accessibilityValue("\(hrs(item.minutes)) hours")
+            }
+            .chartXScale(domain: 0...(Double(max(peak, 30)) / 60 * 1.3))
+            .chartXAxis {
+                AxisMarks { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel {
+                        if let h = value.as(Double.self) {
+                            Text(hrs(h * 60) + " hrs").font(.system(size: 12))
+                        }
+                    }
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading) { _ in
+                    AxisValueLabel().font(.system(size: 12))
+                }
+            }
+            .frame(height: CGFloat(items.count) * 34 + 24)
+            .accessibilityLabel("DOTTL hours this term by type")
+
+            if let top {
+                Text("\(hrs(total)) hrs logged across \(items.count) types. Most time: \(top.type), \(hrs(top.minutes)) hrs.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.ink2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 

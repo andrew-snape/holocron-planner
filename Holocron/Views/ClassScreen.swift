@@ -207,6 +207,8 @@ struct ClassScreenView: View {
                             .buttonStyle(.plain)
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(Color.ink3)
+                            .frame(minWidth: 28, minHeight: 28)
+                            .contentShape(Rectangle())
                             .help("Type three short steps for the class to follow")
                         }
                     }
@@ -314,11 +316,11 @@ struct ClassScreenView: View {
             }
             Button { if let i = ix, i > 0 { pn = ps[i - 1].period } } label: { Image(systemName: "chevron.left") }
                 .disabled((ix ?? 0) <= 0)
-                .help("Previous lesson")
+                .help("Go to the previous lesson")
                 .accessibilityLabel("Previous lesson")
             Button { if let i = ix, i < ps.count - 1 { pn = ps[i + 1].period } } label: { Image(systemName: "chevron.right") }
                 .disabled(ix == nil || (ix ?? 0) >= ps.count - 1)
-                .help("Next lesson")
+                .help("Go to the next lesson")
                 .accessibilityLabel("Next lesson")
             if embedded {
                 Button("Pop out") { openWindow(id: "classscreen", value: ClassTarget(date: date, per: pn)) }
@@ -421,6 +423,7 @@ struct WorkCard: View {
                         .frame(maxWidth: .infinity)
                         .background(on ? Color(hex: w.hex) : Color.white)
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .accessibilityValue(on ? "Selected" : "")
                     }
                     .buttonStyle(.plain)
                 }

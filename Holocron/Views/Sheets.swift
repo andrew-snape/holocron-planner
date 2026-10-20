@@ -7,8 +7,12 @@ struct SheetFrame<Content: View>: View {
     var title: String
     var subtitle: String = ""
     var width: CGFloat = 460
+    /// True while there are unsaved edits. Closing then asks before throwing them away.
+    var dirty: Bool = false
+    var discardMessage: String = "You have changes that are not saved."
     @ViewBuilder var content: Content
     @Environment(\.dismiss) private var dismiss
+    @State private var askDiscard = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -18,11 +22,14 @@ struct SheetFrame<Content: View>: View {
                     if !subtitle.isEmpty { Text(subtitle).font(.system(size: 12.5)).foregroundStyle(Color.ink2) }
                 }
                 Spacer()
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark.circle.fill").font(.system(size: 18)).foregroundStyle(Color.ink3)
+                Button { if dirty { askDiscard = true } else { dismiss() } } label: {
+                    Image(systemName: "xmark.circle.fill").font(.system(size: 18)).foregroundStyle(Color.ink2)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Close")
+                .help("Close (Esc)")
                 .keyboardShortcut(.cancelAction)
             }
             .padding(.horizontal, 22)
@@ -37,6 +44,12 @@ struct SheetFrame<Content: View>: View {
         }
         .frame(minWidth: width, idealWidth: width, minHeight: 280, idealHeight: 420)
         .background(Color.appBG)
+        .confirmationDialog("Discard your changes?", isPresented: $askDiscard) {
+            Button("Discard changes", role: .destructive) { dismiss() }
+            Button("Keep editing", role: .cancel) {}
+        } message: {
+            Text(discardMessage)
+        }
     }
 }
 
@@ -182,6 +195,7 @@ struct DayTypeSheet: View {
                 dismiss()
             }
             .buttonStyle(.borderedProminent)
+            .keyboardShortcut(.defaultAction)
         }
         .onAppear {
             if !loaded {
@@ -264,7 +278,7 @@ struct BumpSheet: View {
                     }
                 }
                 HStack {
-                    Button("Done") { dismiss() }.buttonStyle(.borderedProminent)
+                    Button("Done") { dismiss() }.buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
                     Button("Undo") {
                         if let s = snapshot { db.undoBump(s) }
                         model.showToast("Put back")
@@ -273,13 +287,13 @@ struct BumpSheet: View {
                 }
             } else if sm.isEmpty {
                 Text("Nothing to move.").font(.system(size: 13))
-                Button("Close") { dismiss() }
+                Button("Close") { dismiss() }.keyboardShortcut(.defaultAction)
             } else if sm.contains(where: { $0.lost > 0 }) {
                 Text("\(sm.filter { $0.lost > 0 }.map { $0.subject }.joined(separator: ", ")) would run out of lessons before the end of the year, so the last summary would have nowhere to go.")
                     .font(.system(size: 13))
                 Text("Nothing has changed. Add the next term's dates in Settings, or clear the last lesson first.")
                     .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
-                Button("Close") { dismiss() }
+                Button("Close") { dismiss() }.keyboardShortcut(.defaultAction)
             } else {
                 if !intro.isEmpty { Text(intro).font(.system(size: 13)) }
                 VStack(alignment: .leading, spacing: 8) {
@@ -316,6 +330,7 @@ struct PlanSheet: View {
     @State private var draft = LessonContent()
     @State private var loaded = false
     @State private var armedClear = false
+    @State private var askCancel = false
 
     init(date: String, per: Int, startEditing: Bool) {
         self.date = date
@@ -329,7 +344,9 @@ struct PlanSheet: View {
         let p = db.period(per)
         let sub = "\(longDate(date)) · \(p?.name ?? "") · \(fmtTime(p?.start ?? "")) to \(fmtTime(p?.end ?? ""))"
         let stored = db.content(date, per)
-        SheetFrame(title: subj.isEmpty ? (p?.name ?? "Lesson") : subj, subtitle: sub, width: 640) {
+        SheetFrame(title: subj.isEmpty ? (p?.name ?? "Lesson") : subj, subtitle: sub, width: 640,
+                   dirty: editing && draft != stored,
+                   discardMessage: "This lesson has edits you have not saved.") {
             if editing {
                 form(subj: subj, stored: stored)
             } else {
@@ -424,7 +441,7 @@ struct PlanSheet: View {
                 openWindow(id: "classscreen", value: ClassTarget(date: date, per: per))
                 dismiss()
             }
-            Button("Done") { dismiss() }
+            Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
         }
         .padding(.top, 4)
     }
@@ -460,12 +477,22 @@ struct PlanSheet: View {
                 if n.hasPlan { editing = false } else { dismiss() }
             }
             .buttonStyle(.borderedProminent)
+            .keyboardShortcut("s", modifiers: .command)
             Button("Cancel") {
-                if stored.hasPlan { editing = false } else { dismiss() }
+                if draft != stored { askCancel = true } else if stored.hasPlan { editing = false } else { dismiss() }
+            }
+            .confirmationDialog("Discard your changes?", isPresented: $askCancel) {
+                Button("Discard changes", role: .destructive) {
+                    draft = stored
+                    if stored.hasPlan { editing = false } else { dismiss() }
+                }
+                Button("Keep editing", role: .cancel) {}
+            } message: {
+                Text("This lesson has edits you have not saved.")
             }
             Spacer()
             if !stored.isEmpty {
-                Button(armedClear ? "Click again to clear" : "Clear lesson") {
+                Button(armedClear ? "Click again to clear" : "Clear lesson", role: .destructive) {
                     if !armedClear { armedClear = true; return }
                     model.db.setContent(date, per, subj, LessonContent())
                     model.showToast("Lesson cleared")

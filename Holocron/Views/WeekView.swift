@@ -153,6 +153,11 @@ struct SlotCell: View {
             .onTapGesture { model.sheet = .change(date: date, per: pn) }
             .draggable(ref)
             .help("Click to change, drag onto another slot to swap")
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(subj.isEmpty ? "Not set" : subj), \(Cal.weekdayLong[day]), period \(pn)")
+            .accessibilityValue(moved ? "Changed for this date" : "")
+            .accessibilityHint("Drag onto another lesson to swap")
+            .accessibilityAddTraits(.isButton)
 
             if info.isRelease {
                 Text("Release").font(.system(size: 11.5)).foregroundStyle(tone.inkColor.opacity(0.75))
@@ -180,10 +185,14 @@ struct SlotCell: View {
                         if let link = firstLink(in: c.summary) {
                             Button { NSWorkspace.shared.open(link) } label: {
                                 Image(systemName: "link").font(.system(size: 11, weight: .semibold))
+                                    .frame(minWidth: 28, minHeight: 28)
+                                    .contentShape(Rectangle())
+                                    .padding(-5)
                             }
                             .buttonStyle(.plain)
                             .foregroundStyle(tone.inkColor)
                             .help("Open \(link.host ?? "link")")
+                            .accessibilityLabel("Open link")
                         }
                         Button {
                             model.sheet = .plan(date: date, per: pn, edit: !c.hasPlan)
@@ -197,8 +206,12 @@ struct SlotCell: View {
                             .background(Color.white.opacity(c.hasPlan ? 1 : 0.62))
                             .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).stroke(Color.black.opacity(0.08), lineWidth: 0.5))
+                            .frame(minWidth: 28, minHeight: 28)
+                            .contentShape(Rectangle())
+                            .padding(-5)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityValue(c.hasPlan ? "Has a plan" : "No plan")
                     }
                 }
             }

@@ -19,7 +19,14 @@ struct HolocronApp: App {
         }
         .defaultSize(width: 1280, height: 860)
         .commands {
-            CommandGroup(replacing: .newItem) {}
+            CommandGroup(replacing: .newItem) {
+                Button("New Student…") { model.sheet = .newStudent }
+                    .keyboardShortcut("n", modifiers: .command)
+                    .disabled(model.sheet != nil || !model.isEnabled(.students))
+                Button("Log Note…") { model.nav = .quick }
+                    .keyboardShortcut("l", modifiers: .command)
+                    .disabled(model.sheet != nil || !model.isEnabled(.quick))
+            }
             AppCommands(model: model)
             CommandMenu("Go") {
                 ForEach(Array(NavItem.allCases.enumerated()), id: \.element) { idx, item in
@@ -35,10 +42,10 @@ struct HolocronApp: App {
                     .disabled(model.nav != .today)
             }
             CommandGroup(replacing: .printItem) {
-                Button("Print Week...") { PrintWeek.open(model: model) }
+                Button("Print Week…") { PrintWeek.open(model: model) }
                     .keyboardShortcut("p", modifiers: .command)
                     .disabled(model.nav != .week)
-                Button("Save Week as PDF...") { PrintWeek.save(model: model) }
+                Button("Save Week as PDF…") { PrintWeek.save(model: model) }
                     .keyboardShortcut("p", modifiers: [.command, .shift])
                     .disabled(model.nav != .week)
             }
@@ -83,7 +90,7 @@ struct AppCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .appInfo) {
-            Button("Check for Updates...") {
+            Button("Check for Updates…") {
                 UserDefaults.standard.set(SettingsTab.updates.rawValue, forKey: "settingsTab")
                 openSettings()
                 model.updater.check(userInitiated: true)

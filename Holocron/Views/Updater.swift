@@ -279,8 +279,8 @@ struct UpdateBanner: View {
                     }
                 }
                 Spacer()
-                if case .working = u.state {
-                    ProgressView().controlSize(.small)
+                if case .working(let what) = u.state {
+                    ProgressView().controlSize(.small).accessibilityLabel(what)
                 } else {
                     Button("What's new") { u.openDownloadPage() }
                     Button("Install and restart") { u.install() }.buttonStyle(.borderedProminent)
@@ -312,7 +312,7 @@ struct UpdatesSettings: View {
                 HStack {
                     Button("Check now") { u.check(userInitiated: true) }
                         .disabled(u.state == .checking)
-                    if case .checking = u.state { ProgressView().controlSize(.small) }
+                    if case .checking = u.state { ProgressView().controlSize(.small).accessibilityLabel("Checking for updates") }
                     statusText(u)
                     Spacer()
                     if let info = u.pending {

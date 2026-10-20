@@ -57,6 +57,7 @@ struct SettingsView: View {
                     .tag(t)
             }
         }
+        .navigationTitle(tab.title)
     }
 
     @ViewBuilder
@@ -144,6 +145,7 @@ struct SettingsView: View {
                         .frame(width: 130)
                         ColorPicker("Colour", selection: colourBinding(i), supportsOpacity: false)
                             .labelsHidden()
+                            .accessibilityValue(subjectRows[i].s("colour"))
                         Spacer()
                     }
                 }

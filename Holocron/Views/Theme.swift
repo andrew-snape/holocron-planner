@@ -402,7 +402,12 @@ struct DeleteButton: View {
             Text(armed ? "Click again" : "Delete")
                 .font(.system(size: 12))
                 .foregroundStyle(armed ? Color.appRed : Color.ink2)
+                .padding(.horizontal, 4)
+                .frame(minHeight: 28)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(armed ? "Click again to confirm delete" : "Delete")
+        .help(armed ? "Click again to delete" : "Delete this entry")
     }
 }

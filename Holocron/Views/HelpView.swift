@@ -241,6 +241,7 @@ struct HelpCallout: View {
             Image(systemName: kind == .info ? "info.circle.fill" : "exclamationmark.triangle.fill")
                 .foregroundStyle(kind == .info ? Color.appBlue : Color.appAmber)
                 .padding(.top, 1)
+                .accessibilityLabel(kind == .info ? "Note" : "Caution")
             VStack(alignment: .leading, spacing: 3) {
                 Text(title).font(.system(size: 13.5, weight: .semibold))
                 helpText(text)

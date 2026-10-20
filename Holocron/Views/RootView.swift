@@ -21,6 +21,7 @@ struct RootView: View {
                 }
                 if let t = model.toast {
                     Text(t)
+                        .accessibilityLabel(t)
                         .font(.system(size: 12.5, weight: .medium))
                         .padding(.vertical, 7)
                         .padding(.horizontal, 14)
@@ -32,6 +33,7 @@ struct RootView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.2), value: model.toast)
+            .navigationTitle(model.nav.title)
         }
         .onGeometryChange(for: CGFloat.self) { proxy in
             proxy.size.width

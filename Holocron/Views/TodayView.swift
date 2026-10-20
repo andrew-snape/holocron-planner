@@ -151,6 +151,7 @@ struct BlockRow: View {
                 HStack(spacing: 6) {
                     Text(subj.isEmpty ? "Not set" : subj)
                         .font(.system(size: 15, weight: .semibold)).foregroundStyle(tone.inkColor)
+                        .accessibilityValue(isNow ? "Happening now" : "")
                     if c.hasPlan { TagLabel(text: "Plan", fg: tone.inkColor, bg: Color.white.opacity(0.7)) }
                     if moved { Circle().fill(Color.appAmber).frame(width: 6, height: 6).help("Moved for today") }
                 }
@@ -321,9 +322,13 @@ struct TodoPanel: View {
             } label: {
                 Image(systemName: done ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(done ? Color.appGreen : Color.ink3)
+                    .frame(minWidth: 28, minHeight: 28)
+                    .contentShape(Rectangle())
+                    .padding(-5)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(done ? "Mark not done" : "Mark done")
+            .help(done ? "Reopen this to-do" : "Complete this to-do")
             Text(x.s("text"))
                 .font(.system(size: 13.5))
                 .strikethrough(done)
@@ -332,10 +337,16 @@ struct TodoPanel: View {
             if !done, !x.s("due").isEmpty { dueLabel(x.s("due")) }
             Button {
                 model.db.deleteRow(.todo, id: id)
-            } label: { Image(systemName: "xmark").font(.system(size: 10)) }
+            } label: {
+                Image(systemName: "xmark").font(.system(size: 10))
+                    .frame(minWidth: 28, minHeight: 28)
+                    .contentShape(Rectangle())
+                    .padding(-5)
+            }
                 .buttonStyle(.plain)
                 .foregroundStyle(Color.ink3)
                 .accessibilityLabel("Delete to-do")
+                .help("Delete this item")
         }
     }
 

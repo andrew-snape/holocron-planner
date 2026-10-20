@@ -85,7 +85,11 @@ struct ArchiveYearSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack {
-                if working { ProgressView().controlSize(.small) }
+                if working {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel(plan.map { "Copying \(plural($0.copies.count, "file")) and the student photos" } ?? "Copying files")
+                }
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction).disabled(working)
                 Button("Make archive") { run() }
@@ -246,7 +250,11 @@ struct ImportSheet: View {
             }
 
             HStack {
-                if working { ProgressView().controlSize(.small) }
+                if working {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel(plan.map { "Importing \(plural($0.items.count, "file")) and \(plural($0.photos.count, "photo"))" } ?? "Importing files")
+                }
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction).disabled(working)
                 Button("Import") { if let plan { run(plan) } }

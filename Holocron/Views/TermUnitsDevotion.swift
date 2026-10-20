@@ -124,6 +124,7 @@ struct TermView: View {
                         }
                         .labelsHidden()
                         .frame(width: 160)
+                        .accessibilityLabel("Subject")
                     }
                     TermStatBar(build: b, tone: tone)
                     TermGridScroller(build: b, tone: tone)
@@ -168,6 +169,9 @@ struct TermStatBar: View {
                 .clipShape(Capsule())
             }
             .frame(height: 10)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Term progress")
+            .accessibilityValue("\(build.plan) full plan\(build.plan == 1 ? "" : "s"), \(build.summary) summary only, \(build.empty) not planned")
             HStack(spacing: 16) {
                 legend(tone.barColor, "\(build.plan) full plan\(build.plan == 1 ? "" : "s")")
                 legend(tone.barColor.opacity(0.4), "\(build.summary) summary only")
@@ -291,6 +295,7 @@ struct TermGrid: View {
             .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
         }
         .buttonStyle(.plain)
+        .accessibilityValue(l.status == .plan ? "Full plan" : (l.status == .summary ? "Summary only" : "Not planned"))
     }
 }
 
@@ -426,6 +431,7 @@ struct UnitCard: View {
                     .background(Color.white.opacity(isFocus ? 0.9 : 0.5))
                     .overlay(Capsule().stroke(isFocus ? tone.barColor : Color.clear, lineWidth: 1.5))
                     .clipShape(Capsule())
+                    .accessibilityValue(isFocus ? "Focus" : "")
                 }
             }
         }
@@ -458,6 +464,7 @@ struct UnitSheet: View {
                     ForEach(PYP.themes.map { $0.name }, id: \.self) { Text($0).tag($0) }
                 }
                 .labelsHidden()
+                .accessibilityLabel("Transdisciplinary theme")
             }
             HStack(alignment: .top, spacing: 16) {
                 OptionalDate(label: "Starts", iso: b("start"))
@@ -482,11 +489,11 @@ struct UnitSheet: View {
             NoteBox(label: "Reflection", hint: "at the end of the unit", text: b("reflection"), lines: 3)
             if !error.isEmpty { Text(error).font(.system(size: 12.5)).foregroundStyle(Color.appRed) }
             HStack {
-                Button("Save") { save() }.buttonStyle(.borderedProminent)
+                Button("Save") { save() }.buttonStyle(.borderedProminent).keyboardShortcut("s", modifiers: .command)
                 Button("Cancel") { dismiss() }
                 Spacer()
                 if !isNew {
-                    Button(armDelete ? "Click again to delete" : "Delete unit") {
+                    Button(armDelete ? "Click again to delete" : "Delete unit", role: .destructive) {
                         if !armDelete { armDelete = true; return }
                         model.db.deleteRow(.units, id: unitID)
                         model.showToast("Unit deleted")
@@ -542,6 +549,7 @@ struct OptionalDate: View {
                     DatePicker("", selection: isoBinding({ iso }, { iso = $0 }), displayedComponents: .date)
                         .labelsHidden()
                         .datePickerStyle(.field)
+                        .accessibilityLabel(label)
                     Button("Clear") { iso = "" }
                 }
             }
@@ -596,6 +604,7 @@ struct DevotionView: View {
                         }
                         .labelsHidden()
                         .frame(width: 300)
+                        .accessibilityLabel("Devotion date")
                     }
                     DevotionCard(d: d)
                 }

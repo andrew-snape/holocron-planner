@@ -28,6 +28,7 @@ struct ResultModePicker: View {
         .pickerStyle(.segmented)
         .labelsHidden()
         .frame(width: 190)
+        .accessibilityLabel("Result type")
         .help("Type a score, or pick Extending, Mastering, Consolidating, Developing, Emerging or Modified")
     }
 }
@@ -47,5 +48,6 @@ struct LevelPicker: View {
             }
         }
         .labelsHidden()
+        .accessibilityLabel("Achievement level")
     }
 }

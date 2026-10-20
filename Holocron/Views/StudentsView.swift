@@ -5,13 +5,33 @@ import AppKit
 
 struct StudentsView: View {
     @Environment(AppModel.self) private var model
+    @State private var query = ""
+    @State private var narrow = false
+
+    /// The roster, narrowed by the search field. Matches any part of the full name or the house.
+    private var roster: [Student] {
+        let all = model.db.roster
+        let q = query.trimmingCharacters(in: .whitespaces)
+        guard !q.isEmpty else { return all }
+        return all.filter { $0.fullName.localizedCaseInsensitiveContains(q) || $0.house.localizedCaseInsensitiveContains(q) }
+    }
 
     var body: some View {
         GeometryReader { geo in
-            if geo.size.width < 660 {
+            if model.db.roster.isEmpty {
+                noStudents
+            } else if geo.size.width < 660 {
                 compact
             } else {
                 wide
+            }
+        }
+        .onGeometryChange(for: Bool.self) { $0.size.width < 660 } action: { narrow = $0 }
+        .modifier(StudentSearch(query: $query, active: !model.db.roster.isEmpty && !narrow))
+        .onChange(of: query) { _, _ in
+            // Keep the detail pane on someone who is in the filtered list.
+            if let sel = model.selectedStudent, !roster.contains(where: { $0.id == sel }), let first = roster.first {
+                model.selectedStudent = first.id
             }
         }
         .onAppear {
@@ -22,10 +42,18 @@ struct StudentsView: View {
         }
     }
 
+    private var noStudents: some View {
+        VStack(spacing: 14) {
+            EmptyNote(title: "No students yet", message: "Add your class to log notes, mark work and build report packs.")
+            Button("Add student") { model.sheet = .newStudent }
+                .buttonStyle(.borderedProminent)
+        }
+        .padding(40)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
     private var wide: some View {
-        let db = model.db
-        let roster = db.roster
-        return HStack(spacing: 0) {
+        HStack(spacing: 0) {
             VStack(spacing: 0) {
                 HStack {
                     Text("Students").font(.system(size: 17, weight: .bold))
@@ -43,6 +71,13 @@ struct StudentsView: View {
                         ForEach(roster) { s in
                             StudentListRow(student: s, selected: model.selectedStudent == s.id)
                                 .onTapGesture { model.selectedStudent = s.id }
+                                .accessibilityElement(children: .combine)
+                                .accessibilityAddTraits(model.selectedStudent == s.id ? [.isButton, .isSelected] : .isButton)
+                        }
+                        if roster.isEmpty {
+                            Text("No match for \u{201C}\(query)\u{201D}")
+                                .font(.system(size: 13)).foregroundStyle(Color.ink2)
+                                .padding(.top, 20)
                         }
                     }
                     .padding(8)
@@ -57,13 +92,11 @@ struct StudentsView: View {
 
     /// Narrow windows (split screen): a menu of names above the detail instead of the list.
     private var compact: some View {
-        let db = model.db
-        let roster = db.roster
-        return VStack(spacing: 0) {
+        VStack(spacing: 0) {
             HStack(spacing: 10) {
                 Picker("", selection: Binding(get: { model.selectedStudent ?? "" },
                                               set: { model.selectedStudent = $0 })) {
-                    ForEach(roster) { s in Text(s.fullName).tag(s.id) }
+                    ForEach(model.db.roster) { s in Text(s.fullName).tag(s.id) }
                 }
                 .labelsHidden()
                 Spacer(minLength: 0)
@@ -93,6 +126,20 @@ struct StudentsView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// The toolbar search field, shown only when the list it filters is on screen.
+private struct StudentSearch: ViewModifier {
+    @Binding var query: String
+    var active: Bool
+
+    func body(content: Content) -> some View {
+        if active {
+            content.searchable(text: $query, placement: .toolbar, prompt: "Search students")
+        } else {
+            content
+        }
     }
 }
 
@@ -766,7 +813,7 @@ struct DetailsTab: View {
             NoteBox(label: "Medical", text: bind(\.medical), lines: 2)
             NoteBox(label: "Notes", text: bind(\.notes), lines: 3)
             Divider()
-            Button(armDelete ? "Click again to delete this student and all their notes" : "Delete student") {
+            Button(armDelete ? "Click again to delete this student and all their notes" : "Delete student", role: .destructive) {
                 if !armDelete { armDelete = true; return }
                 model.db.removeStudent(sid)
                 model.selectedStudent = model.db.roster.first?.id
@@ -807,6 +854,7 @@ struct NewStudentSheet: View {
                 dismiss()
             }
             .buttonStyle(.borderedProminent)
+            .keyboardShortcut(.defaultAction)
             .disabled(first.trimmingCharacters(in: .whitespaces).isEmpty)
         }
     }
@@ -900,9 +948,13 @@ struct QuickLogView: View {
                             .disabled(chosen.isEmpty)
                     }
                 }
-                LazyVGrid(columns: cols, spacing: 12) {
-                    ForEach(db.roster) { s in
-                        tile(s, today: counts[s.id] ?? 0)
+                if db.roster.isEmpty {
+                    EmptyNote(title: "No students yet", message: "Add your class under Students, then log notes from here.")
+                } else {
+                    LazyVGrid(columns: cols, spacing: 12) {
+                        ForEach(db.roster) { s in
+                            tile(s, today: counts[s.id] ?? 0)
+                        }
                     }
                 }
             }
@@ -943,6 +995,8 @@ struct QuickLogView: View {
                 .stroke(on ? Color.appBlue : Color.clear, lineWidth: 2))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(today > 0 ? "\(s.fullName), \(today) logged today" : s.fullName)
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 }
 
