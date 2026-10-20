@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.9.0
+
+- Year end. Archive this year copies your data folder into a Holocron archive folder without changing anything, checks each copy and writes a README. Import from folder now shows what it will replace, checks the source, saves the replaced files into a Before import folder first, and rolls back if a step fails.
+- Sheets now follow Mac habits. Return confirms and Escape closes, Cmd+S saves a lesson or unit, and closing a lesson with unsaved edits asks before discarding them.
+- New in the File menu: New Student (Cmd+N) and Log Note (Cmd+L). The window title now shows the screen you are on, and Settings shows the tab.
+- Students has a search field in the toolbar, and Students and Quick log say what to do when there are no students yet.
+- Hours has a bar chart of DOTTL time by type for the term.
+- Better for VoiceOver and for small click targets across Week, Today, Class screen, Terms, Units, Help and Settings.
+
 ## 1.8.12
 
 - Safer updates. Holocron now only installs an update if the release includes its checksum file, and the download is checked against it before anything is replaced.
