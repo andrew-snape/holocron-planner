@@ -1,4 +1,6 @@
 # Changelog
+## 1.9.1
+- Minor Updates
 
 ## 1.9.0
 
