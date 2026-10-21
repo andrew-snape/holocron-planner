@@ -4,6 +4,14 @@ import AppKit
 @main
 struct HolocronApp: App {
     @State private var model = AppModel()
+    private let auLocale = Locale(identifier: "en_AU")
+    private let auCalendar: Calendar = {
+        var c = Calendar(identifier: .gregorian)
+        c.locale = Locale(identifier: "en_AU")
+        c.timeZone = .current
+        c.firstWeekday = 2
+        return c
+    }()
 
     init() {
         // Light mode only, by choice.
@@ -14,6 +22,8 @@ struct HolocronApp: App {
         WindowGroup {
             RootView()
                 .environment(model)
+                .environment(\.locale, auLocale)
+                .environment(\.calendar, auCalendar)
                 .preferredColorScheme(.light)
                 .frame(minWidth: 520, minHeight: 480)
         }
@@ -60,6 +70,8 @@ struct HolocronApp: App {
             if let t = target {
                 ClassScreenView(initial: t)
                     .environment(model)
+                    .environment(\.locale, auLocale)
+                    .environment(\.calendar, auCalendar)
                     .preferredColorScheme(.light)
                     .frame(minWidth: 700, minHeight: 480)
             }
@@ -69,6 +81,8 @@ struct HolocronApp: App {
         Settings {
             SettingsView()
                 .environment(model)
+                .environment(\.locale, auLocale)
+                .environment(\.calendar, auCalendar)
                 .preferredColorScheme(.light)
                 .frame(minWidth: 540, idealWidth: 600, minHeight: 460, idealHeight: 620)
         }
@@ -76,6 +90,8 @@ struct HolocronApp: App {
         Window("Holocron Help", id: "help") {
             HelpView()
                 .environment(model)
+                .environment(\.locale, auLocale)
+                .environment(\.calendar, auCalendar)
                 .preferredColorScheme(.light)
         }
         .defaultSize(width: 920, height: 680)
