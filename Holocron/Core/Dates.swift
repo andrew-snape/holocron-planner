@@ -4,7 +4,7 @@ import Foundation
 /// so they sort and compare as text. All maths is integer calendar maths (no time zones).
 enum Cal {
     static let weekdayLong = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    static let weekdayInitials = ["M", "T", "W", "T", "F", "S", "S"]
+    static let weekdayInitials = ["M", "Tu", "W", "Th", "F", "Sa", "Su"]
     static let weekdayShort = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     static let monthShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     static let monthLong = ["January", "February", "March", "April", "May", "June", "July",
