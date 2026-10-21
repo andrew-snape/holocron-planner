@@ -270,6 +270,7 @@ struct TodoPanel: View {
     @State private var text = ""
     @State private var hasDue = false
     @State private var due = Date()
+    private var canAdd: Bool { !text.trimmed.isEmpty }
 
     var body: some View {
         let db = model.db
@@ -277,7 +278,7 @@ struct TodoPanel: View {
         let done = db.doneTodayTodos()
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("To do").font(.system(size: 13, weight: .semibold))
+                Text("To-do").font(.system(size: 13, weight: .semibold))
                 if !open.isEmpty { Text("\(open.count)").font(.system(size: 12)).foregroundStyle(Color.ink2) }
             }
             VStack(alignment: .leading, spacing: 6) {
@@ -288,6 +289,7 @@ struct TodoPanel: View {
                         .textFieldStyle(.roundedBorder)
                         .onSubmit(add)
                     Button("Add", action: add).controlSize(.small)
+                        .disabled(!canAdd)
                 }
                 HStack(spacing: 6) {
                     Toggle("Due", isOn: $hasDue).toggleStyle(.checkbox).font(.system(size: 12))
