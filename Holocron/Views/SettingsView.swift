@@ -229,10 +229,19 @@ struct SettingsView: View {
                         .textFieldStyle(.roundedBorder)
                         .labelsHidden()
                     Button("Add day") {
-                        guard !ntLabel.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-                        db.append(.nonteaching, ["date": ntDate, "label": ntLabel.trimmingCharacters(in: .whitespaces)])
+                        let label = ntLabel.trimmingCharacters(in: .whitespaces)
+                        guard !label.isEmpty else { return }
+                        var updated = false
+                        db.update(.nonteaching, where: { $0.s("date") == ntDate }) { row in
+                            row["label"] = label
+                            updated = true
+                        }
+                        if !updated {
+                            db.append(.nonteaching, ["date": ntDate, "label": label])
+                        }
                         db.touch(.nonteaching)
                         ntLabel = ""
+                        model.showToast(updated ? "Updated non-teaching day" : "Added non-teaching day")
                     }
                     .disabled(ntLabel.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
