@@ -1,4 +1,10 @@
 # Changelog
+## Unreleased
+
+- Import results from a spreadsheet. In Mark class (or File, then Import Results…), choose an Excel or CSV export and Holocron matches its columns, subjects and students before anything is saved. Essential Assessment exports are recognised as they are, with each strand and focus area, pre and post test, percentage, achievement level, range and growth. For other spreadsheets the columns are matched from their headers, and on a Mac with Apple Intelligence it can suggest them, on this Mac only.
+- Students not on your roll are left out, so a whole-school export only brings in your class. Close names such as Alex and Alexander are marked for you to check, and a student you pick by hand is remembered by the file's student ID for next time.
+- Importing a newer export of the same tests updates those results instead of adding them twice, and keeps anything you typed in the comment. assessments.csv is copied into a Before results import folder in Holocron archive first.
+
 ## 1.9.1
 - Minor Updates
 

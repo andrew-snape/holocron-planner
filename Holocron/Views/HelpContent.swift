@@ -71,7 +71,7 @@ struct HelpUsingPage: View {
                     "**Class screen:** a student friendly view for the projector. It shows what we are learning (We are learning to), the success criteria (I can), First, Then and Next steps you can type straight onto the screen, what is on now and what comes next, and a timer. Click a step's heading to highlight the one the class is on. **Pop out** opens it in its own window.",
                     "**Students:** the class list on the left and a record on the right, with tabs for notes, assessments, wellbeing, behaviour and plan notes, plus a report pack.",
                     "**Quick log:** pick several students from the photo grid and add one note to all of them.",
-                    "**Mark class:** mark the whole class on one task. Type a score or pick an achievement level.",
+                    "**Mark class:** mark the whole class on one task. Type a score or pick an achievement level. **Import results…** brings in results from a spreadsheet such as an Essential Assessment export. You check the columns, subjects and students before anything is saved, and students who are not on your roll are left out.",
                     "**Hours:** face to face time, release time and duties other than teaching and learning (DOTTL), by term and for the year. Wellbeing entries record which period was lost.",
                     "**Settings:** tabs across the top for your class name, which screens are switched on, periods, subjects, terms, non-teaching days, updates and your data folders.",
                 ])

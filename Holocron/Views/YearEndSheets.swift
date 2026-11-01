@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-private func plural(_ n: Int, _ one: String, _ many: String? = nil) -> String {
+func plural(_ n: Int, _ one: String, _ many: String? = nil) -> String {
     "\(n) " + (n == 1 ? one : (many ?? one + "s"))
 }
 

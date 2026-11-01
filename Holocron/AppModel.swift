@@ -69,6 +69,7 @@ enum ActiveSheet: Identifiable {
     case pack(studentID: String)
     case quick(ids: [String])
     case newStudent
+    case importResults(url: URL)
 
     var id: String {
         switch self {
@@ -82,6 +83,7 @@ enum ActiveSheet: Identifiable {
         case .pack(let s): return "pack-\(s)"
         case .quick(let ids): return "quick-" + ids.joined(separator: ",")
         case .newStudent: return "newstudent"
+        case .importResults(let u): return "importresults-" + u.path
         }
     }
 }
@@ -604,6 +606,51 @@ final class AppModel {
             }
             return .done(summary)
         }
+    }
+
+    // MARK: Import results from a spreadsheet
+
+    enum ResultsOutcome {
+        case done(backup: URL?)
+        case failed(String)
+    }
+
+    /// Saves imported results. assessments.csv is first copied into a dated "Before results import"
+    /// folder in Holocron archive, and nothing is changed if that copy cannot be made.
+    func importResults(_ changes: ResultsChanges, remember: [String: String], fm: FileManager = .default) -> ResultsOutcome {
+        flushNow(wait: true)
+        guard folder.exists() else { return .failed("The data folder could not be found, so nothing was changed.") }
+        guard !badLoads.contains(TableName.assessments.rawValue) else {
+            return .failed("assessments.csv could not be read, so it was not changed. Fix or move the file, then press Shift+Cmd+R.")
+        }
+        let file = folder.fileURL(.assessments)
+        var backup: URL? = nil
+        if fm.fileExists(atPath: file.path) {
+            let dir = StartOverPlan.uniqueFolder(in: folder.archiveRoot, named: "Before results import " + StartOverPlan.stamp(Date(), .current), fm: fm)
+            let copy = dir.appendingPathComponent(file.lastPathComponent)
+            do {
+                try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+                try fm.copyItem(at: file, to: copy)
+            } catch {
+                try? fm.removeItem(at: dir)
+                return .failed("A safety copy of assessments.csv could not be made, so nothing was changed.")
+            }
+            guard ArchivePlan.sameSize(file, copy, fm) else {
+                try? fm.removeItem(at: dir)
+                return .failed("A safety copy of assessments.csv could not be made, so nothing was changed.")
+            }
+            backup = dir
+        }
+        let expected = db.rows(.assessments).count + changes.added.count
+        db.applyResults(changes, remember: remember)
+        flushNow(wait: true)
+        // flushNow reports a failed write only as a toast, so check the file itself.
+        guard ArchivePlan.rowCount(file) == expected else {
+            loadAll()
+            return .failed("The results could not be saved to assessments.csv, so they were not imported. Check that your data folder is available, then try again."
+                           + (backup.map { " A copy from before is in \($0.path)." } ?? ""))
+        }
+        return .done(backup: backup)
     }
 
     // MARK: Year end archive

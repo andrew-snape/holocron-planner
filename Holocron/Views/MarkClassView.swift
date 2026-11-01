@@ -27,7 +27,11 @@ struct MarkClassView: View {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
                     Text("Mark class").font(.system(size: 28, weight: .bold)).tracking(-0.5)
                     Text("One task, the whole roll, saved in a single pass").font(.system(size: 13)).foregroundStyle(Color.ink2)
+                        .lineLimit(2)
                     Spacer()
+                    Button { chooseResultsFile(model) } label: { Label("Import results…", systemImage: "square.and.arrow.down") }
+                        .fixedSize()
+                        .help("Bring in results from a spreadsheet, such as an Essential Assessment export")
                 }
                 VStack(alignment: .leading, spacing: 12) {
                     FlowLayout(spacing: 14) {
