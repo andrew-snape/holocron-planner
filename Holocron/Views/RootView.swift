@@ -111,6 +111,7 @@ struct SheetRouter: View {
         case .pack(let sid): PackSheet(studentID: sid)
         case .quick(let ids): QuickLogSheet(ids: ids)
         case .newStudent: NewStudentSheet()
+        case .importResults(let u): ImportResultsSheet(url: u)
         }
     }
 }

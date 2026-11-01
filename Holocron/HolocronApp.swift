@@ -36,6 +36,8 @@ struct HolocronApp: App {
                 Button("Log Note…") { model.nav = .quick }
                     .keyboardShortcut("l", modifiers: .command)
                     .disabled(model.sheet != nil || !model.isEnabled(.quick))
+                Button("Import Results…") { chooseResultsFile(model) }
+                    .disabled(model.sheet != nil || !model.isEnabled(.assess) || !model.folderOK)
             }
             AppCommands(model: model)
             CommandMenu("Go") {
