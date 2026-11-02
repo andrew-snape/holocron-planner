@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.11.0
 
 - Dictate notes. In Quick log, choose Dictate… and say your notes for several students at once. With Apple Intelligence on, Holocron sorts what you said into a note for each student, with the subject and whether it is a lesson, behaviour or wellbeing note, for you to check before saving. A student who was not named is never added, and if two students share a first name you are asked which one.
 - Draft report comments. On a student's Report tab, Draft comment writes a general comment in your voice, learnt from your earlier comments, using the semester's notes, results, report judgements and unit. Draft for the class… does every student without a comment, for you to go through one by one. Choose she, he or they for each student. Wellbeing, behaviour, medical notes, adjustments and plan notes are never used, and no score or report label is quoted.
