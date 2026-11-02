@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.13.0
+## 1.13.1
 Fixing AI Guardrails
 
 ## 1.13.0
