@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.13.0
 
 - Import Essential Assessment report comments. Choose a Report Comments export in Import results… and Holocron recognises it, matches the students, and keeps each student's Areas of Success, Growth and Improvement with the semester. Import one file for each strand. Importing the same strand again replaces the earlier comments.
 - Draft Mathematics points (and English, for literacy strands) now builds on those comments: what a student understands and has grown in becomes "[Name] has:", and what they still have to work on becomes "Areas for [Name] to focus on:". The imported comments are shown under the comment box on the Report tab.
