@@ -35,21 +35,22 @@ enum Intelligence {
     static func can(_ f: AIFeature, _ db: Database) -> Bool { isAvailable && db.aiEnabled(f) }
 
     /// A plain message for an error from the on-device model.
-    /// True when there was more to read than the model can take at once. macOS 27 reports it with a new error.
+    /// True when there was more to read than the model can take at once. macOS 27 reports it with a
+    /// new error type that older SDKs do not have, so that one is recognised by name.
     static func isTooLong(_ error: Error) -> Bool {
         if case LanguageModelSession.GenerationError.exceededContextWindowSize = error { return true }
-        if #available(macOS 27, *), case LanguageModelError.contextSizeExceeded = error { return true }
-        return false
+        return isNewModelError(error, case: "contextSizeExceeded")
     }
 
     static func isRefusal(_ error: Error) -> Bool {
         if case LanguageModelSession.GenerationError.guardrailViolation = error { return true }
         if case LanguageModelSession.GenerationError.refusal = error { return true }
-        if #available(macOS 27, *) {
-            if case LanguageModelError.guardrailViolation = error { return true }
-            if case LanguageModelError.refusal = error { return true }
-        }
-        return false
+        return isNewModelError(error, case: "guardrailViolation") || isNewModelError(error, case: "refusal")
+    }
+
+    /// Whether `error` is macOS 27's LanguageModelError with the given case.
+    private static func isNewModelError(_ error: Error, case name: String) -> Bool {
+        String(describing: type(of: error)) == "LanguageModelError" && Mirror(reflecting: error).children.first?.label == name
     }
 
     static func message(for error: Error) -> String {
