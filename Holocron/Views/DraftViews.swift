@@ -11,6 +11,8 @@ struct DraftBox<Extra: View>: View {
     var working: Bool
     var error: String
     var hint = ""
+    /// Things to check, such as two sentences that begin the same way.
+    var notes: [String] = []
     var useLabel = "Use"
     var use: () -> Void
     var again: () -> Void
@@ -36,6 +38,15 @@ struct DraftBox<Extra: View>: View {
             if !hint.isEmpty {
                 Text(hint).font(.system(size: 12)).foregroundStyle(Color.ink2)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+            if !notes.isEmpty && !working {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Check before you use it").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.ink2)
+                    ForEach(notes, id: \.self) { n in
+                        Label(n, systemImage: "pencil.circle").font(.system(size: 12)).foregroundStyle(Color.ink2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
             }
             if !error.isEmpty {
                 Label(error, systemImage: "exclamationmark.triangle")
@@ -98,6 +109,7 @@ struct CommentDraftArea: View {
                 }
                 if open {
                     DraftBox(text: $text, working: working, error: error,
+                             notes: text.isEmpty ? [] : CommentDrafter.styleProblems(text, name: db.student(sid)?.usualName ?? ""),
                              use: { db.generalComment(sid, sem: sem).trimmed.isEmpty ? use(replace: true) : (askReplace = true) },
                              again: start, discard: discard) { EmptyView() }
                 }
@@ -151,6 +163,100 @@ struct CommentDraftArea: View {
         task?.cancel()
         task = nil
         run = UUID()
+        open = false
+        working = false
+        text = ""
+        error = ""
+    }
+}
+
+// MARK: English and Mathematics comments
+
+/// A student's English or Mathematics comment: dot points under "[Name] has:" and
+/// "Areas for [Name] to focus on:", with a draft and a copy in SIMON's %* format.
+struct DotPointCommentBox: View {
+    @Environment(AppModel.self) private var model
+    var sid: String
+    var sem: String
+    var kind: ReportComment
+    @State private var text = ""
+    @State private var open = false
+    @State private var working = false
+    @State private var error = ""
+    @State private var task: Task<Void, Never>? = nil
+    @State private var askReplace = false
+
+    var body: some View {
+        let db = model.db
+        let saved = db.reportText(sid, sem: sem, kind.rawValue)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                FieldLabel(text: kind.title, hint: kind == .english
+                           ? "4 to 6 achievements and 3 to 6 next steps, covering reading, writing, and speaking and listening"
+                           : "4 to 6 achievements and 3 to 6 next steps, covering number and one other area")
+                Spacer()
+                if !saved.trimmed.isEmpty {
+                    Button("Copy for SIMON") { model.copyText(DotPointDrafter.forSIMON(saved), toast: "Copied with %* dot points") }
+                        .controlSize(.small)
+                        .help("Copies the points with %* at the start of each, ready to paste into SIMON")
+                }
+            }
+            TextEditor(text: Binding(get: { db.reportText(sid, sem: sem, kind.rawValue) },
+                                     set: { db.setReportText(sid, sem: sem, kind.rawValue, $0) }))
+                .writingToolsBehavior(.complete)
+                .font(.system(size: 13))
+                .frame(minHeight: 110)
+                .scrollContentBackground(.hidden)
+                .textBox()
+                .accessibilityLabel(kind.title)
+            if Intelligence.can(.drafts, db) {
+                Button { start() } label: { Label("Draft \(kind == .english ? "English" : "Mathematics") points", systemImage: "apple.intelligence") }
+                    .disabled(working)
+                    .help("Apple Intelligence drafts the points from this semester's \(kind == .english ? "English" : "Mathematics") notes, results and judgements")
+                if open {
+                    DraftBox(text: $text, working: working, error: error,
+                             hint: "Each point starts with a lower case letter and ends with a full stop. Lines starting with - become dot points.",
+                             use: { saved.trimmed.isEmpty ? use() : (askReplace = true) }, again: start, discard: discard) { EmptyView() }
+                }
+            }
+        }
+        .confirmationDialog("Replace the \(kind.title.lowercased()) you have written?", isPresented: $askReplace) {
+            Button("Replace it", role: .destructive) { use() }
+            Button("Cancel", role: .cancel) {}
+        }
+        .onChange(of: sid) { discard() }
+        .onChange(of: sem) { discard() }
+        .onDisappear { discard() }
+    }
+
+    private func start() {
+        let db = model.db
+        task?.cancel()
+        open = true
+        working = true
+        error = ""
+        text = ""
+        task = Task {
+            do {
+                let t = try await DotPointDrafter.draft(db, sid: sid, sem: sem, kind: kind)
+                if Task.isCancelled { return }
+                text = t
+            } catch {
+                if Task.isCancelled { return }
+                self.error = Intelligence.message(for: error)
+            }
+            working = false
+        }
+    }
+
+    private func use() {
+        model.db.setReportText(sid, sem: sem, kind.rawValue, text.trimmed)
+        discard()
+    }
+
+    private func discard() {
+        task?.cancel()
+        task = nil
         open = false
         working = false
         text = ""

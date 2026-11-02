@@ -26,7 +26,7 @@ enum TableName: String, CaseIterable {
 
     var header: [String] {
         switch self {
-        case .students:      return ["id", "first", "surname", "birthdate", "parents", "house", "roles", "adjustments", "nccd", "medical", "notes"]
+        case .students:      return ["id", "first", "surname", "birthdate", "parents", "house", "roles", "adjustments", "nccd", "medical", "notes", "preferred", "ilp"]
         case .subjects:      return ["subject", "kind", "colour"]
         case .periods:       return ["period", "name", "start", "end"]
         case .timetable:     return ["week", "day", "period", "subject"]
@@ -47,7 +47,7 @@ enum TableName: String, CaseIterable {
         case .units:         return ["id", "title", "theme", "central_idea", "lines", "concepts", "related", "atl", "profile", "start", "end", "notes", "reflection"]
         case .todo:          return ["id", "text", "due", "done", "created"]
         case .reportjudge:   return ["id", "student_id", "sem", "subject", "achievement", "engagement"]
-        case .reportcomment: return ["id", "student_id", "sem", "general"]
+        case .reportcomment: return ["id", "student_id", "sem", "general", "english", "maths", "context"]
         case .classsteps:    return ["date", "period", "first", "then", "next"]
         case .settings:      return ["key", "value"]
         }

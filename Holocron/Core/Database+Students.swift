@@ -363,16 +363,22 @@ extension Database {
         touch(.reportjudge)
     }
 
-    func generalComment(_ sid: String, sem: String) -> String {
-        rows(.reportcomment).first(where: { $0.s("student_id") == sid && $0.s("sem") == sem })?.s("general") ?? ""
+    func generalComment(_ sid: String, sem: String) -> String { reportText(sid, sem: sem, "general") }
+
+    func setGeneralComment(_ sid: String, sem: String, text: String) { setReportText(sid, sem: sem, "general", text) }
+
+    /// One of a student's report texts for a semester: "general", "english", "maths" or "context"
+    /// (the teacher's notes for drafting).
+    func reportText(_ sid: String, sem: String, _ field: String) -> String {
+        rows(.reportcomment).first(where: { $0.s("student_id") == sid && $0.s("sem") == sem })?.s(field) ?? ""
     }
 
-    func setGeneralComment(_ sid: String, sem: String, text: String) {
+    func setReportText(_ sid: String, sem: String, _ field: String, _ text: String) {
         let match: (Row) -> Bool = { $0.s("student_id") == sid && $0.s("sem") == sem }
         if rows(.reportcomment).contains(where: match) {
-            update(.reportcomment, where: match) { $0["general"] = text }
+            update(.reportcomment, where: match) { $0[field] = text }
         } else {
-            append(.reportcomment, ["id": uid(), "student_id": sid, "sem": sem, "general": text])
+            append(.reportcomment, ["id": uid(), "student_id": sid, "sem": sem, field: text])
         }
         touch(.reportcomment)
     }

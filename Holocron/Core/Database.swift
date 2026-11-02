@@ -45,23 +45,32 @@ struct Student: Identifiable, Equatable {
     var nccd: String
     var medical: String
     var notes: String
+    /// The name used at school when it is different from the formal first name, such as Shirley for Qixuan.
+    var preferred: String
+    /// "yes" when the student has an Individual Learning Plan.
+    var ilp: String
     var fullName: String { surname.isEmpty ? first : first + " " + surname }
+    var hasILP: Bool { ilp == "yes" }
+    /// The name to use after the first mention in a report.
+    var usualName: String { preferred.trimmed.isEmpty ? first : preferred.trimmed }
 
     init(row: Row) {
         id = row.s("id"); first = row.s("first"); surname = row.s("surname")
         birthdate = row.s("birthdate"); parents = row.s("parents"); house = row.s("house")
         roles = row.s("roles"); adjustments = row.s("adjustments"); nccd = row.s("nccd")
-        medical = row.s("medical"); notes = row.s("notes")
+        medical = row.s("medical"); notes = row.s("notes"); preferred = row.s("preferred"); ilp = row.s("ilp")
     }
 
     init(id: String, first: String, surname: String) {
         self.id = id; self.first = first; self.surname = surname
         birthdate = ""; parents = ""; house = ""; roles = ""; adjustments = ""; nccd = ""; medical = ""; notes = ""
+        preferred = ""; ilp = ""
     }
 
     var asRow: Row {
         ["id": id, "first": first, "surname": surname, "birthdate": birthdate, "parents": parents,
-         "house": house, "roles": roles, "adjustments": adjustments, "nccd": nccd, "medical": medical, "notes": notes]
+         "house": house, "roles": roles, "adjustments": adjustments, "nccd": nccd, "medical": medical, "notes": notes,
+         "preferred": preferred, "ilp": ilp]
     }
 }
 

@@ -714,6 +714,11 @@ struct ReportTab: View {
                     }
                     .labelsHidden()
                     .frame(width: 170)
+                    if db.judgement(sid, sem: current, subject: subj).achievement == "Modified" && db.student(sid)?.hasILP != true {
+                        Label("Modified is for students with an ILP. Tick Has an ILP in Details, or choose another level.", systemImage: "exclamationmark.triangle")
+                            .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 .padding(.vertical, 6)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -725,12 +730,20 @@ struct ReportTab: View {
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
+        if Intelligence.can(.drafts, db) {
+            NoteBox(label: "Notes for drafting", hint: "only used for drafts, such as the unit project, a goal or a specialist's comment",
+                    text: Binding(get: { db.reportText(sid, sem: current, "context") }, set: { db.setReportText(sid, sem: current, "context", $0) }),
+                    lines: 2, placeholder: "Podcast on Federation for the unit. Goal: asking for help sooner.")
+        }
+
         let general = db.generalComment(sid, sem: current)
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 FieldLabel(text: "General comment")
                 Spacer()
-                Text("\(wordCount(general)) words").font(.system(size: 11.5)).foregroundStyle(Color.ink2)
+                Text("\(wordCount(general)) words").font(.system(size: 11.5))
+                    .foregroundStyle(wordCount(general) > 150 ? Color.appRed : Color.ink2)
+                    .help("The general comment should be 100 to 150 words")
             }
             TextEditor(text: Binding(get: { db.generalComment(sid, sem: current) },
                                      set: { db.setGeneralComment(sid, sem: current, text: $0) }))
@@ -738,10 +751,11 @@ struct ReportTab: View {
                 .font(.system(size: 13))
                 .frame(minHeight: 160)
                 .scrollContentBackground(.hidden)
-                .padding(8)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .textBox()
             CommentDraftArea(sid: sid, sem: current)
+        }
+        ForEach([ReportComment.english, .maths]) { kind in
+            DotPointCommentBox(sid: sid, sem: current, kind: kind)
         }
     }
 
@@ -780,9 +794,10 @@ struct DetailsTab: View {
         let s = model.db.student(sid)
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 12) {
-                LineField(label: "First name", text: bind(\.first))
+                LineField(label: "First name", hint: "formal", text: bind(\.first))
                 LineField(label: "Surname", text: bind(\.surname))
             }
+            LineField(label: "Preferred name", hint: "if different, such as Shirley for Qixuan. Reports write Qixuan (Shirley) once, then Shirley", text: bind(\.preferred))
             HStack(alignment: .bottom, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     FieldLabel(text: "Birth date")
@@ -810,6 +825,10 @@ struct DetailsTab: View {
             }
             LineField(label: "Parents", hint: "names only", text: bind(\.parents))
             LineField(label: "Current responsibilities", hint: "for example SRC or school captain", text: bind(\.roles))
+            Toggle("Has an Individual Learning Plan", isOn: Binding(get: { model.db.student(sid)?.hasILP ?? false },
+                                                                    set: { v in if var s = model.db.student(sid) { s.ilp = v ? "yes" : ""; model.db.updateStudent(s) } }))
+                .toggleStyle(.checkbox)
+                .help("Report drafts add your ILP sentence at the end, and a Modified grade is only expected for students with an ILP")
             NoteBox(label: "Adjustments", text: bind(\.adjustments), lines: 2)
             NoteBox(label: "NCCD", text: bind(\.nccd), lines: 2)
             NoteBox(label: "Medical", text: bind(\.medical), lines: 2)

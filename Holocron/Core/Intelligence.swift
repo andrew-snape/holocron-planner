@@ -35,15 +35,35 @@ enum Intelligence {
     static func can(_ f: AIFeature, _ db: Database) -> Bool { isAvailable && db.aiEnabled(f) }
 
     /// A plain message for an error from the on-device model.
+    /// True when there was more to read than the model can take at once. macOS 27 reports it with a new error.
+    static func isTooLong(_ error: Error) -> Bool {
+        if case LanguageModelSession.GenerationError.exceededContextWindowSize = error { return true }
+        if #available(macOS 27, *), case LanguageModelError.contextSizeExceeded = error { return true }
+        return false
+    }
+
+    static func isRefusal(_ error: Error) -> Bool {
+        if case LanguageModelSession.GenerationError.guardrailViolation = error { return true }
+        if case LanguageModelSession.GenerationError.refusal = error { return true }
+        if #available(macOS 27, *) {
+            if case LanguageModelError.guardrailViolation = error { return true }
+            if case LanguageModelError.refusal = error { return true }
+        }
+        return false
+    }
+
     static func message(for error: Error) -> String {
+        if case CommentDrafter.DraftError.privateInNotes = error {
+            return "The draft mentioned something private, which came from your Notes for drafting or your report rules. Take out words such as ILP, meeting or diagnosis there, then try again."
+        }
         if case CommentDrafter.DraftError.privateTerm = error {
             return "The draft mentioned something private, such as a plan, a meeting or a diagnosis, so it was not shown. Try again, or write this one yourself."
         }
-        if case LanguageModelSession.GenerationError.guardrailViolation = error {
+        if isRefusal(error) {
             return "Apple Intelligence would not write this one. Try again, or write it yourself."
         }
-        if case LanguageModelSession.GenerationError.exceededContextWindowSize = error {
-            return "There was too much to fit in one go."
+        if isTooLong(error) {
+            return "There was too much to fit in one go. Shorten your rules or the notes for this draft, then try again."
         }
         return "Apple Intelligence could not finish. Try again in a moment."
     }
