@@ -32,10 +32,7 @@ struct SuggestedColumns {
 }
 
 enum ColumnSuggest {
-    static var isAvailable: Bool {
-        if case .available = SystemLanguageModel.default.availability { return true }
-        return false
-    }
+    static var isAvailable: Bool { Intelligence.isAvailable }
 
     /// Suggested columns for a table. Headers the model names that are not in the table are ignored.
     static func suggest(_ table: ResultsTable) async throws -> ColumnMap {

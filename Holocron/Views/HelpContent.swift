@@ -82,6 +82,7 @@ struct HelpUsingPage: View {
                     "**Switch off what you do not use.** In Settings, then General, every screen except Today can be turned off.",
                     "**Saving is automatic.** Every change is written to your CSV files and a small confirmation appears. If a red banner says No data folder connected, nothing is saved until you reconnect a folder.",
                     "**Sharing the planner.** In Settings, then Data, you can point the planner at a shared folder so colleagues use the same timetable. Student records stay in your private folder. Under Privacy on the same tab, you can keep your Devotion scripts and the lessons for particular subjects to yourself.",
+                    "**Siri and Shortcuts.** Ask Siri, or type into Spotlight: “What's next in Holocron?”, “What's on tomorrow in Holocron?”, “When is Maths in Holocron?”, “Log a note for Ava in Holocron” or “Start a Holocron timer”. The same actions are in the Shortcuts app. Siri only says or suggests student names once you switch that on in Settings, then Apple Intelligence, and never while the Class screen is showing. Reading birthdays, logging a note and copying a day need your Mac to be unlocked.",
                     "**Updates.** Holocron checks GitHub when it opens. Choose **Holocron, then Check for Updates** at any time.",
                 ])
             }

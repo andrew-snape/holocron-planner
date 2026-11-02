@@ -3,7 +3,7 @@ import AppKit
 
 @main
 struct HolocronApp: App {
-    @State private var model = AppModel()
+    @State private var model: AppModel
     private let auLocale = Locale(identifier: "en_AU")
     private let auCalendar: Calendar = {
         var c = Calendar(identifier: .gregorian)
@@ -16,6 +16,9 @@ struct HolocronApp: App {
     init() {
         // Light mode only, by choice.
         NSApplication.shared.appearance = NSAppearance(named: .aqua)
+        let m = AppModel()
+        _model = State(initialValue: m)
+        IntentHost.model = m
     }
 
     var body: some Scene {

@@ -14,13 +14,14 @@ extension View {
 }
 
 enum SettingsTab: String, CaseIterable, Identifiable {
-    case general, timetable, calendar, updates, data
+    case general, timetable, calendar, intelligence, updates, data
     var id: String { rawValue }
     var title: String {
         switch self {
         case .general: return "General"
         case .timetable: return "Timetable"
         case .calendar: return "Calendar"
+        case .intelligence: return "Apple Intelligence"
         case .updates: return "Updates"
         case .data: return "Data"
         }
@@ -30,6 +31,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .general: return "gearshape"
         case .timetable: return "clock"
         case .calendar: return "calendar"
+        case .intelligence: return "apple.intelligence"
         case .updates: return "arrow.down.circle"
         case .data: return "externaldrive"
         }
@@ -66,6 +68,7 @@ struct SettingsView: View {
         case .general: generalTab
         case .timetable: timetableTab
         case .calendar: calendarTab
+        case .intelligence: IntelligenceSettings()
         case .updates: UpdatesSettings()
         case .data: dataTab
         }

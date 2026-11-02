@@ -1,4 +1,10 @@
 # Changelog
+## Unreleased
+
+- Siri, Spotlight and Shortcuts. Ask “What's next in Holocron?”, “What's on today” or “tomorrow”, “When is Maths in Holocron?” or “Any birthdays this week in Holocron?”. You can also log a note for a student (Siri checks with you before saving), add a to-do, copy today for a relief teacher, open the Class screen or start the class timer. Every action is also in the Shortcuts app, ready to build into your own shortcuts.
+- Student names stay private. Siri only says or suggests them once you switch that on in Settings, then Apple Intelligence, and never while the Class screen is showing. Birthdays, notes and copying a day need your Mac to be unlocked, and Siri only says Saved once the note is on disk.
+- New Settings, then Apple Intelligence tab. It shows whether Apple Intelligence is ready on this Mac, lets you switch off each suggestion feature, and lists what you can ask Siri. Everything runs on this Mac.
+
 ## 1.9.2
 
 - Import results from a spreadsheet. In Mark class (or File, then Import Results…), choose an Excel or CSV export and Holocron matches its columns, subjects and students before anything is saved. Essential Assessment exports are recognised as they are, with each strand and focus area, pre and post test, percentage, achievement level, range and growth. For other spreadsheets the columns are matched from their headers, and on a Mac with Apple Intelligence it can suggest them, on this Mac only.

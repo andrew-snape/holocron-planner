@@ -87,7 +87,7 @@ struct ImportResultsSheet: View {
             draft = d
             remap()
             showColumns = !d.map.isComplete || d.map.source.isEmpty
-            if !d.map.isComplete && ColumnSuggest.isAvailable { suggest() }
+            if !d.map.isComplete && canSuggest { suggest() }
         }
     }
 
@@ -144,6 +144,8 @@ struct ImportResultsSheet: View {
             suggesting = false
         }
     }
+
+    private var canSuggest: Bool { ColumnSuggest.isAvailable && model.db.aiEnabled(.columns) }
 
     private var teachSubjects: [String] {
         model.db.subjects.filter { $0.kind == "teach" }.map { $0.subject }
@@ -214,7 +216,7 @@ struct ImportResultsSheet: View {
             }
             HStack(spacing: 8) {
                 Button(showColumns ? "Hide columns" : "Change columns") { showColumns.toggle() }
-                if ColumnSuggest.isAvailable {
+                if canSuggest {
                     if suggesting {
                         ProgressView().controlSize(.small).accessibilityLabel("Suggesting columns")
                     } else {

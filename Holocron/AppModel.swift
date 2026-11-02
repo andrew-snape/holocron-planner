@@ -121,6 +121,10 @@ final class AppModel {
 
     /// The Class screen timer, shared by the sidebar module and the pop-out window.
     let classTimer = ClassTimer()
+    /// The Class screens on show, in the window or popped out. Siri leaves names out while any are.
+    var classScreens: Set<UUID> = []
+    /// The students and subjects last given to Siri, so they are only sent again when they change.
+    @ObservationIgnored private var siriVocabulary = ""
 
     /// Looks for new versions on GitHub Releases and installs them.
     let updater = Updater()
@@ -304,6 +308,7 @@ final class AppModel {
         if !folderThere { folderMessage = missingMessage(folder) }
         else { folderMessage = messages.isEmpty ? "" : messages.joined(separator: ". ") }
         if !db.termsSorted.isEmpty && termKey.isEmpty { termKey = termDefault() }
+        refreshSiriVocabulary()
 
         // A photo that was missing may have arrived from iCloud since.
         if !force, !noPhoto.isEmpty {
@@ -606,6 +611,29 @@ final class AppModel {
             }
             return .done(summary)
         }
+    }
+
+    // MARK: Siri
+
+    /// Lets Siri recognise this class's subjects, and students when names are allowed, in phrases.
+    func refreshSiriVocabulary() {
+        let names = db.siriMayUseNames ? db.roster.map { $0.id + $0.fullName }.joined(separator: "|") : ""
+        let v = names + "#" + db.subjectNames.joined(separator: "|")
+        guard v != siriVocabulary else { return }
+        siriVocabulary = v
+        HolocronShortcuts.updateAppShortcutParameters()
+    }
+
+    /// Whether a table can be changed now: the folder is there and the file was read properly.
+    func canWrite(_ t: TableName) -> Bool {
+        folder.exists() && !badLoads.contains(t.rawValue)
+    }
+
+    /// Writes waiting changes and checks the table's file now holds every row. For Siri, which
+    /// should only say Saved once the note is on disk.
+    func saveNow(_ t: TableName) -> Bool {
+        flushNow(wait: true)
+        return canWrite(t) && ArchivePlan.rowCount(folder.fileURL(t)) == db.rows(t).count
     }
 
     // MARK: Import results from a spreadsheet
