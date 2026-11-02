@@ -43,6 +43,28 @@ struct IntelligenceSettings: View {
             }
 
             Section {
+                VStack(alignment: .leading, spacing: 4) {
+                    TextEditor(text: Binding(get: { db.reportRules }, set: { db.setReportRules($0) }))
+                        .font(.body)
+                        .frame(minHeight: 110)
+                        .scrollContentBackground(.hidden)
+                        .textBox()
+                        .accessibilityLabel("Report comment rules")
+                    Text("\(db.reportRules.count) of \(Database.reportRulesLimit) characters")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                LabeledContent("ILP sentence") {
+                    TextField("", text: Binding(get: { db.ilpSentence }, set: { db.setILPSentence($0) }), axis: .vertical)
+                        .lineLimit(2...4)
+                        .textFieldStyle(.roundedBorder)
+                }
+            } header: {
+                Text("Report comments")
+            } footer: {
+                Text("Your rules are followed in every draft, on top of Holocron's style: plain Australian English, 100 to 150 words, short sentences, positive framing and no labels or scores. For example: \"Mention our school value of Hope\" or \"Avoid the word excellent\". The ILP sentence is added to the end of the general comment for students with Has an ILP ticked, with [name] replaced by their name. Leave it empty to add nothing.")
+            }
+
+            Section {
                 Toggle(isOn: Binding(get: { db.siriMayUseNames }, set: { db.setSiriMayUseNames($0); model.refreshSiriVocabulary() })) {
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Siri can say and suggest student names")

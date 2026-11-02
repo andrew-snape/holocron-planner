@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Report drafts follow school reporting style: plain Australian English, 100 to 150 words, short sentences, a positive opening, one area of need framed as growth and a warm close, with no labels, scores, exclamation marks or words such as good and nice. Spellings such as focused, benefited, judgement and program are fixed, and numbers up to ten are written as words. Anything left to check, such as two sentences that begin the same way, is listed beside the draft.
+- Your own rules for report comments, in Settings, then Apple Intelligence, are followed in every draft.
+- Students can have a preferred name. Reports write the formal name first, as Qixuan (Shirley), then the preferred name.
+- Tick Has an ILP in a student's details and drafts end with your ILP sentence, which you can change in Settings. Holocron adds it; the drafter never writes about the plan. Choosing Modified for a student without an ILP shows a reminder.
+- English and Mathematics comments on the Report tab, as dot points under "[Name] has:" and "Areas for [Name] to focus on:". Draft them from the semester's notes and results, then Copy for SIMON pastes them with %* dot points.
+- Notes for drafting on the Report tab let you add what a draft should mention, such as the unit project or a specialist's comment.
+
 ## 1.11.0
 
 - Dictate notes. In Quick log, choose Dictate… and say your notes for several students at once. With Apple Intelligence on, Holocron sorts what you said into a note for each student, with the subject and whether it is a lesson, behaviour or wellbeing note, for you to check before saving. A student who was not named is never added, and if two students share a first name you are asked which one.
