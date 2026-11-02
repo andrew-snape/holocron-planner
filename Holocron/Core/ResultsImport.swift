@@ -12,6 +12,8 @@ struct ResultsTable {
     var name: String
     var header: [String]
     var rows: [[String]]
+    /// Rows above the header, such as a title or "Strand: Number".
+    var preamble: [[String]] = []
 
     func value(_ row: [String], _ col: Int?) -> String {
         guard let c = col, c < row.count else { return "" }
@@ -46,13 +48,16 @@ struct ResultsTable {
         grid = grid.filter { $0.contains { !$0.trimmingCharacters(in: .whitespaces).isEmpty } }
         // Some exports put a title or report date above the real header. Take the fullest of the
         // first few rows as the header.
-        let top = grid.prefix(8).enumerated().max { a, b in
-            a.element.filter { !$0.isEmpty }.count < b.element.filter { !$0.isEmpty }.count
+        // The fullest row wins, and of rows equally full the first.
+        var top: (offset: Int, element: [String])? = nil
+        for (i, r) in grid.prefix(8).enumerated() where r.filter({ !$0.isEmpty }).count > (top?.element.filter { !$0.isEmpty }.count ?? 0) {
+            top = (i, r)
         }
         guard let h = top, h.element.filter({ !$0.isEmpty }).count >= 2, grid.count > h.offset + 1 else { throw Failure.empty }
         return ResultsTable(name: url.lastPathComponent,
                             header: h.element.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) },
-                            rows: Array(grid.dropFirst(h.offset + 1)))
+                            rows: Array(grid.dropFirst(h.offset + 1)),
+                            preamble: Array(grid.prefix(h.offset)))
     }
 
     /// Splits CSV or tab separated text into rows, keeping every column in order. Quoted fields
@@ -309,7 +314,8 @@ struct ResultsDraft {
         self.map = map
     }
 
-    private func personID(_ row: [String]) -> String {
+    /// Who a row is about: the file's student ID when there is one, else the folded name.
+    func personID(_ row: [String]) -> String {
         let ref = table.value(row, map[.ref])
         if !ref.isEmpty { return "ref:" + ref }
         let (f, s) = names(row)

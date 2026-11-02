@@ -9,6 +9,8 @@ enum TableName: String, CaseIterable {
     case lessonsprivate
     /// Mac app only: the First, Then and Next steps typed on the Class screen. Kept in the student folder.
     case classsteps
+    /// Mac app only: report comments imported from Essential Assessment, by student, semester and strand.
+    case strandcomments
     /// Mac app only: key and value pairs such as which modules are switched off.
     case settings
 
@@ -49,6 +51,7 @@ enum TableName: String, CaseIterable {
         case .reportjudge:   return ["id", "student_id", "sem", "subject", "achievement", "engagement"]
         case .reportcomment: return ["id", "student_id", "sem", "general", "english", "maths", "context"]
         case .classsteps:    return ["date", "period", "first", "then", "next"]
+        case .strandcomments: return ["id", "student_id", "sem", "strand", "substrand", "success", "growth", "improve", "imported"]
         case .settings:      return ["key", "value"]
         }
     }

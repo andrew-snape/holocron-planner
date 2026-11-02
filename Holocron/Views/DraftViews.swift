@@ -185,10 +185,12 @@ struct DotPointCommentBox: View {
     @State private var error = ""
     @State private var task: Task<Void, Never>? = nil
     @State private var askReplace = false
+    @State private var showSource = false
 
     var body: some View {
         let db = model.db
         let saved = db.reportText(sid, sem: sem, kind.rawValue)
+        let imported = db.strandComments(sid, sem: sem, for: kind)
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 FieldLabel(text: kind.title, hint: kind == .english
@@ -209,10 +211,34 @@ struct DotPointCommentBox: View {
                 .scrollContentBackground(.hidden)
                 .textBox()
                 .accessibilityLabel(kind.title)
+            if !imported.isEmpty {
+                DisclosureGroup(isExpanded: $showSource) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(imported, id: \.self) { c in
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(c.s("substrand").isEmpty ? c.s("strand") : "\(c.s("strand")) (\(c.s("substrand")))")
+                                    .font(.system(size: 12, weight: .semibold))
+                                ForEach([("Success", "success"), ("Growth", "growth"), ("Improvement", "improve")], id: \.1) { label, key in
+                                    if !c.s(key).isEmpty {
+                                        Text("\(label): ").font(.system(size: 12, weight: .medium)) + Text(c.s(key)).font(.system(size: 12))
+                                    }
+                                }
+                            }
+                            .foregroundStyle(Color.ink2)
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .padding(.top, 4)
+                } label: {
+                    Text("From Essential Assessment: " + imported.map { $0.s("strand") }.joined(separator: ", "))
+                        .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                }
+            }
             if Intelligence.can(.drafts, db) {
                 Button { start() } label: { Label("Draft \(kind == .english ? "English" : "Mathematics") points", systemImage: "apple.intelligence") }
                     .disabled(working)
-                    .help("Apple Intelligence drafts the points from this semester's \(kind == .english ? "English" : "Mathematics") notes, results and judgements")
+                    .help("Apple Intelligence drafts the points from this semester's \(kind == .english ? "English" : "Mathematics") notes, results, judgements and any Essential Assessment report comments")
                 if open {
                     DraftBox(text: $text, working: working, error: error,
                              hint: "Each point starts with a lower case letter and ends with a full stop. Lines starting with - become dot points.",

@@ -24,6 +24,8 @@ struct ImportResultsSheet: View {
     var url: URL
 
     @State private var draft: ResultsDraft? = nil
+    /// Set when the file is Essential Assessment's report comments rather than results.
+    @State private var strandFile: StrandCommentsFile? = nil
     @State private var people: [ImportPerson] = []
     /// People matched to the roll when the columns were last set. Kept apart from the pickers so a
     /// row stays in its list while the teacher changes it.
@@ -55,6 +57,8 @@ struct ImportResultsSheet: View {
                     .font(.system(size: 13)).foregroundStyle(Color.appRed)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack { Spacer(); Button("Close") { dismiss() }.keyboardShortcut(.defaultAction) }
+            } else if let f = strandFile {
+                StrandCommentsImport(file: f)
             } else if draft != nil {
                 form
             } else {
@@ -82,6 +86,11 @@ struct ImportResultsSheet: View {
         case .failure:
             loadError = "\(url.lastPathComponent) has no rows of results under a header."
         case .success(let table):
+            if let f = StrandCommentsFile(table) { strandFile = f; return }
+            if StrandCommentsFile.matches(table) {
+                loadError = "This looks like Essential Assessment report comments, but the strand (such as \"Strand: Number\") could not be found above the student list, so nothing can be imported."
+                return
+            }
             var d = ResultsDraft(table: table, map: ColumnMap.guess(table.header))
             d.fixedSubject = teachSubjects.first ?? ""
             draft = d

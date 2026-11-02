@@ -104,6 +104,18 @@ extension Database {
             }
         }
 
+        // Essential Assessment's own report comments are the strongest evidence for English and Mathematics.
+        if kind != .general {
+            let limit = detail >= 3 ? 450 : 200
+            for c in strandComments(sid, sem: sem, for: kind) {
+                let label = c.s("substrand").isEmpty ? c.s("strand") : "\(c.s("strand")) (\(c.s("substrand")))"
+                lines.append("Essential Assessment, \(label):")
+                if !c.s("success").isEmpty { lines.append("- Understands: " + clip(c.s("success"), limit)) }
+                if !c.s("growth").isEmpty { lines.append("- Has grown in: " + clip(c.s("growth"), limit)) }
+                if !c.s("improve").isEmpty { lines.append("- Still to work on: " + clip(c.s("improve"), limit)) }
+            }
+        }
+
         let tests = logRows(.assessments, student: sid).filter(inRange).prefix(detail * 4)
         if !tests.isEmpty {
             lines.append("Assessments: " + tests.map { "\($0.s("subject")) \($0.s("task")) \($0.s("result"))" }.joined(separator: "; "))
@@ -478,9 +490,11 @@ enum DotPointDrafter {
         """
 
     static func coverage(_ kind: ReportComment) -> String {
-        kind == .english
+        "When Essential Assessment lists are given, base the achievements on what the student understands and has grown in, "
+            + "and the areas to focus on on what they still have to work on, rewording each concept as a past or -ing action. "
+            + (kind == .english
             ? "Across the points, cover reading, writing, and speaking and listening."
-            : "Across the points, cover number and at least one other area, such as measurement, space, statistics or algebra."
+            : "Across the points, cover number and at least one other area, such as measurement, space, statistics or algebra.")
     }
 
     @MainActor

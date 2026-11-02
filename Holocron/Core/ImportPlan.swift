@@ -27,7 +27,7 @@ enum ImportScope: String, CaseIterable, Identifiable {
 
 extension TableName {
     /// The tables that hold students and what is recorded about them.
-    static let studentRecords: [TableName] = [.students, .assessments, .plannotes, .wellbeing, .behaviour,
+    static let studentRecords: [TableName] = [.students, .assessments, .plannotes, .wellbeing, .behaviour, .strandcomments,
                                               .lessonnotes, .reportjudge, .reportcomment]
 }
 
