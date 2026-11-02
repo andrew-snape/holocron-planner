@@ -82,6 +82,8 @@ struct CommentDraftArea: View {
     @State private var open = false
     @State private var working = false
     @State private var error = ""
+    /// Said beside a draft that had to leave some notes out.
+    @State private var notice = ""
     @State private var task: Task<Void, Never>? = nil
     /// Which draft is wanted, so a late answer from one that was discarded is ignored.
     @State private var run = UUID()
@@ -108,7 +110,7 @@ struct CommentDraftArea: View {
                     Button("Draft for the class…") { showClass = true }.fixedSize()
                 }
                 if open {
-                    DraftBox(text: $text, working: working, error: error,
+                    DraftBox(text: $text, working: working, error: error, hint: notice,
                              notes: text.isEmpty ? [] : CommentDrafter.styleProblems(text, name: db.student(sid)?.usualName ?? ""),
                              use: { db.generalComment(sid, sem: sem).trimmed.isEmpty ? use(replace: true) : (askReplace = true) },
                              again: start, discard: discard) { EmptyView() }
@@ -136,14 +138,15 @@ struct CommentDraftArea: View {
         open = true
         working = true
         error = ""
+        notice = ""
         text = ""
         let pronoun = db.pronoun(sid) ?? .they
         task = Task {
             do {
-                let t = try await CommentDrafter.draft(db, sid: sid, sem: sem, pronoun: pronoun, words: db.typicalCommentWords) { w in
+                let d = try await CommentDrafter.draft(db, sid: sid, sem: sem, pronoun: pronoun, words: db.typicalCommentWords) { w in
                     if run == me { text = w }
                 }
-                if run == me { text = t }
+                if run == me { text = d.text; notice = d.notice ?? "" }
             } catch is CancellationError {
             } catch {
                 if run == me { self.error = Intelligence.message(for: error); text = "" }
@@ -167,6 +170,7 @@ struct CommentDraftArea: View {
         working = false
         text = ""
         error = ""
+        notice = ""
     }
 }
 
@@ -392,12 +396,12 @@ struct ClassDraftsSheet: View {
                 current = sid
                 failed[sid] = nil
                 do {
-                    let t = try await CommentDrafter.draft(db, sid: sid, sem: sem, pronoun: db.pronoun(sid) ?? .they,
+                    let d = try await CommentDrafter.draft(db, sid: sid, sem: sem, pronoun: db.pronoun(sid) ?? .they,
                                                            words: db.typicalCommentWords) { w in
                         if !Task.isCancelled { drafts[sid] = w }
                     }
                     if Task.isCancelled { drafts[sid] = nil; break }
-                    drafts[sid] = t
+                    drafts[sid] = d.text
                 } catch is CancellationError {
                     drafts[sid] = nil
                     break

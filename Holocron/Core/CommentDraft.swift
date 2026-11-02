@@ -76,8 +76,10 @@ extension Database {
 
     func setPronoun(_ sid: String, _ p: Pronoun) { setSetting("pronoun_" + sid, p.rawValue) }
 
-    /// What the drafter is told about a student, as short lines. `detail` trims it when it is too long.
-    func reportFacts(_ sid: String, sem: String, for kind: ReportComment = .general, detail: Int = 3) -> String {
+    /// What the drafter is told about a student, as short lines. `detail` trims it when it is too long,
+    /// and `omit` leaves out notes the on-device model would not take.
+    func reportFacts(_ sid: String, sem: String, for kind: ReportComment = .general, detail: Int = 3,
+                     omit: CommentDrafter.Omit = .nothing) -> String {
         guard let s = student(sid) else { return "" }
         let r = semesterRange(sem)
         func inRange(_ x: Row) -> Bool { x.s("date") >= r.from && x.s("date") <= r.to && kind.covers(x.s("subject")) }
@@ -86,7 +88,7 @@ extension Database {
         if kind == .general && !s.roles.trimmed.isEmpty { lines.append("Roles: \(s.roles.trimmed)") }
 
         let context = reportText(sid, sem: sem, "context").trimmed
-        if !context.isEmpty { lines.append("The teacher's notes for this report: " + clip(maskingNames(context, keep: sid), 600)) }
+        if !context.isEmpty && omit < .allNotes { lines.append("The teacher's notes for this report: " + clip(maskingNames(context, keep: sid), 600)) }
 
         let judged = reportSubjects.filter(kind.covers).compactMap { subj -> String? in
             let j = judgement(sid, sem: sem, subject: subj)
@@ -126,7 +128,8 @@ extension Database {
         func line(_ r: Row) -> String {
             "- " + (r.s("subject").isEmpty ? "" : "\(r.s("subject")): ") + clip(maskingNames(r.s("note"), keep: sid), 160)
         }
-        let unitNotes = notes.filter(isUnit), otherNotes = notes.filter { !isUnit($0) }
+        let unitNotes = omit < .unitNotes ? notes.filter(isUnit) : []
+        let otherNotes = omit < .lessonNotes ? notes.filter { !isUnit($0) } : []
         if kind == .general && !unitNotes.isEmpty { lines.append("Unit work notes:"); lines += unitNotes.map(line) }
         if !otherNotes.isEmpty { lines.append("Other teacher's notes:"); lines += otherNotes.map(line) }
         return lines.joined(separator: "\n")
@@ -241,30 +244,59 @@ enum CommentDrafter {
         return privateWords.contains { w in t.range(of: "\\b" + w, options: .regularExpression) != nil }
     }
 
+    /// Notes left out after the on-device model refuses them, a little more each time. Its safety
+    /// check turns down some ordinary class topics, such as a unit project on LGBTQIA+ rights.
+    enum Omit: Int, Comparable {
+        case nothing, unitNotes, lessonNotes, allNotes
+        static func < (a: Omit, b: Omit) -> Bool { a.rawValue < b.rawValue }
+        var next: Omit? { Omit(rawValue: rawValue + 1) }
+
+        /// What the teacher is told beside a draft written without some of their notes.
+        var notice: String? {
+            switch self {
+            case .nothing: return nil
+            case .unitNotes: return "Apple Intelligence would not use your unit work notes, so this draft leaves them out. Add the unit work yourself."
+            case .lessonNotes: return "Apple Intelligence would not use your lesson notes, so this draft leaves them out. Add anything important from them yourself."
+            case .allNotes: return "Apple Intelligence would not use your notes, including your Notes for drafting, so this draft leaves them out. Add anything important from them yourself."
+            }
+        }
+    }
+
     /// Runs on the main actor, where Holocron's data lives. Streaming from the model does not block it.
-    /// The draft is checked against the house style and revised once if it falls short.
+    /// Returns the draft and, when some notes had to be left out, a sentence saying so.
     @MainActor
     static func draft(_ db: Database, sid: String, sem: String, pronoun: Pronoun, words: Int,
-                      onWords: @escaping (String) -> Void) async throws -> String {
+                      onWords: @escaping (String) -> Void) async throws -> (text: String, notice: String?) {
         guard let st = db.student(sid) else { throw CancellationError() }
         let name = st.usualName
         var last: Error? = nil
+        var omit = Omit.nothing
         // Detail 3 with examples, then the same without examples if the model copied from them,
-        // then less detail if there was too much to fit.
-        for (detail, withExamples) in [(3, true), (3, false), (1, false)] {
+        // then less detail if there was too much to fit. A refusal tries the same step again with fewer notes.
+        let steps = [(3, true), (3, false), (1, false)]
+        var i = 0
+        while i < steps.count {
+            let (detail, withExamples) = steps[i]
             let examples = withExamples ? db.voiceExamples(excluding: sid) : []
             let session = session(base: rules, rules: db.reportRules, examples: examples)
             do {
-                let text = try await run(session, prompt(facts: db.reportFacts(sid, sem: sem, detail: detail), name: name, pronoun: pronoun, words: words), onWords)
+                let facts = db.reportFacts(sid, sem: sem, detail: detail, omit: omit)
+                let text = try await run(session, prompt(facts: facts, name: name, pronoun: pronoun, words: words), onWords)
                 let done = tidy(text)
                 if mentionsPrivate(done) {
                     throw mentionsPrivate(db.reportText(sid, sem: sem, "context") + " " + db.reportRules) ? DraftError.privateInNotes : DraftError.privateTerm
                 }
-                if copies(done, from: examples) { last = DraftError.copied; continue }
-                return finish(done, student: st, ilp: db.ilpSentence)
+                if copies(done, from: examples) { last = DraftError.copied; i += 1; continue }
+                return (finish(done, student: st, ilp: db.ilpSentence), omit.notice)
             } catch {
+                if Intelligence.isRefusal(error), let next = omit.next {
+                    omit = next
+                    onWords("")
+                    continue
+                }
                 guard Intelligence.isTooLong(error) else { throw error }
                 last = error
+                i += 1
             }
         }
         throw last ?? CancellationError()
