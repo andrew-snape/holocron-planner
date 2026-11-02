@@ -453,6 +453,7 @@ struct PlanSheet: View {
         NoteBox(label: "Summary", hint: "shows on Today and Week", text: $draft.summary, lines: 2, placeholder: "A sentence or a link")
         NoteBox(label: "Learning intention", text: $draft.li, lines: 2, placeholder: "We are learning to...")
         NoteBox(label: "Success criteria", hint: "one per line", text: $draft.sc, lines: 3, placeholder: "I can...")
+        IntentDraftArea(subject: subj, date: date, content: $draft)
         NoteBox(label: "Tuning in", text: $draft.tuning, lines: 3)
         NoteBox(label: "Explicit teaching", text: $draft.teaching, lines: 3)
         NoteBox(label: "Independent work", text: $draft.independent, lines: 3)

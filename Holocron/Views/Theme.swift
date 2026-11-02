@@ -182,6 +182,7 @@ struct NoteBox: View {
             TextField(placeholder, text: $text, axis: .vertical)
                 .lineLimit(lines...max(lines, lines + 6))
                 .textFieldStyle(.plain)
+                .writingToolsBehavior(.complete)
                 .padding(8)
                 .background(Color.white)
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))

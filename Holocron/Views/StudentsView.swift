@@ -734,12 +734,14 @@ struct ReportTab: View {
             }
             TextEditor(text: Binding(get: { db.generalComment(sid, sem: current) },
                                      set: { db.setGeneralComment(sid, sem: current, text: $0) }))
+                .writingToolsBehavior(.complete)
                 .font(.system(size: 13))
                 .frame(minHeight: 160)
                 .scrollContentBackground(.hidden)
                 .padding(8)
                 .background(Color.white)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            CommentDraftArea(sid: sid, sem: current)
         }
     }
 
@@ -939,6 +941,11 @@ struct QuickLogView: View {
                     Text(selecting ? "Choose several students, then log once" : "Tap a student to add a note")
                         .font(.system(size: 13)).foregroundStyle(Color.ink2)
                     Spacer()
+                    if !db.roster.isEmpty {
+                        Button { model.sheet = .dictate } label: { Label("Dictate…", systemImage: "mic") }
+                            .fixedSize()
+                            .help("Say your notes for several students at once")
+                    }
                     Toggle("Select several", isOn: $selecting)
                         .toggleStyle(.switch)
                         .onChange(of: selecting) { _, on in if !on { chosen = [] } }
@@ -998,13 +1005,6 @@ struct QuickLogView: View {
         .accessibilityLabel(today > 0 ? "\(s.fullName), \(today) logged today" : s.fullName)
         .accessibilityAddTraits(on ? .isSelected : [])
     }
-}
-
-enum QuickKind: String, CaseIterable, Identifiable {
-    case lesson = "Lesson note"
-    case wellbeing = "Wellbeing"
-    case behaviour = "Behaviour"
-    var id: String { rawValue }
 }
 
 struct QuickLogSheet: View {
