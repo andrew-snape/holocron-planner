@@ -287,6 +287,24 @@ enum CommentDrafter {
             out.append("Sentences \(i) and \(i + 1) both begin with \"\(openers[i].capitalized)\". Begin them differently.")
         }
         for s in sentences where wordCount(s) > 28 { out.append("Split this long sentence: \"\(s.prefix(60))…\"") }
+        // The same describing word twice, such as skilful and skilfully.
+        let stems = text.lowercased().split(whereSeparator: { !$0.isLetter }).map(String.init)
+            .filter { w in w.count >= 6 && !["valuable", "only", "early", "family"].contains(w)
+                && ["ful", "fully", "ly", "ive", "ous", "able", "ible"].contains { w.hasSuffix($0) } }
+            .map { w -> String in
+                for end in ["fully", "ful", "ly", "ness"] where w.hasSuffix(end) && w.count > end.count + 4 { return String(w.dropLast(end.count)) }
+                return w
+            }
+        var seenStems: [String: Int] = [:]
+        for s in stems { seenStems[s, default: 0] += 1 }
+        for (s, n) in seenStems where n > 1 && !name.lowercased().hasPrefix(s) {
+            out.append("\"\(s)…\" is used \(n) times. Use a different word in one place.")
+        }
+        // "which will help her…" followed by "This will help her…" says the same thing twice.
+        let lowerAll = text.lowercased()
+        if lowerAll.contains("which will") && lowerAll.contains("this will help") {
+            out.append("The goal and the next sentence both say how it will help. Keep one.")
+        }
         let lower = text.lowercased()
         for w in ["good", "nice", "very good", "needs to improve"] where lower.range(of: "\\b\(w)\\b", options: .regularExpression) != nil {
             out.append("Replace \"\(w)\" with a more descriptive word.")
@@ -362,6 +380,12 @@ enum CommentDrafter {
                      "works well with": "works cooperatively with", "worked well with": "worked cooperatively with",
                      "relates well to": "relates positively to", "has done well": "has achieved soundly"]
         for (from, to) in swaps { out = replacingKeepingCase(out, from, to) }
+        // Subject names take a capital, as the house style asks, and "maths" is written in full.
+        for (from, to) in [("maths", "Mathematics"), ("math", "Mathematics"), ("mathematics", "Mathematics"),
+                           ("english", "English"), ("literacy", "Literacy"), ("numeracy", "Numeracy"),
+                           ("science", "Science"), ("french", "French"), ("christian studies", "Christian Studies")] {
+            out = out.replacingOccurrences(of: "\\b\(from)\\b", with: to, options: [.regularExpression, .caseInsensitive])
+        }
         if numbers { out = smallNumbersAsWords(out) }
         for theme in PYP.themes.map(\.name) {
             out = out.replacingOccurrences(of: theme, with: theme, options: .caseInsensitive)
@@ -410,19 +434,25 @@ enum CommentDrafter {
 struct GeneralParts {
     @Guide(description: "One sentence: the student's name, then \"has been a\", two or three fitting adjectives, \"student who\" and how they relate to peers and teachers. Mention a leadership role if the notes give one.")
     var opening: String
-    @Guide(description: "Two sentences in the present perfect, such as \"She has compared…\", on how the student learns: effort, organisation, independence or taking risks, from the Other teacher's notes. Begin the two sentences with different words, and not with the name.")
+    @Guide(description: "Two sentences in the present perfect, such as \"She has compared…\", on how the student learns: effort, organisation, independence or taking risks, from the Other teacher's notes. Begin the two sentences with different words, not with the name and not with \"She has\" or \"He has\" twice. Do not reuse any adjective from the opening.")
     var work: String
     @Guide(description: "One or two sentences on what the student did in the unit of inquiry, using only the Unit work notes, in the form: For our 'Where we are in place and time' unit, Ava created a news report on …, showing … . Empty if there are no Unit work notes.")
     var unit: String
-    @Guide(description: "One sentence beginning \"A valuable goal for\" and the name, describing one area of need from the notes as something to grow in.")
+    @Guide(description: "One sentence beginning \"A valuable goal for\" and the name, describing one area of need from the notes as something to grow in. Do not say why here; that is the next sentence.")
     var goal: String
     @Guide(description: "One short sentence on how working on the goal will help the student as a learner. Begin with \"This\" or \"Building\".")
     var why: String
-    @Guide(description: "One warm closing sentence for parents about what the student has shown this semester.")
+    @Guide(description: "One warm closing sentence for parents about what the student has shown this semester. Use a word not already used in the comment.")
     var closing: String
 
     static func join(_ parts: [String?]) -> String {
-        parts.compactMap { $0?.trimmed }.filter { !$0.isEmpty }
+        var parts = parts
+        // The goal sometimes says why as well ("…, which will support her learning"); the next part already does.
+        if parts.count == 6, let goal = parts[3], let why = parts[4], !why.trimmed.isEmpty,
+           let r = goal.range(of: ", which will ", options: .backwards) {
+            parts[3] = String(goal[..<r.lowerBound]) + "."
+        }
+        return parts.compactMap { $0?.trimmed }.filter { !$0.isEmpty }
             .map { $0.hasSuffix(".") || $0.hasSuffix("?") ? $0 : $0 + "." }
             .joined(separator: " ")
     }

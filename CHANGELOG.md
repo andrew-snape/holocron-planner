@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Report drafts write subject names with a capital, and "maths" in full as Mathematics, as the reporting style asks.
+- Drafts are asked not to reuse their describing words or to say why a goal helps twice, and the list of things to check now points out a describing word used twice, such as skilful and skilfully.
+
 ## 1.12.0
 
 - Report drafts follow school reporting style: plain Australian English, 100 to 150 words, short sentences, a positive opening, one area of need framed as growth and a warm close, with no labels, scores, exclamation marks or words such as good and nice. Spellings such as focused, benefited, judgement and program are fixed, and numbers up to ten are written as words. Anything left to check, such as two sentences that begin the same way, is listed beside the draft.
