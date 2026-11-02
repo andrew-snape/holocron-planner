@@ -1,9 +1,7 @@
 # Changelog
-## Unreleased
 
-- Siri, Spotlight and Shortcuts. Ask “What's next in Holocron?”, “What's on today” or “tomorrow”, “When is Maths in Holocron?” or “Any birthdays this week in Holocron?”. You can also log a note for a student (Siri checks with you before saving), add a to-do, copy today for a relief teacher, open the Class screen or start the class timer. Every action is also in the Shortcuts app, ready to build into your own shortcuts.
-- Student names stay private. Siri only says or suggests them once you switch that on in Settings, then Apple Intelligence, and never while the Class screen is showing. Birthdays, notes and copying a day need your Mac to be unlocked, and Siri only says Saved once the note is on disk.
-- New Settings, then Apple Intelligence tab. It shows whether Apple Intelligence is ready on this Mac, lets you switch off each suggestion feature, and lists what you can ask Siri. Everything runs on this Mac.
+## 1.10.0
+Updated for apple intelligence
 
 ## 1.9.2
 
