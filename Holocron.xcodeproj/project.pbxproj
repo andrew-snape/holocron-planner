@@ -196,6 +196,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Holocron;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "Holocron keeps your planner data as CSV files in the folder you choose.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Holocron listens only while you dictate a note, and turns your words into text on this Mac.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Holocron turns your dictated notes into text on this Mac.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -225,6 +227,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Holocron;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "Holocron keeps your planner data as CSV files in the folder you choose.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Holocron listens only while you dictate a note, and turns your words into text on this Mac.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Holocron turns your dictated notes into text on this Mac.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

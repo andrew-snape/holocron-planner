@@ -70,6 +70,7 @@ enum ActiveSheet: Identifiable {
     case quick(ids: [String])
     case newStudent
     case importResults(url: URL)
+    case dictate
 
     var id: String {
         switch self {
@@ -84,6 +85,7 @@ enum ActiveSheet: Identifiable {
         case .quick(let ids): return "quick-" + ids.joined(separator: ",")
         case .newStudent: return "newstudent"
         case .importResults(let u): return "importresults-" + u.path
+        case .dictate: return "dictate"
         }
     }
 }

@@ -112,6 +112,7 @@ struct SheetRouter: View {
         case .quick(let ids): QuickLogSheet(ids: ids)
         case .newStudent: NewStudentSheet()
         case .importResults(let u): ImportResultsSheet(url: u)
+        case .dictate: DictateSheet()
         }
     }
 }

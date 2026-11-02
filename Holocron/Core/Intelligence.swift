@@ -31,6 +31,23 @@ enum Intelligence {
 
     static var isAvailable: Bool { status == .available }
 
+    /// Whether a feature can be offered now: Apple Intelligence is ready and the feature is switched on.
+    static func can(_ f: AIFeature, _ db: Database) -> Bool { isAvailable && db.aiEnabled(f) }
+
+    /// A plain message for an error from the on-device model.
+    static func message(for error: Error) -> String {
+        if case CommentDrafter.DraftError.privateTerm = error {
+            return "The draft mentioned something private, such as a plan, a meeting or a diagnosis, so it was not shown. Try again, or write this one yourself."
+        }
+        if case LanguageModelSession.GenerationError.guardrailViolation = error {
+            return "Apple Intelligence would not write this one. Try again, or write it yourself."
+        }
+        if case LanguageModelSession.GenerationError.exceededContextWindowSize = error {
+            return "There was too much to fit in one go."
+        }
+        return "Apple Intelligence could not finish. Try again in a moment."
+    }
+
     /// A sentence for Settings that says why the features are or are not available.
     static var statusText: String {
         switch status {
@@ -45,6 +62,10 @@ enum Intelligence {
 
 /// Features that can be switched off in Settings. Each is on until it is switched off.
 enum AIFeature: String, CaseIterable, Identifiable {
+    /// Dictated notes are sorted into students, subjects and kinds of note.
+    case dictation
+    /// Report comments and learning intentions are drafted for the teacher to edit.
+    case drafts
     /// Apple Intelligence suggests the columns of an imported spreadsheet.
     case columns
 
@@ -52,12 +73,16 @@ enum AIFeature: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
+        case .dictation: return "Sort dictated notes"
+        case .drafts: return "Draft comments and learning intentions"
         case .columns: return "Suggest columns when importing results"
         }
     }
 
     var blurb: String {
         switch self {
+        case .dictation: return "Splits what you say in Quick log into notes for each student, with the subject and kind of note, for you to check."
+        case .drafts: return "Drafts a report comment in your voice, or a lesson's learning intention and success criteria. Nothing is saved until you choose Use."
         case .columns: return "Reads the headers of a spreadsheet Holocron does not recognise and suggests which column is which."
         }
     }
