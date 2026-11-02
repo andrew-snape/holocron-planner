@@ -132,6 +132,8 @@ struct ClassScreenView: View {
     @State private var stepsOpen = false
     /// Which of First (1), Then (2) and Next (3) the class is on. 0 when none is picked.
     @State private var activeStep = 0
+    /// Marks this screen as showing, so Siri leaves student names out.
+    @State private var screenID = UUID()
 
     init(initial: ClassTarget, embedded: Bool = false) {
         self.initial = initial
@@ -229,6 +231,8 @@ struct ClassScreenView: View {
         .background(Color.white)
         .onExitCommand { if !embedded { dismiss() } }
         .onChange(of: ClassTarget(date: date, per: pn)) { stepsOpen = false; activeStep = 0 }
+        .onAppear { model.classScreens.insert(screenID) }
+        .onDisappear { model.classScreens.remove(screenID) }
     }
 
     private func heading(_ s: String, _ tone: Tone) -> some View {
