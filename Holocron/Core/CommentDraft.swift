@@ -60,27 +60,41 @@ extension Database {
         let notes = logRows(.lessonnotes, student: sid).filter(inRange).prefix(detail * 5)
         if !notes.isEmpty {
             lines.append("Teacher's notes:")
-            lines += notes.map { "- " + ($0.s("subject").isEmpty ? "" : "\($0.s("subject")): ") + clip($0.s("note"), 160) }
+            // Notes that mention private matters are left out, and other children's names are masked.
+            lines += notes.filter { !CommentDrafter.mentionsPrivate($0.s("note")) }
+                .map { "- " + ($0.s("subject").isEmpty ? "" : "\($0.s("subject")): ") + clip(maskingNames($0.s("note"), keep: sid), 160) }
         }
         return lines.joined(separator: "\n")
     }
 
-    /// Up to `n` of the teacher's own general comments, newest first, to copy their voice from.
-    /// The student being written about is left out.
+    /// Text with every name on the roll, other than `keep`'s, swapped for "a classmate", so
+    /// another child's name can never reach a draft. With `replacing`, only that student's names are swapped.
+    func maskingNames(_ text: String, keep: String? = nil, replacing one: String? = nil, with word: String = "a classmate") -> String {
+        var t = text
+        let parts = roster.filter { one == nil ? $0.id != keep : $0.id == one }
+            .flatMap { [$0.fullName, $0.first, $0.surname] + $0.first.split(separator: " ").map(String.init) + $0.surname.split(separator: " ").map(String.init) }
+        let keepParts = Set(student(keep ?? "").map { ($0.first + " " + $0.surname).lowercased().split(separator: " ").map(String.init) } ?? [])
+        for p in Set(parts.map { $0.trimmed }).filter({ $0.count > 1 && !keepParts.contains($0.lowercased()) }).sorted(by: { $0.count > $1.count }) {
+            let pattern = "\\b" + NSRegularExpression.escapedPattern(for: p) + "\\b"
+            t = t.replacingOccurrences(of: pattern, with: word, options: [.regularExpression, .caseInsensitive])
+        }
+        // "Sam and Ava" becomes "a classmate and a classmate": say it once.
+        while t.contains("\(word) and \(word)") { t = t.replacingOccurrences(of: "\(word) and \(word)", with: word == "a classmate" ? "classmates" : word) }
+        return t
+    }
+
+    /// Up to `n` of the teacher's own general comments to copy their voice from, a different few
+    /// each time. The student being written about is left out, and every name is masked.
     func voiceExamples(excluding sid: String, n: Int = 2) -> [String] {
-        rows(.reportcomment)
+        let pool = rows(.reportcomment)
             .filter { $0.s("student_id") != sid && wordCount($0.s("general")) >= 60 }
             .sorted { $0.s("sem") > $1.s("sem") }
-            .prefix(n)
-            .map { c in
-                // Each example uses that student's own first name, swapped for "Name" so it is never copied.
-                var t = c.s("general")
-                if let st = student(c.s("student_id")), !st.first.isEmpty {
-                    let pattern = "\\b" + NSRegularExpression.escapedPattern(for: st.first) + "\\b"
-                    t = t.replacingOccurrences(of: pattern, with: "Name", options: .regularExpression)
-                }
-                return String(t.prefix(1100))
-            }
+            .prefix(8)
+        return pool.shuffled().prefix(n).map { c in
+            var t = maskingNames(c.s("general"), replacing: c.s("student_id"), with: "Name")
+            t = maskingNames(t)
+            return String(t.prefix(1100))
+        }
     }
 
     /// About how long the teacher's comments usually are, for the target length.
@@ -148,19 +162,39 @@ enum CommentDrafter {
     }
 
     /// Writes a whole comment, trying again with less detail if there was too much for the model.
+    /// Words that point to private matters a report must never mention.
+    static let privateWords = ["ilp", "iep", "ssg", "nccd", "diagnos", "adjustment", "funding", "medical", "medication",
+                               "adhd", "autis", "asd", "dyslex", "anxiety", "psycholog", "paediatric", "meeting", "custody"]
+
+    static func mentionsPrivate(_ text: String) -> Bool {
+        let t = text.lowercased()
+        return privateWords.contains { w in t.range(of: "\\b" + w, options: .regularExpression) != nil }
+    }
+
+    /// Runs on the main actor, where Holocron's data lives. Streaming from the model does not block it.
+    @MainActor
     static func draft(_ db: Database, sid: String, sem: String, pronoun: Pronoun, words: Int,
                       onWords: @escaping (String) -> Void) async throws -> String {
         let name = db.student(sid)?.first ?? "The student"
         var last: Error? = nil
-        for detail in [3, 1] {
-            let session = session(examples: detail == 3 ? db.voiceExamples(excluding: sid) : Array(db.voiceExamples(excluding: sid, n: 1)))
+        // Detail 3 with examples, then the same without examples if the model copied from them,
+        // then less detail if there was too much to fit.
+        for (detail, withExamples) in [(3, true), (3, false), (1, false)] {
+            let examples = withExamples ? db.voiceExamples(excluding: sid) : []
+            let session = session(examples: examples)
             var text = ""
             do {
                 for try await t in stream(session, prompt(facts: db.reportFacts(sid, sem: sem, detail: detail), name: name, pronoun: pronoun, words: words)) {
+                    try Task.checkCancellation()
                     text = t
                     onWords(t)
                 }
-                return tidy(text)
+                // A cancelled stream ends quietly, so check again rather than return half a comment.
+                try Task.checkCancellation()
+                let done = tidy(text)
+                if mentionsPrivate(done) { throw DraftError.privateTerm }
+                if copies(done, from: examples) { last = DraftError.copied; continue }
+                return done
             } catch {
                 guard case LanguageModelSession.GenerationError.exceededContextWindowSize = error else { throw error }
                 last = error
@@ -169,11 +203,36 @@ enum CommentDrafter {
         throw last ?? CancellationError()
     }
 
+    enum DraftError: Error { case privateTerm, copied }
+
+    /// True when the draft repeats six or more words in a row from one of the examples, which are
+    /// about other students.
+    static func copies(_ draft: String, from examples: [String]) -> Bool {
+        func words(_ t: String) -> [String] { t.lowercased().split(whereSeparator: { !$0.isLetter }).map(String.init) }
+        func runs(_ w: [String]) -> Set<String> {
+            w.count < 6 ? [] : Set((0...(w.count - 6)).map { w[$0..<($0 + 6)].joined(separator: " ") })
+        }
+        // The house phrases in the rules ("should be proud of the effort") are meant to repeat.
+        let d = words(draft)
+        let mine = runs(d).subtracting(runs(words(rules)))
+        guard !mine.isEmpty else { return false }
+        return examples.contains { e in
+            let w = words(e)
+            guard w.count >= 6 else { return false }
+            return (0...(w.count - 6)).contains { mine.contains(w[$0..<($0 + 6)].joined(separator: " ")) }
+        }
+    }
+
     /// Removes dashes and stray whitespace the house style does not use.
     static func tidy(_ t: String) -> String {
-        t.replacingOccurrences(of: " — ", with: ", ").replacingOccurrences(of: "—", with: ", ")
+        var out = t.replacingOccurrences(of: " — ", with: ", ").replacingOccurrences(of: "—", with: ", ")
             .replacingOccurrences(of: " – ", with: ", ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        // Unit themes keep their capital, as in 'Where we are in place and time'.
+        for theme in PYP.themes.map(\.name) {
+            out = out.replacingOccurrences(of: theme, with: theme, options: .caseInsensitive)
+        }
+        return out
     }
 }
 

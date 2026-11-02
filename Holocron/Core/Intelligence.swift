@@ -36,6 +36,9 @@ enum Intelligence {
 
     /// A plain message for an error from the on-device model.
     static func message(for error: Error) -> String {
+        if case CommentDrafter.DraftError.privateTerm = error {
+            return "The draft mentioned something private, such as a plan, a meeting or a diagnosis, so it was not shown. Try again, or write this one yourself."
+        }
         if case LanguageModelSession.GenerationError.guardrailViolation = error {
             return "Apple Intelligence would not write this one. Try again, or write it yourself."
         }

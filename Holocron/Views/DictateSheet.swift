@@ -11,14 +11,14 @@ struct DictateSheet: View {
     @State private var dictation = Dictation()
     @State private var transcript = ""
     @State private var notes: [SortedNote] = []
-    @State private var sorting = false
+    @State private var sorting: Task<Void, Never>? = nil
     @State private var sortError = ""
 
     var body: some View {
         let db = model.db
         let canSort = Intelligence.can(.dictation, db)
-        SheetFrame(title: "Dictate notes", subtitle: longDate(todayISO()), width: 620,
-                   dirty: !transcript.trimmed.isEmpty || !notes.isEmpty,
+        SheetFrame(title: "Dictate notes", subtitle: longDate(todayISO()), width: 580,
+                   dirty: dictation.isBusy || !dictation.text.trimmed.isEmpty || !transcript.trimmed.isEmpty || !notes.isEmpty,
                    discardMessage: "Your dictated notes have not been saved.") {
             if notes.isEmpty {
                 listenCard
@@ -28,15 +28,18 @@ struct DictateSheet: View {
                             sort()
                         } label: { Label("Sort into notes", systemImage: "apple.intelligence") }
                         .buttonStyle(.borderedProminent)
-                        .keyboardShortcut(.defaultAction)
-                        .disabled(transcript.trimmed.isEmpty || listening || sorting)
-                        if sorting { ProgressView().controlSize(.small).accessibilityLabel("Sorting notes") }
-                    } else {
-                        Button("Use as one note") { notes = [SortedNote(students: [], kind: .lesson, subject: model.nowSubject(), note: transcript.trimmed)] }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(transcript.trimmed.isEmpty || listening)
+                        .disabled(transcript.trimmed.isEmpty || dictation.isBusy || sorting != nil)
+                        if sorting != nil { ProgressView().controlSize(.small).accessibilityLabel("Sorting notes") }
                     }
-                    Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+                    if canSort {
+                        Button("Use as one note") { useAsOne() }
+                            .disabled(transcript.trimmed.isEmpty || dictation.isBusy || sorting != nil)
+                    } else {
+                        Button("Use as one note") { useAsOne() }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(transcript.trimmed.isEmpty || dictation.isBusy)
+                    }
+                    Spacer()
                 }
                 if !sortError.isEmpty {
                     Label(sortError, systemImage: "exclamationmark.triangle")
@@ -44,18 +47,27 @@ struct DictateSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Text(canSort
-                     ? "Say who each note is about, for example “Ava and Sam, great reasoning in maths. Leo was upset after lunch.” Holocron sorts it into notes for you to check. Everything stays on this Mac."
-                     : "Your words become one note. Choose the students next.")
+                     ? "Say who each note is about, for example “Ava and Sam, great reasoning in maths.” Holocron sorts it into notes for you to check. Everything stays on this Mac."
+                     : "Your words become one note, and you choose the students next. Everything stays on this Mac.")
                     .font(.system(size: 12)).foregroundStyle(Color.ink2)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 reviewList
             }
         }
-        .onDisappear { dictation.cancel() }
+        .onChange(of: dictation.state) { _, s in
+            // Keep whatever was heard, after Stop and after a failure alike.
+            if s == .idle || { if case .failed = s { return true }; return false }() { transcript = dictation.text }
+        }
+        .onDisappear {
+            dictation.cancel()
+            sorting?.cancel()
+        }
     }
 
-    private var listening: Bool { dictation.state == .listening || dictation.state == .preparing }
+    private func useAsOne() {
+        notes = [SortedNote(students: [], kind: .lesson, subject: model.nowSubject(), note: transcript.trimmed)]
+    }
 
     // MARK: Listening
 
@@ -65,15 +77,18 @@ struct DictateSheet: View {
                 Button {
                     Task { await toggle() }
                 } label: {
-                    Label(listening ? "Stop" : "Start dictating", systemImage: listening ? "stop.circle.fill" : "mic.circle.fill")
+                    Label(dictation.isBusy ? "Stop" : "Start dictating", systemImage: dictation.isBusy ? "stop.circle.fill" : "mic.circle.fill")
                         .font(.system(size: 15, weight: .semibold))
                 }
                 .controlSize(.large)
-                .tint(listening ? Color.appRed : Color.appBlue)
+                .tint(dictation.isBusy ? Color.appRed : Color.appBlue)
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut("d", modifiers: .command)
+                .disabled(dictation.state == .stopping || sorting != nil)
+                .help("Start or stop dictating (Cmd+D)")
                 switch dictation.state {
                 case .preparing: Text("Getting ready…").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                case .stopping: Text("Finishing…").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
                 case .listening: Label("Listening", systemImage: "waveform").font(.system(size: 12.5)).foregroundStyle(Color.appRed)
                 default: EmptyView()
                 }
@@ -84,14 +99,12 @@ struct DictateSheet: View {
                     .font(.system(size: 12.5)).foregroundStyle(Color.appRed)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            if listening {
+            if dictation.isBusy {
                 Text(dictation.text.isEmpty ? "Start speaking…" : dictation.text)
                     .font(.system(size: 14))
                     .foregroundStyle(dictation.text.isEmpty ? Color.ink2 : Color.primary)
                     .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
-                    .padding(8)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .textBox()
                     .accessibilityLabel("Dictated so far")
                     .accessibilityValue(dictation.text)
             } else {
@@ -100,19 +113,18 @@ struct DictateSheet: View {
                     .font(.system(size: 14))
                     .frame(minHeight: 120)
                     .scrollContentBackground(.hidden)
-                    .padding(8)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .textBox()
+                    .disabled(sorting != nil)
                     .accessibilityLabel("Dictated words")
+                    .accessibilityHint("Edit the words before sorting them into notes")
             }
         }
         .card()
     }
 
     private func toggle() async {
-        if listening {
+        if dictation.isBusy {
             await dictation.stop()
-            transcript = dictation.text
         } else {
             await dictation.start(keeping: transcript)
         }
@@ -121,17 +133,16 @@ struct DictateSheet: View {
     private func sort() {
         let db = model.db
         let text = transcript.trimmed
-        sorting = true
         sortError = ""
-        Task {
+        sorting = Task {
             do {
                 let found = try await NoteSorter.sort(text, roster: db.roster, subjects: db.subjectNames, lessonNow: model.nowSubject())
+                if Task.isCancelled { return }
                 notes = found.isEmpty ? [SortedNote(students: [], kind: .lesson, subject: model.nowSubject(), note: text)] : found
             } catch {
-                sortError = Intelligence.message(for: error) + " You can still use your words as one note."
-                notes = []
+                if !Task.isCancelled { sortError = Intelligence.message(for: error) + " You can still use your words as one note." }
             }
-            sorting = false
+            sorting = nil
         }
     }
 
@@ -140,21 +151,18 @@ struct DictateSheet: View {
     @ViewBuilder
     private var reviewList: some View {
         let ready = notes.allSatisfy { !$0.students.isEmpty && !$0.note.trimmed.isEmpty }
-        Text("Check each note, then save. \(notes.count == 1 ? "It is" : "They are") saved for today.")
+        Text("Check each note, then save. Notes are saved for today.")
             .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
-        ScrollView {
-            VStack(spacing: 10) {
-                ForEach($notes) { $n in NoteRow(note: $n) { notes.removeAll { $0.id == n.id } } }
-            }
+        VStack(spacing: 10) {
+            ForEach($notes) { $n in NoteRow(note: $n) { notes.removeAll { $0.id == n.id } } }
         }
-        .frame(minHeight: 160, maxHeight: 440)
         HStack {
-            Button("Save \(notes.count == 1 ? "note" : "\(notes.count) notes")") { save() }
+            Button("Save \(plural(notes.count, "note"))") { save() }
                 .buttonStyle(.borderedProminent)
-                .keyboardShortcut(.defaultAction)
+                .keyboardShortcut(.return, modifiers: .command)
                 .disabled(!ready || notes.isEmpty)
+                .help("Save (Cmd+Return)")
             Button("Back to the words") { notes = [] }
-            Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
             Spacer()
         }
         if !ready {
@@ -165,7 +173,8 @@ struct DictateSheet: View {
 
     private func save() {
         let db = model.db
-        var saved = 0
+        var count = 0
+        var students = Set<String>()
         for n in notes {
             let text = n.note.trimmed
             guard !n.students.isEmpty, !text.isEmpty else { continue }
@@ -178,9 +187,10 @@ struct DictateSheet: View {
             case .behaviour:
                 db.addBehaviour(students: n.students, date: todayISO(), note: text)
             }
-            saved += n.students.count
+            count += 1
+            students.formUnion(n.students)
         }
-        model.showToast(saved == 1 ? "Saved" : "Saved \(saved) notes")
+        model.showToast("Saved \(plural(count, "note")) for \(plural(students.count, "student"))")
         dismiss()
     }
 }
@@ -193,6 +203,9 @@ private struct NoteRow: View {
 
     var body: some View {
         let db = model.db
+        let firsts = Dictionary(grouping: db.roster) { $0.first.lowercased() }
+        let names = note.students.compactMap { db.student($0) }
+            .map { (firsts[$0.first.lowercased()]?.count ?? 0) > 1 ? $0.fullName : $0.first }
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 Menu {
@@ -203,11 +216,18 @@ private struct NoteRow: View {
                         }))
                     }
                 } label: {
-                    Text(note.students.isEmpty ? "Choose students" : note.students.map { db.student($0)?.first ?? "?" }.joined(separator: ", "))
-                        .lineLimit(1)
+                    Text(names.isEmpty ? "Choose students" : names.joined(separator: ", ")).lineLimit(1)
                 }
-                .frame(maxWidth: 230)
+                .help(note.students.compactMap { db.student($0)?.fullName }.joined(separator: ", "))
                 .accessibilityLabel("Students")
+                Spacer(minLength: 0)
+                Button { remove() } label: { Image(systemName: "trash") }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(Color.appRed)
+                    .help("Remove this note")
+                    .accessibilityLabel("Remove this note")
+            }
+            HStack(spacing: 10) {
                 Picker("", selection: $note.kind) {
                     ForEach(QuickKind.allCases) { Text($0.rawValue).tag($0) }
                 }
@@ -218,24 +238,37 @@ private struct NoteRow: View {
                         Text("No subject").tag("")
                         ForEach(db.subjectNames, id: \.self) { Text($0).tag($0) }
                     }
-                    .labelsHidden().frame(width: 140)
+                    .labelsHidden().frame(width: 150)
                     .accessibilityLabel("Subject")
                 }
-                Spacer()
-                Button(role: .destructive) { remove() } label: { Image(systemName: "trash") }
-                    .buttonStyle(.borderless)
-                    .help("Leave this note out")
-                    .accessibilityLabel("Leave this note out")
+                Spacer(minLength: 0)
             }
             if !note.unknown.isEmpty {
-                Label("Not on your roll: \(note.unknown.joined(separator: ", ")). Choose the student above.", systemImage: "questionmark.circle")
-                    .font(.system(size: 12)).foregroundStyle(Color.appAmber)
+                Label {
+                    Text("Not matched: \(note.unknown.joined(separator: ", ")). Choose the student above.")
+                        .foregroundStyle(Color.ink2)
+                } icon: {
+                    Image(systemName: "questionmark.circle").foregroundStyle(Color.appAmber)
+                }
+                .font(.system(size: 12))
+                .fixedSize(horizontal: false, vertical: true)
             }
-            TextField("Note", text: $note.note, axis: .vertical)
+            TextField("What happened", text: $note.note, axis: .vertical)
                 .textFieldStyle(.roundedBorder)
                 .lineLimit(1...4)
+                .writingToolsBehavior(.complete)
                 .accessibilityLabel("Note")
         }
         .card()
+    }
+}
+
+extension View {
+    /// A white writing area with a hairline edge, as in NoteBox.
+    func textBox() -> some View {
+        self.padding(8)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.black.opacity(0.14), lineWidth: 0.5))
     }
 }

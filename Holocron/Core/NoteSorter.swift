@@ -66,7 +66,11 @@ enum NoteSorter {
             """)
         let out = try await session.respond(to: "Dictated: \(transcript)", generating: DictatedNotes.self,
                                            options: GenerationOptions(sampling: .greedy)).content
-        let saidWords = Set(NameMatcher.fold(transcript))
+        let saidList = NameMatcher.fold(transcript)
+        let saidWords = Set(saidList)
+        // "Whole class" only counts when it was said as such, not for "great in class".
+        let joined = " " + saidList.joined(separator: " ") + " "
+        let wholeClassSaid = [" whole class ", " everyone ", " everybody ", " the whole group "].contains { joined.contains($0) }
         let firstCounts = Dictionary(grouping: roster) { NameMatcher.fold($0.first) }.mapValues(\.count)
         var seen = Set<String>()
         return out.notes.compactMap { n in
@@ -76,9 +80,7 @@ enum NoteSorter {
             var ids: [String] = [], unknown: [String] = []
             for said in n.students {
                 if NameMatcher.fold(said) == ["whole", "class"] || NameMatcher.fold(said) == ["everyone"] {
-                    if saidWords.contains("class") || saidWords.contains("everyone") || saidWords.contains("everybody") {
-                        ids = roster.map(\.id)
-                    }
+                    if wholeClassSaid { ids = roster.map(\.id) }
                     continue
                 }
                 guard let sid = match(said, roster), let st = roster.first(where: { $0.id == sid }) else {
@@ -87,6 +89,7 @@ enum NoteSorter {
                 }
                 // The model can name a student who was never mentioned, so a name must have been said.
                 if !(NameMatcher.fold(st.first) + NameMatcher.fold(st.surname)).contains(where: saidWords.contains) {
+                    unknown.append(said.trimmed)
                     continue
                 }
                 // Two students with the same first name: the model may have picked one itself,
@@ -99,11 +102,13 @@ enum NoteSorter {
             }
             if ids.isEmpty && unknown.isEmpty {
                 // No name came back, but the note may still say who: take any student named in it.
-                let words = Set(NameMatcher.fold(text))
+                // The name must also have been said, so one the model added to its note does not count.
+                let words = Set(NameMatcher.fold(text)).intersection(saidWords)
                 for st in roster {
                     let f = NameMatcher.fold(st.first), sn = NameMatcher.fold(st.surname)
+                    guard !f.isEmpty else { continue }
                     let shared = (firstCounts[f] ?? 0) > 1
-                    if f.allSatisfy(words.contains) && (!shared || sn.allSatisfy(words.contains)) { ids.append(st.id) }
+                    if f.allSatisfy(words.contains) && (!shared || (!sn.isEmpty && sn.allSatisfy(words.contains))) { ids.append(st.id) }
                 }
             }
             let subject = subjects.first { $0.caseInsensitiveCompare(n.subject.trimmed) == .orderedSame }
