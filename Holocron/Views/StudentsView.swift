@@ -960,25 +960,6 @@ struct QuickLogView: View {
         let counts = db.todaysEntryCounts()
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text("Quick log").font(.system(size: 28, weight: .bold)).tracking(-0.5)
-                    Text(selecting ? "Choose several students, then log once" : "Tap a student to add a note")
-                        .font(.system(size: 13)).foregroundStyle(Color.ink2)
-                    Spacer()
-                    if !db.roster.isEmpty {
-                        Button { model.sheet = .dictate } label: { Label("Dictate…", systemImage: "mic") }
-                            .fixedSize()
-                            .help("Say your notes for several students at once")
-                    }
-                    Toggle("Select several", isOn: $selecting)
-                        .toggleStyle(.switch)
-                        .onChange(of: selecting) { _, on in if !on { chosen = [] } }
-                    if selecting {
-                        Button("Log for \(chosen.count)") { model.sheet = .quick(ids: Array(chosen)) }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(chosen.isEmpty)
-                    }
-                }
                 if db.roster.isEmpty {
                     EmptyNote(title: "No students yet", message: "Add your class under Students, then log notes from here.")
                 } else {
@@ -990,6 +971,26 @@ struct QuickLogView: View {
                 }
             }
             .padding(24)
+        }
+        .navigationTitle("Quick log")
+        .navigationSubtitle(selecting ? "Choose several students, then log once" : "Tap a student to add a note")
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                if !db.roster.isEmpty {
+                    Button { model.sheet = .dictate } label: { Label("Dictate…", systemImage: "mic") }
+                        .help("Say your notes for several students at once")
+                    Toggle(isOn: $selecting) { Label("Select several", systemImage: "checklist") }
+                        .toggleStyle(.button)
+                        .help("Choose several students, then log one note for all of them")
+                        .onChange(of: selecting) { _, on in if !on { chosen = [] } }
+                }
+                if selecting {
+                    Button("Log for \(chosen.count)") { model.sheet = .quick(ids: Array(chosen)) }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(chosen.isEmpty)
+                        .help("Log one note for the chosen students")
+                }
+            }
         }
     }
 
