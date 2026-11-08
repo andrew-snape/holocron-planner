@@ -108,7 +108,7 @@ struct WeekGrid: View {
                             .frame(width: WeekGrid.labelW, alignment: .leading)
                         HStack(spacing: 10) {
                             Text(label).font(.system(size: 11)).foregroundStyle(Color.ink3)
-                            Rectangle().fill(Color.fieldStroke).frame(height: 0.5)
+                            Rectangle().fill(Color.rule).frame(height: 0.5)
                         }
                         .padding(.horizontal, 8)
                         .gridCellColumns(5)

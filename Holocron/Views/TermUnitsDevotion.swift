@@ -291,7 +291,7 @@ struct TermGrid: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(l.status == .empty ? Color.cardBG : (l.status == .plan ? tone.tintColor : tone.tintColor.opacity(0.55)))
             .overlay(RoundedRectangle(cornerRadius: Radius.block, style: .continuous)
-                .stroke(l.status == .empty ? Color.fieldStroke : Color.clear, style: StrokeStyle(lineWidth: 0.8, dash: [3, 2])))
+                .stroke(l.status == .empty ? Color.rule : Color.clear, style: StrokeStyle(lineWidth: 0.8, dash: [3, 2])))
             .clipShape(RoundedRectangle(cornerRadius: Radius.block, style: .continuous))
         }
         .buttonStyle(.plain)

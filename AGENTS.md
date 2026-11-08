@@ -344,7 +344,7 @@ Each recipe names real functions and files. When one step says "compile error", 
 
 ### Change the UI
 
-1. Use the tokens in [Views/Theme.swift](Holocron/Views/Theme.swift): `Color.appBG`, `cardBG`, `ink2`, `ink3`, `hairline`, `appBlue`, `appGreen`, `appAmber`, `appRed`, `fieldBG`, `fieldStroke`, `fill`, `fillFaint`, `fillStrong`, `onAccent`, `Radius.*`, `Space.*`, `Font.hPage`, `hSheet`, `hSection`, `.card()`, `PageHeader`, `EmptyNote`, `NoteBox`. No raw `Color(red:...)`, `Color.white`, `Color.black.opacity` or corner radius numbers that duplicate a token. Subject colours come from `Tone`.
+1. Use the tokens in [Views/Theme.swift](Holocron/Views/Theme.swift): `Color.appBG`, `cardBG`, `ink2`, `ink3`, `hairline`, `appBlue`, `appGreen`, `appAmber`, `appRed`, `fieldBG`, `fieldStroke`, `rule`, `fill`, `fillFaint`, `fillStrong`, `onAccent`, `Radius.*`, `Space.*`, `Font.hPage`, `hSheet`, `hSection`, `.card()`, `PageHeader`, `EmptyNote`, `NoteBox`. No raw `Color(red:...)`, `Color.white`, `Color.black.opacity` or corner radius numbers that duplicate a token. Subject colours come from `Tone`.
 2. Sheets use `SheetFrame` ([Views/Sheets.swift](Holocron/Views/Sheets.swift)): title 18 bold, Escape closes (`.cancelAction`), Return confirms (`.defaultAction`), and `dirty:` asks before discarding. Settings forms use `settingsForm()`.
 3. Text sizes follow neighbours (`.system(size: 13)` body, 12 to 12.5 for notes). Icon-only buttons need `accessibilityLabel`. Destructive actions use `role: .destructive`, `Color.appRed` and a confirmation.
 4. The Class screen is projected. Check contrast and size, and never show student information there.

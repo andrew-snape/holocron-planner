@@ -42,6 +42,8 @@ extension Color {
     /// Text box fill and border.
     static let fieldBG = Color.white
     static let fieldStroke = Color.black.opacity(0.14)
+    /// Grid lines and dashed outlines, stronger than a hairline.
+    static let rule = Color.black.opacity(0.14)
     /// Quiet fills for chips that are off, empty states and placeholders, from faint to strong.
     static let fillFaint = Color.black.opacity(0.03)
     static let fill = Color.black.opacity(0.06)
