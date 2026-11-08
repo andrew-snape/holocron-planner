@@ -344,7 +344,8 @@ struct ClassDraftsSheet: View {
         let waiting = todo.filter { drafts[$0.id] != nil && current != $0.id && !used.contains($0.id) && !skipped.contains($0.id) }
         let left = todo.filter { drafts[$0.id] == nil && !used.contains($0.id) && !skipped.contains($0.id) }
         SheetFrame(title: "Draft comments for the class", subtitle: "Semester " + sem, width: 600,
-                   dirty: !waiting.isEmpty || task != nil, discardMessage: "Drafts you have not used will be lost.") {
+                   dirty: !waiting.isEmpty || task != nil, discardMessage: "Drafts you have not used will be lost.",
+                   confirmTitle: "Done", onConfirm: { stop(); dismiss() }) {
             Text("Apple Intelligence drafts a comment for each student without one, in your voice, from this semester's notes, results and judgements. Check each one, edit it, then use it or skip it.")
                 .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
@@ -371,7 +372,6 @@ struct ClassDraftsSheet: View {
             VStack(spacing: 10) {
                 ForEach(todo) { s in row(s) }
             }
-            HStack { Spacer(); Button("Done") { stop(); dismiss() }.keyboardShortcut(.defaultAction) }
         }
         .onAppear {
             // The first student to be drafted, so the first draft starts sooner.
