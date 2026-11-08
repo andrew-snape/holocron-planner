@@ -928,7 +928,6 @@ struct PackSheet: View {
                 .frame(minHeight: 260, maxHeight: 360)
                 .background(Color.cardBG)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous))
-                .hairlineEdge(Radius.inset)
                 HStack {
                     Button("Copy") { model.copyText(text) }
                     .buttonStyle(.borderedProminent)
