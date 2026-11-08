@@ -1,7 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- Settings now looks like System Settings, with a sidebar and search. The Data tab is split into Folders, Privacy and Year End.
+- Holocron writes a guide for AI assistants into each data folder, and Help has Copy Guide for AI Assistants.
+- New Describe Holocron action for Shortcuts.
+- Documentation for contributors and AI assistants: CLAUDE.md, AGENTS.md and the docs folder.
+- Draft lesson… in a lesson's plan drafts tuning in, explicit teaching, independent work and reflection from the summary. It fills the empty steps, or replaces yours if you ask, and never uses student names.
+- Suggest subject and kind reads a note you have typed for a student and offers a subject and a kind of note. It only runs when you choose it, and nothing changes until you press Use.
+- Type a to-do in plain words, such as "remind me to print excursion forms Friday". Holocron tidies the wording and fills in the due date for you to check. It works with Apple Intelligence off, and so does the Add a To-Do shortcut.
+- Drafts start sooner. Apple Intelligence gets ready when you open the Report tab, class drafts, Dictate or Import results, and what it was given is cleared within three minutes or when you leave the screen.
+- Scan text… reads the words from a photo, a scan or a PDF into a lesson's summary or resources, or a student's note. You check the words before they are added, and the picture is never kept.
+
 ## 1.13.1
-Fixing AI Guardrails
+
+- Report drafts no longer stop when Apple Intelligence refuses a note. Its safety check sometimes turns down ordinary class topics, such as a unit project on LGBTQIA+ rights. Holocron now tries again with fewer notes: first without your unit work notes, then without your lesson notes, then without any notes, including your Notes for drafting.
+- When a draft was written without some of your notes, a message beside it says which ones were left out, so you can add them yourself.
 
 ## 1.13.0
 
@@ -30,7 +44,10 @@ Fixing AI Guardrails
 - Drafts never name other students, leave out notes that mention plans, meetings or diagnoses, and are written again if they copy from your earlier comments about other students.
 
 ## 1.10.0
-Updated for apple intelligence
+
+- Siri, Spotlight and Shortcuts. Ask "What's next in Holocron?", "What's on today" or "tomorrow", "When is Maths in Holocron?" or "Any birthdays this week in Holocron?". You can also log a note for a student (Siri checks with you before saving), add a to-do, copy today for a relief teacher, open the Class screen or start the class timer. Every action is also in the Shortcuts app, ready to build into your own shortcuts.
+- Student names stay private. Siri only says or suggests them once you switch that on in Settings, then Apple Intelligence, and never while the Class screen is showing. Birthdays, notes and copying a day need your Mac to be unlocked, and Siri only says Saved once the note is on disk.
+- New Settings, then Apple Intelligence tab. It shows whether Apple Intelligence is ready on this Mac, lets you switch off each suggestion feature, and lists what you can ask Siri. Everything runs on this Mac.
 
 ## 1.9.2
 
@@ -39,7 +56,10 @@ Updated for apple intelligence
 - Importing a newer export of the same tests updates those results instead of adding them twice, and keeps anything you typed in the comment. assessments.csv is copied into a Before results import folder in Holocron archive first.
 
 ## 1.9.1
-- Minor Updates
+
+- Dates now follow Australian habits throughout Holocron: weeks start on Monday, and the calendar's day letters read M, Tu, W, Th, F, Sa, Su so Tuesday and Thursday can be told apart.
+- Adding a non-teaching day for a date that already has one now updates its label instead of adding a second row, and a message says whether it was added or updated.
+- On Today, the list is now called To-do, and Add stays greyed out until you have typed something.
 
 ## 1.9.0
 

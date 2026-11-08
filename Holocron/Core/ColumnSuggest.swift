@@ -34,6 +34,21 @@ struct SuggestedColumns {
 enum ColumnSuggest {
     static var isAvailable: Bool { Intelligence.isAvailable }
 
+    private static let instructions = """
+        You help a primary school teacher in Australia import assessment results from a spreadsheet \
+        exported by another program. Match the spreadsheet's columns to what is asked. Answer only \
+        with headers copied exactly from the list. Leave a field empty when no column fits.
+        """
+    private static let promptPrefix = "The spreadsheet's columns are:\n"
+
+    /// Loads the model while a results file is being read, so a suggestion starts sooner.
+    static func prewarm() {
+        guard isAvailable else { return }
+        let session = LanguageModelSession(instructions: instructions)
+        WarmSessions.put("columns", session: session, instructions: instructions)
+        Intelligence.prewarm(session, prefix: promptPrefix)
+    }
+
     /// Suggested columns for a table. Headers the model names that are not in the table are ignored.
     static func suggest(_ table: ResultsTable) async throws -> ColumnMap {
         let example = table.rows.first { $0.filter { !$0.isEmpty }.count >= table.header.count / 2 } ?? table.rows.first ?? []
@@ -41,12 +56,8 @@ enum ColumnSuggest {
             let v = i < example.count ? String(example[i].prefix(30)) : ""
             return "- \(h)" + (v.isEmpty ? "" : " (for example: \(v))")
         }
-        let session = LanguageModelSession(instructions: """
-            You help a primary school teacher in Australia import assessment results from a spreadsheet \
-            exported by another program. Match the spreadsheet's columns to what is asked. Answer only \
-            with headers copied exactly from the list. Leave a field empty when no column fits.
-            """)
-        let prompt = "The spreadsheet's columns are:\n" + lines.joined(separator: "\n")
+        let session = WarmSessions.take("columns", instructions: instructions)?.session ?? LanguageModelSession(instructions: instructions)
+        let prompt = promptPrefix + lines.joined(separator: "\n")
         let s = try await session.respond(to: prompt, generating: SuggestedColumns.self).content
 
         var m = ColumnMap(source: "Apple Intelligence")

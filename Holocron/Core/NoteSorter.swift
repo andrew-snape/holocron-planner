@@ -57,15 +57,29 @@ enum NoteSorter {
         return roster.map { s in firsts[NameMatcher.fold(s.first)]!.count > 1 ? s.fullName : s.first }
     }
 
+    private static func instructions(roster: [Student], subjects: [String]) -> String {
+        """
+        You help a primary school teacher in Australia file notes they dictated during the day. \
+        Split what they said into separate notes, one for each observation. Students in the class: \
+        \(spokenNames(roster).joined(separator: ", ")). Subjects: \(subjects.joined(separator: ", ")). \
+        Never invent details, names or subjects that were not said.
+        """
+    }
+
+    /// Loads the model while the teacher dictates, so sorting starts sooner. Call only when sorting is on and available.
+    static func prewarm(roster: [Student], subjects: [String]) {
+        let instructions = instructions(roster: roster, subjects: subjects)
+        let session = LanguageModelSession(instructions: instructions)
+        WarmSessions.put("sort", session: session, instructions: instructions)
+        Intelligence.prewarm(session, prefix: "Dictated: ")
+    }
+
     static func sort(_ transcript: String, roster: [Student], subjects: [String], lessonNow: String) async throws -> [SortedNote] {
-        let session = LanguageModelSession(instructions: """
-            You help a primary school teacher in Australia file notes they dictated during the day. \
-            Split what they said into separate notes, one for each observation. Students in the class: \
-            \(spokenNames(roster).joined(separator: ", ")). Subjects: \(subjects.joined(separator: ", ")). \
-            Never invent details, names or subjects that were not said.
-            """)
+        let instructions = instructions(roster: roster, subjects: subjects)
+        // A session warmed when the Dictate sheet opened is used once, if the roll and subjects are unchanged.
+        let session = WarmSessions.take("sort", instructions: instructions)?.session ?? LanguageModelSession(instructions: instructions)
         let out = try await session.respond(to: "Dictated: \(transcript)", generating: DictatedNotes.self,
-                                           options: GenerationOptions(sampling: .greedy)).content
+                                           options: GenerationOptions(samplingMode: .greedy)).content
         let saidList = NameMatcher.fold(transcript)
         let saidWords = Set(saidList)
         // "Whole class" only counts when it was said as such, not for "great in class".

@@ -89,6 +89,7 @@ struct CommentDraftArea: View {
     @State private var run = UUID()
     @State private var askReplace = false
     @State private var showClass = false
+    @State private var warming: Task<Void, Never>? = nil
 
     var body: some View {
         let db = model.db
@@ -121,12 +122,26 @@ struct CommentDraftArea: View {
                 Button("Add the draft below it") { use(replace: false) }
                 Button("Cancel", role: .cancel) {}
             }
-            .onChange(of: sid) { discard() }
-            .onChange(of: sem) { discard() }
-            .onDisappear { discard() }
+            .onAppear { warm() }
+            .onChange(of: sid) { discard(); warm() }
+            .onChange(of: sem) { discard(); warm() }
+            .onDisappear { discard(); warming?.cancel(); WarmSessions.discard(prefix: CommentDrafter.warmPrefix) }
             .sheet(isPresented: $showClass) {
                 ClassDraftsSheet(sem: sem).environment(model).preferredColorScheme(.light)
             }
+        }
+    }
+
+    /// Gets the model ready for the first draft, so its first words arrive sooner.
+    /// Waits a moment first, so clicking through the roll does not reload the model for each student.
+    private func warm() {
+        warming?.cancel()
+        let (sid, sem) = (self.sid, self.sem)
+        warming = Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            if Task.isCancelled { return }
+            let db = model.db
+            CommentDrafter.prewarm(db, sid: sid, sem: sem, pronoun: db.pronoun(sid) ?? .they, words: db.typicalCommentWords)
         }
     }
 
@@ -189,6 +204,7 @@ struct DotPointCommentBox: View {
     @State private var error = ""
     @State private var task: Task<Void, Never>? = nil
     @State private var askReplace = false
+    @State private var warming: Task<Void, Never>? = nil
     @State private var showSource = false
 
     var body: some View {
@@ -254,9 +270,21 @@ struct DotPointCommentBox: View {
             Button("Replace it", role: .destructive) { use() }
             Button("Cancel", role: .cancel) {}
         }
-        .onChange(of: sid) { discard() }
-        .onChange(of: sem) { discard() }
-        .onDisappear { discard() }
+        .onAppear { warm() }
+        .onChange(of: sid) { discard(); warm() }
+        .onChange(of: sem) { discard(); warm() }
+        .onDisappear { discard(); warming?.cancel(); WarmSessions.discard(prefix: DotPointDrafter.warmPrefix) }
+    }
+
+    /// Waits a moment first, so clicking through the roll does not reload the model for each student.
+    private func warm() {
+        warming?.cancel()
+        let (sid, sem, kind) = (self.sid, self.sem, self.kind)
+        warming = Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            if Task.isCancelled { return }
+            DotPointDrafter.prewarm(model.db, sid: sid, sem: sem, kind: kind)
+        }
     }
 
     private func start() {
@@ -345,7 +373,14 @@ struct ClassDraftsSheet: View {
             }
             HStack { Spacer(); Button("Done") { stop(); dismiss() }.keyboardShortcut(.defaultAction) }
         }
-        .onDisappear { stop() }
+        .onAppear {
+            // The first student to be drafted, so the first draft starts sooner.
+            let db = model.db
+            if let first = db.roster.first(where: { db.generalComment($0.id, sem: sem).trimmed.isEmpty }) {
+                CommentDrafter.prewarm(db, sid: first.id, sem: sem, pronoun: db.pronoun(first.id) ?? .they, words: db.typicalCommentWords)
+            }
+        }
+        .onDisappear { stop(); WarmSessions.discard(prefix: CommentDrafter.warmPrefix) }
     }
 
     @ViewBuilder
@@ -473,7 +508,8 @@ struct IntentDraftArea: View {
                 Button("Replace them", role: .destructive) { use() }
                 Button("Cancel", role: .cancel) {}
             }
-            .onDisappear { discard() }
+            .onAppear { IntentDrafter.prewarm() }
+            .onDisappear { discard(); WarmSessions.discard("intent") }
         }
     }
 

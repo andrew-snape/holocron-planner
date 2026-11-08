@@ -18,24 +18,25 @@ Holocron keeps your fortnightly timetable, lesson summaries, student notes and t
 - **Quick log and Mark class**: log a note for several students at once, or mark the whole class on one task, typing a score or picking an achievement level.
 - **Hours**: face to face time, release time and duties other than teaching and learning, by term and for the year, including the period lost to wellbeing work.
 - **Units and Devotion**: units of inquiry and daily devotion scripts. Every module can be switched off in Settings. When the planner is shared, subjects and devotion scripts can be kept private (see Your data).
+- **Apple Intelligence and Siri**: dictate notes, draft report comments and learning intentions, and ask Siri or Shortcuts what is on next. It all runs on your Mac, every draft waits for you to choose Use, and each feature can be switched off in Settings.
 - **Sidebar**: the class name and current week stay at the top, with a mini calendar that switches between Week and Month views.
 
 The timetable runs on an A and B fortnightly cycle that restarts each term. Whole days can be marked as camps, carnivals and so on.
 
 ## What's new
 
+- **1.13.1**: A report draft that Apple Intelligence refuses is tried again with fewer notes, and a message says which notes were left out.
+- **1.13**: Import Essential Assessment report comments, and use them to draft the Mathematics and English points.
+- **1.12**: Report drafts follow school reporting style and your own rules. Preferred names, an ILP sentence, and English and Mathematics dot points with Copy for SIMON.
+- **1.11**: Dictate notes in Quick log, draft report comments and learning intentions, all on this Mac and never saved until you choose Use.
+- **1.10**: Siri, Spotlight and Shortcuts actions, and a Settings tab for Apple Intelligence. Student names stay off until you switch them on.
+- **1.9.2**: Import results from a spreadsheet, including Essential Assessment exports.
+- **1.9.1**: Monday-first dates, clearer weekday letters, and tidier To-do and non-teaching day handling.
+- **1.9**: Year end archive, a safer import from another folder, Mac-style sheets, Students search, an Hours chart and better VoiceOver support.
 - **1.8.12**: Safer updates. An update is only installed if the release has a checksum file, and updates always come from the official releases page.
 - **1.8.11**: Renaming a subject follows through everywhere it is used, screens are faster, imports are safer, and update check problems show in Settings.
-- **1.8.10**: The Term grid highlights the current week.
-- **1.8.9**: First, Then and Next steps move below I can on the Class screen.
 - **1.8.8**: A student friendly Class screen, with We are learning to and I can, First, Then and Next steps you type on the screen, and a Now and Next strip.
-- **1.8.7**: Privacy for Devotion scripts and subject lessons now sits together in Settings, then Data, and the Settings text is tidier.
-- **1.8.6**: Fixed the duplicated Class name field in Settings, and matched the Settings colours to the rest of Holocron.
-- **1.8.5**: Settings is reorganised into toolbar tabs with grouped, aligned forms.
-- **1.8**: Settings moves to a gear button in the toolbar and opens in its own window, as in other Mac apps. Cmd+comma opens it too.
-- **1.7**: Subjects can be marked private when your planner folder is shared. Their lessons are then kept in your student folder, and colleagues never see or change them. Devotion scripts and quotes can be kept private in the same way.
-- **1.6.2**: A Week and Month switch on the sidebar calendar, and a reordered sidebar menu.
-- **1.6**: Copy lessons copies a day as Markdown for a relief teacher. Assessments can be marked as a score or an achievement level.
+- **1.7**: Subjects can be marked private when your planner folder is shared. Devotion scripts and quotes can be kept private in the same way.
 
 The [changelog](CHANGELOG.md) has the full history.
 
@@ -60,18 +61,28 @@ Updates never touch your data, which lives in its own folders.
 
 ## Your data
 
-Everything is stored as CSV files in a folder you choose, by default `iCloud Drive/Holocron/data`. There is no account, no server, and no tracking. The only network request the app makes is the update check to GitHub.
+Everything is stored as CSV files in a folder you choose, by default `iCloud Drive/Holocron/data`. There is no account, no server, and no tracking. The only network request the app makes is the update check to GitHub. The first time you dictate, macOS itself may download its speech model from Apple. Your voice and notes are never sent.
 
 The data is split in two folders:
 
 - **Student folder (private)**: students, notes, assessments, wellbeing, behaviour, reports, photos, your hours log, your to-do list, your settings, and any private subject lessons or Devotion files (`lessonsprivate.csv`).
-- **Planner folder**: the timetable, lessons, terms, units, devotions, quotes, rubrics, subjects and periods. In Settings, then Data, you can point this at a folder shared with colleagues (for example a shared iCloud Drive folder) so a team can share one planner while keeping student records private. Subjects marked private keep their lessons in the student folder instead, and private Devotion scripts and quotes move there too. Your colleagues' own lessons are never touched.
+- **Planner folder**: the timetable, lessons, terms, units, devotions, quotes, rubrics, subjects and periods. In Settings, then Folders, you can point this at a folder shared with colleagues (for example a shared iCloud Drive folder) so a team can share one planner while keeping student records private. Subjects marked private keep their lessons in the student folder instead, and private Devotion scripts and quotes move there too. Your colleagues' own lessons are never touched.
 
 Edit a CSV in Numbers or a text editor, then press Shift+Cmd+R to reload. Files are written safely (to a temporary file, then swapped in), a file that cannot be read is never overwritten, and a warning shows if the data folder is not connected.
 
-To begin again, use **Start over** in Settings, then Data. You can clear just the planner (timetable, lessons, terms, subjects and so on) or everything. The current files are moved into a dated folder in `Holocron archive`, next to the data folder, so nothing is lost. A shared planner folder is only disconnected, never cleared.
+To begin again, use **Start over** in Settings, then Year End. You can clear just the planner (timetable, lessons, terms, subjects and so on) or everything. The current files are moved into a dated folder in `Holocron archive`, next to the data folder, so nothing is lost. A shared planner folder is only disconnected, never cleared.
 
 **Please check your school's policy** on where student information may be stored before putting any real student data into iCloud Drive or any other service. This repository contains no student data, and the project's `.gitignore` is set up to keep CSV files and photos out of it.
+
+## For AI assistants
+
+The repository has [AGENTS.md](AGENTS.md), an orientation manual that AI coding assistants such as Codex, Cursor, Copilot, Gemini and Claude look for, and [CLAUDE.md](CLAUDE.md) with extra rules for Claude Code. Documentation is in the [docs](docs) folder.
+
+Holocron also helps an assistant understand your own files. It writes `README-for-AI.md` into the planner folder and the student folder. The guide describes each file and its columns, and how to edit them safely. The student folder copy begins with a privacy notice. To use it, ask your assistant to read `README-for-AI.md` in your Holocron folder first, then ask it to make the change. Quit Holocron before an assistant edits the files, or follow the checklist in the guide, then press Shift+Cmd+R in Holocron afterwards.
+
+You can also choose Help, then Copy Guide for AI Assistants, to put the guide on the clipboard. The Describe Holocron action in Shortcuts returns the planner guide, which has no student information.
+
+**Please check your school's policy** before giving any AI tool access to the student folder. It holds real student information.
 
 ## Build it yourself
 
@@ -91,7 +102,7 @@ Every push to `main` and every pull request is also built on a Mac by GitHub Act
 
 ## Keyboard shortcuts
 
-Cmd+1 to Cmd+0 jump between screens in this order: Today, Week, Term, Units, Devotion, Class screen, Students, Quick log, Mark class, Hours. Cmd+comma opens Settings. Option+Cmd+C copies the day's lessons as rich text. Shift+Cmd+R reloads from the folder. On the Week screen, Cmd+P prints the week and Shift+Cmd+P saves it as a PDF.
+Cmd+1 to Cmd+0 jump between screens in this order: Today, Week, Term, Units, Devotion, Class screen, Students, Quick log, Mark class, Hours. Cmd+comma opens Settings. Cmd+N adds a student and Cmd+L logs a note. Option+Cmd+C copies the day's lessons as rich text. Shift+Cmd+R reloads from the folder. On the Week screen, Cmd+P prints the week and Shift+Cmd+P saves it as a PDF.
 
 ## Publishing a release (for maintainers)
 

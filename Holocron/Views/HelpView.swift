@@ -100,6 +100,10 @@ struct HelpCommands: Commands {
             Button("Copy CSV Guide for AI") {
                 model.copyText(CSVGuide.text, toast: "CSV guide copied. Paste it into your AI chat.")
             }
+            Button("Copy Guide for AI Assistants") {
+                model.copyText(model.aiGuideText(), toast: "Guide copied. It includes a privacy notice for the student part.")
+            }
+            .disabled(!model.folder.exists())
             Divider()
             Button("Holocron on GitHub...") { NSWorkspace.shared.open(HelpActions.repoURL) }
         }

@@ -312,11 +312,28 @@ final class AppModel {
         if !db.termsSorted.isEmpty && termKey.isEmpty { termKey = termDefault() }
         refreshSiriVocabulary()
 
+        if folderThere { writeAIGuides() }
+
         // A photo that was missing may have arrived from iCloud since.
         if !force, !noPhoto.isEmpty {
             let arrived = noPhoto.filter { FileManager.default.fileExists(atPath: folder.photoURL($0).path) }
             if !arrived.isEmpty { noPhoto.subtract(arrived); photoVersion += 1 }
         }
+    }
+
+    /// Keeps README-for-AI.md up to date in each data folder. It only writes when the content has changed.
+    private func writeAIGuides() {
+        folder.writeAIGuides(version: Updater.currentVersion, privateSubjects: privateSubjects)
+    }
+
+    /// Both guides for the clipboard: the planner guide, then the student guide under its privacy notice.
+    func aiGuideText() -> String {
+        folder.combinedAIGuide(version: Updater.currentVersion, privateSubjects: privateSubjects)
+    }
+
+    /// The planner guide alone, with no student information.
+    func plannerGuideText() -> String {
+        folder.plannerAIGuide(version: Updater.currentVersion, privateSubjects: privateSubjects)
     }
 
     func reloadIfIdle() {

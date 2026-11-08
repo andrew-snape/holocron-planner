@@ -89,7 +89,7 @@ struct HolocronApp: App {
                 .environment(\.locale, auLocale)
                 .environment(\.calendar, auCalendar)
                 .preferredColorScheme(.light)
-                .frame(minWidth: 540, idealWidth: 600, minHeight: 460, idealHeight: 620)
+                .frame(minWidth: 720, idealWidth: 780, minHeight: 500, idealHeight: 600)
         }
 
         Window("Holocron Help", id: "help") {

@@ -299,6 +299,8 @@ struct UpdatesSettings: View {
     var body: some View {
         let u = model.updater
         Form {
+            SettingsPaneHeader(pane: .updates)
+
             Section {
                 LabeledContent("Installed version") {
                     Text(Updater.currentVersion).foregroundStyle(.secondary)

@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import FoundationModels
 
@@ -34,6 +35,12 @@ enum Intelligence {
     /// Whether a feature can be offered now: Apple Intelligence is ready and the feature is switched on.
     static func can(_ f: AIFeature, _ db: Database) -> Bool { isAvailable && db.aiEnabled(f) }
 
+    /// Starts loading the model for `session`, so its first words arrive sooner. `prefix` is the
+    /// start of the prompt that will follow, when it is known. Does nothing to the answer.
+    static func prewarm(_ session: LanguageModelSession, prefix: String? = nil) {
+        session.prewarm(promptPrefix: prefix.map { Prompt($0) })
+    }
+
     /// A plain message for an error from the on-device model.
     /// True when there was more to read than the model can take at once. macOS 27 reports it with a
     /// new error type that older SDKs do not have, so that one is recognised by name.
@@ -64,7 +71,7 @@ enum Intelligence {
             return "Apple Intelligence would not write this one. Try again, or write it yourself."
         }
         if isTooLong(error) {
-            return "There was too much to fit in one go. Shorten your rules or the notes for this draft, then try again."
+            return "That was too long for Apple Intelligence on this Mac. Try with less text, such as shorter notes or rules."
         }
         return "Apple Intelligence could not finish. Try again in a moment."
     }
@@ -89,6 +96,10 @@ enum AIFeature: String, CaseIterable, Identifiable {
     case drafts
     /// Apple Intelligence suggests the columns of an imported spreadsheet.
     case columns
+    /// A lesson's tuning in, explicit teaching, independent work and reflection are drafted from its summary.
+    case lessonDraft
+    /// A typed note gets a suggested subject and kind of note.
+    case noteTags
 
     var id: String { rawValue }
 
@@ -97,6 +108,8 @@ enum AIFeature: String, CaseIterable, Identifiable {
         case .dictation: return "Sort dictated notes"
         case .drafts: return "Draft comments and learning intentions"
         case .columns: return "Suggest columns when importing results"
+        case .lessonDraft: return "Draft lessons"
+        case .noteTags: return "Suggest a subject and kind for typed notes"
         }
     }
 
@@ -105,6 +118,8 @@ enum AIFeature: String, CaseIterable, Identifiable {
         case .dictation: return "Splits what you say in Quick log into notes for each student, with the subject and kind of note, for you to check."
         case .drafts: return "Drafts a report comment in your voice, or a lesson's learning intention and success criteria. Nothing is saved until you choose Use."
         case .columns: return "Reads the headers of a spreadsheet Holocron does not recognise and suggests which column is which."
+        case .lessonDraft: return "Drafts tuning in, explicit teaching, independent work and reflection from a lesson's summary. Student names are never used. Nothing is saved until you choose Use."
+        case .noteTags: return "Reads a note you have typed for a student and suggests the subject and the kind of note, for you to accept with one click."
         }
     }
 }
@@ -121,4 +136,73 @@ extension Database {
     var siriMayUseNames: Bool { setting(Database.siriNamesKey) == "on" }
 
     func setSiriMayUseNames(_ on: Bool) { setSetting(Database.siriNamesKey, on ? "on" : "off") }
+}
+
+/// Sessions made and warmed when a place that drafts opens, so the first request can use one that is
+/// already loaded. A warmed session is used once, and only if what it was built from is unchanged.
+/// It holds student text (the session's instructions and the payload), so it is kept briefly: expired
+/// entries are dropped on every call, and the places that warm discard theirs when they close. Only
+/// digests of the instructions and facts are kept for comparing, never the text itself.
+enum WarmSessions {
+    struct Item {
+        let session: LanguageModelSession
+        /// Anything else the first request needs to know about how the session was made.
+        let payload: [String]
+        fileprivate let instructions: Data
+        fileprivate let fingerprint: Data
+        fileprivate let made: Date
+    }
+
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var items: [String: Item] = [:]
+    /// A warmed session older than this is dropped, as the model may have unloaded.
+    private static let lifetime: TimeInterval = 180
+    private static let capacity = 6
+
+    private static func digest(_ text: String) -> Data { Data(SHA256.hash(data: Data(text.utf8))) }
+
+    /// Call with the lock held.
+    private static func purge() {
+        let now = Date()
+        items = items.filter { now.timeIntervalSince($0.value.made) < lifetime }
+    }
+
+    static func put(_ key: String, session: LanguageModelSession, instructions: String, fingerprint: String = "", payload: [String] = []) {
+        lock.lock(); defer { lock.unlock() }
+        purge()
+        if items[key] == nil, items.count >= capacity, let oldest = items.min(by: { $0.value.made < $1.value.made })?.key {
+            items[oldest] = nil
+        }
+        items[key] = Item(session: session, payload: payload, instructions: digest(instructions),
+                          fingerprint: digest(fingerprint), made: Date())
+    }
+
+    /// Whether a live warmed session for `key` already matches, so it need not be made again.
+    static func has(_ key: String, instructions: String, fingerprint: String = "") -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        purge()
+        guard let item = items[key] else { return false }
+        return item.instructions == digest(instructions) && item.fingerprint == digest(fingerprint)
+    }
+
+    /// The warmed session for `key`, removed so it is used once, when its instructions and
+    /// fingerprint still match what the request would build now.
+    static func take(_ key: String, instructions: String, fingerprint: String = "") -> Item? {
+        lock.lock(); defer { lock.unlock() }
+        purge()
+        guard let item = items.removeValue(forKey: key), item.instructions == digest(instructions),
+              item.fingerprint == digest(fingerprint) else { return nil }
+        return item
+    }
+
+    static func discard(_ key: String) {
+        lock.lock(); defer { lock.unlock() }
+        items[key] = nil
+    }
+
+    /// Drops every warmed session whose key starts with `prefix`, when a place that warmed closes.
+    static func discard(prefix: String) {
+        lock.lock(); defer { lock.unlock() }
+        items = items.filter { !$0.key.hasPrefix(prefix) }
+    }
 }

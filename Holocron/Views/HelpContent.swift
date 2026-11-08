@@ -30,7 +30,7 @@ struct HelpStartPage: View {
                 HelpSteps([
                     "**Choose where your data lives.** On first launch, pick **Use iCloud Drive / Holocron / data**, or choose another folder. A new folder starts with a typical school day and a list of subjects.",
                     "**Add your term dates.** Open **Settings** with the gear button at the top right of the main window (or press Cmd+comma), then choose the **Calendar** tab. Week 1 of every term is Week A, so Holocron can show whether it is an A or B week.",
-                    "**Check your periods and subjects.** In Settings, open the **Timetable** tab and make sure the bell times and subjects match your school day. Set specialist subjects, such as PE and French, to **Release** so they count as release time.",
+                    "**Check your periods and subjects.** In Settings, open **Timetable** and make sure the bell times and subjects match your school day. Set specialist subjects, such as PE and French, to **Release** so they count as release time.",
                     "**Build your A and B timetable.** Open **Week** and click a subject name in a slot. Choose **This date only** for a one-off change, or **Every A week** (or **Every B week**) to change the standing timetable.",
                     "**Add lessons.** Type a short summary into the **Summary** box in any slot on the Week screen, or click a lesson on **Today** to open it with more room. A couple of sentences or a link is plenty.",
                 ])
@@ -81,9 +81,13 @@ struct HelpUsingPage: View {
                     "**Whole days can be different.** On **Today**, choose **Set day type** to mark a camp, carnival, excursion or pupil free day. The normal timetable steps aside for that day.",
                     "**Switch off what you do not use.** In Settings, then General, every screen except Today can be turned off.",
                     "**Saving is automatic.** Every change is written to your CSV files and a small confirmation appears. If a red banner says No data folder connected, nothing is saved until you reconnect a folder.",
-                    "**Sharing the planner.** In Settings, then Data, you can point the planner at a shared folder so colleagues use the same timetable. Student records stay in your private folder. Under Privacy on the same tab, you can keep your Devotion scripts and the lessons for particular subjects to yourself.",
+                    "**Sharing the planner.** In Settings, then Folders, you can point the planner at a shared folder so colleagues use the same timetable. Student records stay in your private folder. In Settings, then Privacy, you can keep your Devotion scripts and the lessons for particular subjects to yourself.",
                     "**Dictate notes.** In Quick log, choose **Dictate…**, press **Start dictating** and say your notes, such as “Ava and Sam, great reasoning in maths. Leo was upset after lunch.” With Apple Intelligence on, **Sort into notes** splits them into a note for each student with the subject and kind of note. Check each one, then save. Your words are turned into text on this Mac. The first time, macOS may download its English speech model.",
                     "**Drafts.** On a student's Report tab, **Draft comment** writes a general comment in your voice from the semester's notes, results and report judgements, and **Draft for the class…** does it for every student without a comment. In a lesson's plan, **Draft learning intention and success criteria** suggests them from the summary. A draft is never saved until you choose Use. Wellbeing, behaviour, medical notes, adjustments and plan notes are never used.",
+                    "**Draft a lesson.** In a lesson's plan, choose **Edit plan**, write a summary, then **Draft lesson…**. Apple Intelligence drafts tuning in, explicit teaching, independent work and reflection. It fills the empty steps and keeps what you have written, unless you tick **Replace what I have written**. It only reads the lesson text, the subject and the unit of inquiry, never student names. Choose **Use**, **Write again** or **Discard**.",
+                    "**Suggest a subject and kind.** When you type a note for a student, **Suggest subject and kind** reads it and offers a subject and whether it is a lesson, behaviour or wellbeing note. It only runs when you choose it, and nothing changes until you press **Use**. Your note is read on this Mac and is not kept anywhere else.",
+                    "**To-dos in plain words.** On Today, type something like “remind me to print excursion forms Friday”. Holocron takes out the lead-in, fills in the due date and shows it before you add. A bare day name is the coming one, “next Friday” is Friday of next week, and dates such as 13/11 are day first. Change the date or untick Due to keep your words as typed. This works with Apple Intelligence off, and the Add a To-Do shortcut does the same.",
+                    "**Scan text.** In a lesson's summary or resources, and in a student's note boxes, **Scan text…** reads the words from a photo, a scan or a PDF. Check them, fix any mistakes, then choose **Add to the end**. The picture is read on this Mac, is not kept, and Apple Intelligence is not needed. It reads a photo, a scan or a PDF file you choose.",
                     "**Report style.** Drafts follow plain Australian English, 100 to 150 words, positive framing and no labels or scores. Add your school's own rules in Settings, then Apple Intelligence. A student's preferred name and Has an ILP tick are in their Details. English and Mathematics comments are dot points; **Copy for SIMON** copies them with %* dot points.",
                     "**Writing Tools.** Select text in any note or comment, then right-click and choose Writing Tools to proofread or rewrite it.",
                     "**Siri and Shortcuts.** Ask Siri, or type into Spotlight: “What's next in Holocron?”, “What's on tomorrow in Holocron?”, “When is Maths in Holocron?”, “Log a note for Ava in Holocron” or “Start a Holocron timer”. The same actions are in the Shortcuts app. Siri only says or suggests student names once you switch that on in Settings, then Apple Intelligence, and never while the Class screen is showing. Reading birthdays, logging a note and copying a day need your Mac to be unlocked.",
@@ -105,18 +109,18 @@ struct HelpDataPage: View {
 
                 HelpHeading("Your folders")
                 HelpFolderPanel()
-                HelpPara("You can also choose **Help, then Open Data Folder** (or Open Student Folder and Open Planner Folder if you share your planner). Settings, then Data has a Show in Finder button too.", secondary: true)
+                HelpPara("You can also choose **Help, then Open Data Folder** (or Open Student Folder and Open Planner Folder if you share your planner). Settings, then Folders has a Show in Finder button too.", secondary: true)
 
                 HelpHeading("Two folders")
                 HelpBullets([
                     "**Student folder (private):** students, their records, assessments, wellbeing, behaviour, reports, photos, your hours log, your to-do list and your settings.",
-                    "**Planner folder:** the timetable, lessons, terms, subjects, periods, units, devotions, quotes and rubrics. By default this is the same folder. Point it at a shared iCloud Drive folder in Settings, then Data, to share the planner with colleagues.",
+                    "**Planner folder:** the timetable, lessons, terms, subjects, periods, units, devotions, quotes and rubrics. By default this is the same folder. Point it at a shared iCloud Drive folder in Settings, then Folders, to share the planner with colleagues.",
                 ])
 
                 HelpHeading("Three ways to get data in")
                 HelpBullets([
                     "**Start fresh.** Choose a folder at setup. Files that do not exist yet are created with a typical day and a list of subjects. Existing files are never changed.",
-                    "**Bring across an older copy.** In Settings, then Data, choose **Change folder...**, then **Import my existing planner data...** and pick the old data folder. Its CSV files and photos are copied across.",
+                    "**Bring across an older copy.** In Settings, then Folders, choose **Change folder...**, then **Import my existing planner data...** and pick the old data folder. Its CSV files and photos are copied across.",
                     "**Edit the CSV files.** Good for adding a whole term of lessons, a class list or a year of term dates at once. Steps below.",
                 ])
 
@@ -155,11 +159,11 @@ struct HelpDataPage: View {
 
                 HelpHeading("If something looks wrong")
                 HelpBullets([
-                    "**A red banner says No data folder connected.** Choose Set up data folder, or use Settings, then Data, to pick the folder again. If the folder is in iCloud Drive, check it is downloaded.",
+                    "**A red banner says No data folder connected.** Choose Set up data folder, or use Settings, then Folders, to pick the folder again. If the folder is in iCloud Drive, check it is downloaded.",
                     "**A message says a file is still downloading from iCloud.** Wait a moment, then press Shift+Cmd+R.",
                     "**New rows do not show up.** Check you edited the right file, that dates look like `2026-10-14`, that subject names and period numbers match exactly, and that you pressed Shift+Cmd+R. Lessons only appear on dates inside a term you have added.",
                     "**A file could not be read.** Holocron never overwrites a file it cannot read. Open it in TextEdit, fix the problem or restore your backup, then reload.",
-                    "**Want to begin again?** Settings, then Data, then Start over. Your old files move into a dated folder called Holocron archive. Nothing is deleted.",
+                    "**Want to begin again?** Settings, then Year End, then Start over. Your old files move into a dated folder called Holocron archive. Nothing is deleted.",
                 ])
             }
         }
@@ -255,6 +259,8 @@ struct HelpAIPage: View {
 
                 HelpCallout(kind: .care, title: "Student privacy comes first",
                             text: "Check your school's policy before pasting real student details into any AI tool. Where you can, use first names or made-up ids, leave out birth dates, medical details and anything sensitive, and add those in Holocron yourself afterwards. Timetables, term dates and lesson summaries carry no student information at all, so they are the easiest place to start.")
+
+                HelpPara("There are two ways to work. If you paste into a chat, use the CSV guide and the method below. If your assistant can open your files itself, such as Claude on your Mac, it can edit them for you: quit Holocron, then ask the assistant to read README-for-AI.md in your data folder before it changes anything. Holocron keeps that file up to date in each data folder, with a checklist, the allowed values and step-by-step instructions. Reopen Holocron afterwards and check the change. **Help, then Copy Guide for AI Assistants** copies the same guide. The student guide begins with a privacy notice. Do not edit README-for-AI.md, because Holocron replaces it each time it opens.")
 
                 HelpHeading("The method")
                 HelpSteps([

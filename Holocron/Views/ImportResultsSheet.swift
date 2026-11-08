@@ -74,6 +74,8 @@ struct ImportResultsSheet: View {
 
     private func load() async {
         guard draft == nil else { return }
+        // Load the model while the file is read, in case its columns need suggesting.
+        if canSuggest { ColumnSuggest.prewarm() }
         let u = url
         let loaded = await Task.detached { () -> Result<ResultsTable, ResultsTable.Failure> in
             do { return .success(try ResultsTable.load(u)) }

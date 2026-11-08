@@ -197,6 +197,17 @@ struct BirthdaysIntent: AppIntent {
     }
 }
 
+struct DescribeHolocronIntent: AppIntent {
+    static let title: LocalizedStringResource = "Describe Holocron"
+    static let description = IntentDescription("Returns a guide to Holocron's planner files for an AI assistant. It holds no student information.")
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
+        let guide = try IntentHost.require().plannerGuideText()
+        return .result(value: guide, dialog: "Here is the guide to Holocron's planner files. It has no student information.")
+    }
+}
+
 // MARK: Actions
 
 struct LogNoteIntent: AppIntent {
@@ -249,9 +260,16 @@ struct AddTodoIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let model = try IntentHost.require(writing: .todo)
-        let t = text.trimmed
+        var t = text.trimmed
         guard !t.isEmpty else { throw HolocronIntentError.emptyTodo }
         var dueISO = ""
+        if due == nil {
+            // "Print forms Friday": the day is worked out in code, as in the to-do box on Today.
+            // Only a safe date is used (a day word last or after by or on, or a calendar date); otherwise
+            // the words are kept exactly as given and there is no due date.
+            let p = TodoParse.parse(t, strict: true)
+            if let d = p.due, !p.text.isEmpty { t = p.text; dueISO = d }
+        }
         if let d = due {
             let c = Calendar.current.dateComponents([.year, .month, .day], from: d)
             dueISO = Cal.make(c.year ?? 1970, c.month ?? 1, c.day ?? 1)

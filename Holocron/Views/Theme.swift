@@ -175,10 +175,33 @@ struct NoteBox: View {
     @Binding var text: String
     var lines: Int = 3
     var placeholder: String = ""
+    /// Adds a Scan text button that reads a photo, scan or PDF and adds the words to the end of the box.
+    var scannable = false
+    @State private var scanner = TextScanner()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            FieldLabel(text: label, hint: hint)
+            HStack(spacing: 6) {
+                FieldLabel(text: label, hint: hint)
+                if scannable {
+                    Spacer(minLength: 8)
+                    ScanTextButton(scanner: scanner)
+                }
+            }
+            if scannable && !scanner.error.isEmpty {
+                HStack(alignment: .top, spacing: 6) {
+                    Label(scanner.error, systemImage: "exclamationmark.triangle")
+                        .font(.system(size: 12)).foregroundStyle(Color.appRed)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button { scanner.error = "" } label: {
+                        Image(systemName: "xmark").font(.system(size: 10)).frame(minWidth: 22, minHeight: 22).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.ink3)
+                    .accessibilityLabel("Dismiss the message")
+                    .help("Dismiss the message")
+                }
+            }
             TextField(placeholder, text: $text, axis: .vertical)
                 .lineLimit(lines...max(lines, lines + 6))
                 .textFieldStyle(.plain)
@@ -188,6 +211,8 @@ struct NoteBox: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.black.opacity(0.14), lineWidth: 0.5))
         }
+        .scanText(scannable, scanner: scanner) { text = TextScan.appending($0, to: text) }
+        .onChange(of: text) { _, _ in if !scanner.error.isEmpty { scanner.error = "" } }
     }
 }
 

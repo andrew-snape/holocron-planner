@@ -452,7 +452,10 @@ private struct LessonNoteForm: View {
                 ForEach(db.subjectNames, id: \.self) { Text($0).tag($0) }
             }
             .frame(maxWidth: 260)
-            NoteBox(label: "Note", text: $note, lines: 2)
+            NoteBox(label: "Note", text: $note, lines: 2, scannable: true)
+            NoteSuggestBar(note: note, kind: nil, subject: subject) { s in
+                if !s.subject.isEmpty { subject = s.subject }
+            }
             Button("Add note") {
                 let t = note.trimmed
                 guard !t.isEmpty else { return }
@@ -626,7 +629,7 @@ private struct WellbeingForm: View {
                     TextField("", text: $minutes).textFieldStyle(.roundedBorder).frame(width: 70)
                 }
             }
-            NoteBox(label: "Note", text: $note, lines: 3)
+            NoteBox(label: "Note", text: $note, lines: 3, scannable: true)
             Button("Add entry") {
                 db.addWellbeing(students: [sid], date: date, periodLost: lost, minutes: Int(minutes) ?? 0,
                                 note: note.trimmed)
@@ -664,7 +667,7 @@ private struct BehaviourForm: View {
         let db = model.db
         AddBox(title: "Add a behaviour entry") {
             DateField(iso: $date)
-            NoteBox(label: "What happened", text: $note, lines: 3)
+            NoteBox(label: "What happened", text: $note, lines: 3, scannable: true)
             Button("Add entry") {
                 db.addBehaviour(students: [sid], date: date, note: note.trimmed)
                 note = ""
@@ -1072,7 +1075,11 @@ struct QuickLogSheet: View {
                     }
                 }
             }
-            NoteBox(label: "Note", text: $note, lines: 3)
+            NoteBox(label: "Note", text: $note, lines: 3, scannable: true)
+            NoteSuggestBar(note: note, kind: kind, subject: subject) { s in
+                kind = s.kind
+                if s.kind == .lesson && !s.subject.isEmpty { subject = s.subject }
+            }
             HStack {
                 Button("Save") { save() }
                     .buttonStyle(.borderedProminent)

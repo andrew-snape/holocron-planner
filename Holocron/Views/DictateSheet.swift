@@ -55,6 +55,10 @@ struct DictateSheet: View {
                 reviewList
             }
         }
+        .onAppear {
+            // Load the model while the teacher speaks, so sorting starts sooner.
+            if Intelligence.can(.dictation, model.db) { NoteSorter.prewarm(roster: model.db.roster, subjects: model.db.subjectNames) }
+        }
         .onChange(of: dictation.state) { _, s in
             // Keep whatever was heard, after Stop and after a failure alike.
             if s == .idle || { if case .failed = s { return true }; return false }() { transcript = dictation.text }
@@ -62,6 +66,7 @@ struct DictateSheet: View {
         .onDisappear {
             dictation.cancel()
             sorting?.cancel()
+            WarmSessions.discard("sort")
         }
     }
 

@@ -43,7 +43,7 @@ struct StartOverSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             if shared {
-                Label("Your planner folder is a separate folder that may be shared with colleagues. It will be disconnected, not cleared, so everyone else keeps their planner. You can connect it again in Settings, then Data.",
+                Label("Your planner folder is a separate folder that may be shared with colleagues. It will be disconnected, not cleared, so everyone else keeps their planner. You can connect it again in Settings, then Folders.",
                       systemImage: "person.2.fill")
                     .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
                     .fixedSize(horizontal: false, vertical: true)

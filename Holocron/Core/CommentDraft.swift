@@ -76,19 +76,47 @@ extension Database {
 
     func setPronoun(_ sid: String, _ p: Pronoun) { setSetting("pronoun_" + sid, p.rawValue) }
 
-    /// What the drafter is told about a student, as short lines. `detail` trims it when it is too long,
-    /// and `omit` leaves out notes the on-device model would not take.
-    func reportFacts(_ sid: String, sem: String, for kind: ReportComment = .general, detail: Int = 3,
-                     omit: CommentDrafter.Omit = .nothing) -> String {
-        guard let s = student(sid) else { return "" }
+    /// The notes the drafter may ever see for a student and semester: in the semester and the kind
+    /// of comment, and never one that mentions a private matter. Wellbeing, behaviour, medical,
+    /// adjustments and plan notes are not lesson notes, so they are never here. Both the packed
+    /// facts and the lookup tools read from this, so they cannot disagree about what is allowed.
+    func reportEligibleNotes(_ sid: String, sem: String, for kind: ReportComment) -> [Row] {
         let r = semesterRange(sem)
-        func inRange(_ x: Row) -> Bool { x.s("date") >= r.from && x.s("date") <= r.to && kind.covers(x.s("subject")) }
-        func clip(_ t: String, _ n: Int) -> String { t.count > n ? String(t.prefix(n)) + "…" : t }
+        return logRows(.lessonnotes, student: sid)
+            .filter { $0.s("date") >= r.from && $0.s("date") <= r.to && kind.covers($0.s("subject")) }
+            .filter { !CommentDrafter.mentionsPrivate($0.s("note")) }
+    }
+
+    /// The results in the semester for the kind of comment, newest first.
+    func reportEligibleTests(_ sid: String, sem: String, for kind: ReportComment) -> [Row] {
+        let r = semesterRange(sem)
+        return logRows(.assessments, student: sid)
+            .filter { $0.s("date") >= r.from && $0.s("date") <= r.to && kind.covers($0.s("subject")) }
+    }
+
+    static func isUnitNote(_ r: Row) -> Bool {
+        let s = r.s("subject").lowercased()
+        return s == "tdl" || s.contains("inquiry") || s.contains("unit")
+    }
+
+    /// One note as a line, with other children's names masked.
+    func reportNoteLine(_ r: Row, for sid: String) -> String {
+        "- " + (r.s("subject").isEmpty ? "" : "\(r.s("subject")): ") + Database.clip(maskingNames(r.s("note"), keep: sid), 160)
+    }
+
+    func reportTestLine(_ r: Row) -> String { "\(r.s("subject")) \(r.s("task")) \(r.s("result"))" }
+
+    static func clip(_ t: String, _ n: Int) -> String { t.count > n ? String(t.prefix(n)) + "…" : t }
+
+    /// The lines that open every set of facts: the name, roles, the teacher's notes for the report
+    /// and the report judgements. Shared by the packed facts and the shorter summary used with lookup tools.
+    fileprivate func reportHead(_ sid: String, sem: String, for kind: ReportComment, omit: CommentDrafter.Omit) -> [String] {
+        guard let s = student(sid) else { return [] }
         var lines: [String] = ["Student: \(s.usualName)"]
         if kind == .general && !s.roles.trimmed.isEmpty { lines.append("Roles: \(s.roles.trimmed)") }
 
         let context = reportText(sid, sem: sem, "context").trimmed
-        if !context.isEmpty && omit < .allNotes { lines.append("The teacher's notes for this report: " + clip(maskingNames(context, keep: sid), 600)) }
+        if !context.isEmpty && omit < .allNotes { lines.append("The teacher's notes for this report: " + Database.clip(maskingNames(context, keep: sid), 600)) }
 
         let judged = reportSubjects.filter(kind.covers).compactMap { subj -> String? in
             let j = judgement(sid, sem: sem, subject: subj)
@@ -97,14 +125,28 @@ extension Database {
                 .filter { !$0.isEmpty }.joined(separator: ", ")
         }
         if !judged.isEmpty { lines.append("Report judgements (the comment must agree with them): " + judged.joined(separator: "; ")) }
+        return lines
+    }
 
-        if kind == .general {
-            let units = unitsSorted.filter { u in u.s("start") <= r.to && (u.s("end").isEmpty || u.s("end") >= r.from) }
-            for u in units.prefix(2) {
-                lines.append("Unit of inquiry: '\(u.s("theme"))'" + (u.s("title").isEmpty ? "" : ", \(u.s("title"))")
-                             + (u.s("central_idea").isEmpty ? "" : ". Central idea: \(clip(u.s("central_idea"), 160))"))
-            }
+    /// The units of inquiry running in the semester, as the lines the drafter is told.
+    func reportUnitLines(sem: String) -> [String] {
+        let r = semesterRange(sem)
+        let units = unitsSorted.filter { u in u.s("start") <= r.to && (u.s("end").isEmpty || u.s("end") >= r.from) }
+        return units.prefix(2).map { u in
+            "Unit of inquiry: '\(u.s("theme"))'" + (u.s("title").isEmpty ? "" : ", \(u.s("title"))")
+                + (u.s("central_idea").isEmpty ? "" : ". Central idea: \(Database.clip(u.s("central_idea"), 160))")
         }
+    }
+
+    /// What the drafter is told about a student, as short lines. `detail` trims it when it is too long,
+    /// and `omit` leaves out notes the on-device model would not take.
+    func reportFacts(_ sid: String, sem: String, for kind: ReportComment = .general, detail: Int = 3,
+                     omit: CommentDrafter.Omit = .nothing) -> String {
+        guard student(sid) != nil else { return "" }
+        func clip(_ t: String, _ n: Int) -> String { Database.clip(t, n) }
+        var lines = reportHead(sid, sem: sem, for: kind, omit: omit)
+
+        if kind == .general { lines += reportUnitLines(sem: sem) }
 
         // Essential Assessment's own report comments are the strongest evidence for English and Mathematics.
         if kind != .general {
@@ -118,22 +160,21 @@ extension Database {
             }
         }
 
-        let tests = logRows(.assessments, student: sid).filter(inRange).prefix(detail * 4)
+        let tests = reportEligibleTests(sid, sem: sem, for: kind).prefix(detail * 4)
         if !tests.isEmpty {
-            lines.append("Assessments: " + tests.map { "\($0.s("subject")) \($0.s("task")) \($0.s("result"))" }.joined(separator: "; "))
+            lines.append("Assessments: " + tests.map(reportTestLine).joined(separator: "; "))
         }
         // Notes that mention private matters are left out, and other children's names are masked.
-        let notes = logRows(.lessonnotes, student: sid).filter(inRange).filter { !CommentDrafter.mentionsPrivate($0.s("note")) }.prefix(detail * 5)
-        func isUnit(_ r: Row) -> Bool { let s = r.s("subject").lowercased(); return s == "tdl" || s.contains("inquiry") || s.contains("unit") }
-        func line(_ r: Row) -> String {
-            "- " + (r.s("subject").isEmpty ? "" : "\(r.s("subject")): ") + clip(maskingNames(r.s("note"), keep: sid), 160)
-        }
-        let unitNotes = omit < .unitNotes ? notes.filter(isUnit) : []
-        let otherNotes = omit < .lessonNotes ? notes.filter { !isUnit($0) } : []
-        if kind == .general && !unitNotes.isEmpty { lines.append("Unit work notes:"); lines += unitNotes.map(line) }
-        if !otherNotes.isEmpty { lines.append("Other teacher's notes:"); lines += otherNotes.map(line) }
+        let notes = reportEligibleNotes(sid, sem: sem, for: kind).prefix(detail * 5)
+        let unitNotes = omit < .unitNotes ? notes.filter(Database.isUnitNote) : []
+        let otherNotes = omit < .lessonNotes ? notes.filter { !Database.isUnitNote($0) } : []
+        if kind == .general && !unitNotes.isEmpty { lines.append("Unit work notes:"); lines += unitNotes.map { reportNoteLine($0, for: sid) } }
+        if !otherNotes.isEmpty { lines.append("Other teacher's notes:"); lines += otherNotes.map { reportNoteLine($0, for: sid) } }
         return lines.joined(separator: "\n")
     }
+
+    /// The same, with every name on the roll swapped for `word`.
+    func maskingNames(_ text: String, word: String) -> String { maskingNames(text, keep: nil, replacing: nil, with: word) }
 
     /// Text with every name on the roll, other than `keep`'s, swapped for "a classmate", so
     /// another child's name can never reach a draft. With `replacing`, only that student's names are swapped.
@@ -151,6 +192,48 @@ extension Database {
         // "Sam and Ava" becomes "a classmate and a classmate": say it once.
         while t.contains("\(word) and \(word)") { t = t.replacingOccurrences(of: "\(word) and \(word)", with: word == "a classmate" ? "classmates" : word) }
         return t
+    }
+
+    /// What the lookup tools may return for one student and semester, worked out once on the main
+    /// actor with the same filters as `reportFacts`. Notes left out after a refusal (`omit`) are not here,
+    /// so the model cannot fetch them.
+    func reportLookup(_ sid: String, sem: String, omit: CommentDrafter.Omit) -> ReportLookup {
+        var notes: [String: [String]] = [:]
+        var names: [String: String] = [:]
+        for r in reportEligibleNotes(sid, sem: sem, for: .general) {
+            let unit = Database.isUnitNote(r)
+            guard unit ? omit < .unitNotes : omit < .lessonNotes else { continue }
+            let subject = r.s("subject").trimmed.isEmpty ? "General" : r.s("subject").trimmed
+            names[subject.lowercased()] = subject
+            notes[subject.lowercased(), default: []].append(reportNoteLine(r, for: sid))
+        }
+        var tests: [String: [String]] = [:]
+        for r in reportEligibleTests(sid, sem: sem, for: .general) {
+            let subject = r.s("subject").trimmed.isEmpty ? "General" : r.s("subject").trimmed
+            names[subject.lowercased()] = subject
+            tests[subject.lowercased(), default: []].append(reportTestLine(r))
+        }
+        return ReportLookup(notes: notes, tests: tests, names: names, units: reportUnitLines(sem: sem))
+    }
+
+    /// The short version of the facts used with lookup tools: who, the teacher's own notes for the
+    /// report, the judgements, and what can be looked up, with counts. The notes and results themselves are not here.
+    func reportSummary(_ sid: String, sem: String, omit: CommentDrafter.Omit, lookup: ReportLookup) -> String {
+        guard student(sid) != nil else { return "" }
+        var lines = reportHeadForSummary(sid, sem: sem, omit: omit)
+        lines.append(contentsOf: lookup.summaryLines)
+        return lines.joined(separator: "\n")
+    }
+
+    func reportHeadForSummary(_ sid: String, sem: String, omit: CommentDrafter.Omit) -> [String] {
+        reportHead(sid, sem: sem, for: .general, omit: omit)
+    }
+
+    /// What a warmed session was built from: the facts, who is on the roll and how many comments
+    /// exist to take examples from. If any changes, the warmed session is not used.
+    func warmFingerprint(_ sid: String, sem: String, for kind: ReportComment = .general) -> String {
+        reportFacts(sid, sem: sem, for: kind) + "|" + roster.map { $0.id + $0.fullName + $0.preferred }.joined(separator: ",")
+            + "|\(rows(.reportcomment).count)"
     }
 
     /// Up to `n` of the teacher's own comments of a kind to copy their voice from, a different few
@@ -192,9 +275,30 @@ enum CommentDrafter {
         Consolidating, Mastering, Appropriate or Comprehensive; describe what it means instead.
         """
 
+    /// OFF pending side-by-side testing of drafts with and without lookup tools: the tools code below
+    /// is complete but has never been run against the model. Do not turn on without comparing drafts.
+    /// Switch for letting the model look notes and results up with tools instead of reading them all
+    /// in the prompt. Off by default: see `ReportLookup`. When off, or when anything about a lookup
+    /// draft goes wrong, the draft is made from facts packed into the prompt, as it always was.
+    private static let useLookupTools = false
+
+    /// Said in the instructions of a session that has lookup tools.
+    private static let toolRules = """
+        You can look things up with tools. Before you write, call teacherNotes for each subject listed as having \
+        notes, testResults for each subject listed as having results, and unitOfInquiry. Use only what the tools \
+        return and the facts you were given. Never mention the tools.
+        """
+
+    /// What a session is built from, apart from the examples that change each time. A warmed session is
+    /// only used when this is the same.
+    static func warmTag(base: String, rules teacher: String, tools: Bool) -> String {
+        base + "|" + teacher.trimmed.prefix(Database.reportRulesLimit) + (tools ? "|tools" : "")
+    }
+
     /// A new conversation with the model, primed with the house style, the teacher's rules and voice.
-    static func session(base: String, rules teacher: String, examples: [String]) -> LanguageModelSession {
+    static func session(base: String, rules teacher: String, examples: [String], tools: [any Tool] = []) -> LanguageModelSession {
         var instructions = base
+        if !tools.isEmpty { instructions += "\n" + toolRules }
         if !teacher.trimmed.isEmpty {
             instructions += "\nThe teacher's own rules. Follow them too, and where they differ from the style above, follow these:\n"
                 + teacher.trimmed.prefix(Database.reportRulesLimit)
@@ -204,15 +308,37 @@ enum CommentDrafter {
                 + "students: do not reuse their phrases, details or goals.\n"
                 + examples.enumerated().map { "Comment \($0.offset + 1): \($0.element)" }.joined(separator: "\n")
         }
-        return LanguageModelSession(instructions: instructions)
+        return LanguageModelSession(tools: tools, instructions: instructions)
+    }
+
+    /// The start of the prompt, before the facts.
+    static func promptIntro(name: String, pronoun: Pronoun, words: Int) -> String {
+        "Write the parts of the general comment for \(name), about \(words) words in all. Call the student \(name), and use \(pronoun.words).\nWhat the teacher has recorded:\n"
     }
 
     static func prompt(facts: String, name: String, pronoun: Pronoun, words: Int) -> String {
-        """
-        Write the parts of the general comment for \(name), about \(words) words in all. Call the student \(name), and use \(pronoun.words).
-        What the teacher has recorded:
-        \(facts)
-        """
+        promptIntro(name: name, pronoun: pronoun, words: words) + facts
+    }
+
+    static let warmPrefix = "comment-"
+    private static func warmKey(_ sid: String) -> String { warmPrefix + sid }
+
+    /// Makes the session for the first draft now and starts loading the model, for when the teacher opens a
+    /// place that drafts. The first `draft` for the same student uses it if nothing it was built from has
+    /// changed. Does nothing unless drafting is on and the model is available.
+    @MainActor
+    static func prewarm(_ db: Database, sid: String, sem: String, pronoun: Pronoun, words: Int) {
+        guard Intelligence.can(.drafts, db), let st = db.student(sid) else { return }
+        let tools = useLookupTools ? lookupTools(db.reportLookup(sid, sem: sem, omit: .nothing)) : []
+        let tag = warmTag(base: rules, rules: db.reportRules, tools: !tools.isEmpty)
+        let fingerprint = db.warmFingerprint(sid, sem: sem)
+        // Already warm for exactly this: nothing to do.
+        if WarmSessions.has(warmKey(sid), instructions: tag, fingerprint: fingerprint) { return }
+        let examples = db.voiceExamples(excluding: sid)
+        let chat = session(base: rules, rules: db.reportRules, examples: examples, tools: tools)
+        WarmSessions.put(warmKey(sid), session: chat, instructions: tag,
+                         fingerprint: fingerprint, payload: examples)
+        Intelligence.prewarm(chat, prefix: promptIntro(name: st.usualName, pronoun: pronoun, words: words))
     }
 
     /// The comment so far, as the parts arrive.
@@ -271,17 +397,38 @@ enum CommentDrafter {
         let name = st.usualName
         var last: Error? = nil
         var omit = Omit.nothing
+        // Lookup tools are tried first when switched on. Any trouble with them turns them off for this
+        // draft, and the facts are packed into the prompt instead.
+        var toolsOK = useLookupTools
+        var firstTry = true
         // Detail 3 with examples, then the same without examples if the model copied from them,
         // then less detail if there was too much to fit. A refusal tries the same step again with fewer notes.
         let steps = [(3, true), (3, false), (1, false)]
         var i = 0
         while i < steps.count {
             let (detail, withExamples) = steps[i]
-            let examples = withExamples ? db.voiceExamples(excluding: sid) : []
-            let session = session(base: rules, rules: db.reportRules, examples: examples)
+            let lookup = toolsOK ? db.reportLookup(sid, sem: sem, omit: omit) : nil
+            let tools = lookup.map(lookupTools) ?? []
+            var examples = withExamples ? db.voiceExamples(excluding: sid) : []
+            var chat: LanguageModelSession? = nil
+            // The session warmed when the teacher opened this place, for the very first request only.
+            if firstTry, i == 0, omit == .nothing,
+               let w = WarmSessions.take(warmKey(sid), instructions: warmTag(base: rules, rules: db.reportRules, tools: !tools.isEmpty),
+                                         fingerprint: db.warmFingerprint(sid, sem: sem)) {
+                chat = w.session
+                examples = w.payload
+            } else {
+                WarmSessions.discard(warmKey(sid))
+            }
+            firstTry = false
+            let conversation = chat ?? session(base: rules, rules: db.reportRules, examples: examples, tools: tools)
             do {
-                let facts = db.reportFacts(sid, sem: sem, detail: detail, omit: omit)
-                let text = try await run(session, prompt(facts: facts, name: name, pronoun: pronoun, words: words), onWords)
+                var facts = lookup.map { db.reportSummary(sid, sem: sem, omit: omit, lookup: $0) }
+                    ?? db.reportFacts(sid, sem: sem, detail: detail, omit: omit)
+                if lookup != nil { facts += "\nLook up the notes and results with the tools before you write." }
+                let text = try await run(conversation, prompt(facts: facts, name: name, pronoun: pronoun, words: words), onWords)
+                // A draft written without looking anything up would be written from the summary alone.
+                if lookup != nil && !usedTools(conversation) { toolsOK = false; onWords(""); continue }
                 let done = tidy(text)
                 if mentionsPrivate(done) {
                     throw mentionsPrivate(db.reportText(sid, sem: sem, "context") + " " + db.reportRules) ? DraftError.privateInNotes : DraftError.privateTerm
@@ -289,8 +436,15 @@ enum CommentDrafter {
                 if copies(done, from: examples) { last = DraftError.copied; i += 1; continue }
                 return (finish(done, student: st, ilp: db.ilpSentence), omit.notice)
             } catch {
+                if error is CancellationError || Task.isCancelled { throw error }
                 if Intelligence.isRefusal(error), let next = omit.next {
                     omit = next
+                    onWords("")
+                    continue
+                }
+                // Tools failed, ran out of room or refused: write it again the old way.
+                if lookup != nil, !(error is DraftError) {
+                    toolsOK = false
                     onWords("")
                     continue
                 }
@@ -314,6 +468,11 @@ enum CommentDrafter {
         // A cancelled stream ends quietly, so check again rather than return half a comment.
         try Task.checkCancellation()
         return text
+    }
+
+    /// Whether the model called any lookup tool in this session.
+    private static func usedTools(_ session: LanguageModelSession) -> Bool {
+        session.transcript.contains { if case .toolCalls = $0 { return true } else { return false } }
     }
 
     enum DraftError: Error { case privateTerm, privateInNotes, copied }
@@ -502,6 +661,112 @@ struct GeneralParts {
     }
 }
 
+// MARK: - Lookup tools for the general comment
+//
+// Instead of packing every note into the prompt, the model can ask for the notes or results for one
+// subject, or the unit of inquiry. This is for the current student and semester only. The lookup is
+// built by `Database.reportLookup` from the same filters as `reportFacts`, so wellbeing, behaviour,
+// medical, adjustments, plan notes, parents and birth dates are never reachable, other children are
+// "a classmate", notes that mention private matters are dropped, and notes left out after a refusal
+// cannot be fetched. The model never receives a student id: the tools are bound to one student.
+//
+// Whether to use them (`CommentDrafter.useLookupTools`) is off: the on-device model is small and
+// cannot be made to call a tool, so a draft could be written from the summary alone, and tool
+// answers use the same small context as packed notes. A draft that makes no lookup is discarded
+// and redone the old way, which costs a second generation. Switch it on only after comparing drafts.
+
+/// Notes, results and units for one student and semester, already filtered. Read-only and Sendable.
+struct ReportLookup: Sendable {
+    /// Note lines by lower-case subject.
+    var notes: [String: [String]]
+    /// Result lines by lower-case subject.
+    var tests: [String: [String]]
+    /// Subject names as written, by lower-case subject.
+    var names: [String: String]
+    var units: [String]
+
+    /// The most lines one lookup returns.
+    static let limit = 10
+
+    /// What can be looked up, with counts, for the prompt.
+    var summaryLines: [String] {
+        let subjects = Set(notes.keys).union(tests.keys).sorted()
+        var lines = subjects.map { k -> String in
+            let n = notes[k]?.count ?? 0, t = tests[k]?.count ?? 0
+            return "- \(names[k] ?? k): \(n) \(n == 1 ? "note" : "notes"), \(t) \(t == 1 ? "result" : "results")"
+        }
+        lines.insert(subjects.isEmpty ? "Nothing is recorded to look up." : "Recorded notes and results you can look up by subject:", at: 0)
+        if !units.isEmpty { lines.append("Unit of inquiry: look it up.") }
+        return lines
+    }
+
+    private func match(_ subject: String, in table: [String: [String]]) -> [String]? {
+        let k = subject.trimmed.lowercased()
+        if let v = table[k] { return v }
+        // "maths" for "Mathematics", or "Mathematics" for "Maths".
+        let hit = table.keys.first { $0.contains(k) || k.contains($0) }
+        return hit.flatMap { table[$0] }
+    }
+
+    func notesFor(_ subject: String) -> String {
+        guard let v = match(subject, in: notes) else { return "No notes for that subject. Subjects with notes: " + names(for: notes) }
+        return v.prefix(ReportLookup.limit).joined(separator: "\n")
+    }
+
+    func testsFor(_ subject: String) -> String {
+        guard let v = match(subject, in: tests) else { return "No results for that subject. Subjects with results: " + names(for: tests) }
+        return v.prefix(ReportLookup.limit).map { "- " + $0 }.joined(separator: "\n")
+    }
+
+    private func names(for table: [String: [String]]) -> String {
+        let n = table.keys.sorted().map { names[$0] ?? $0 }
+        return n.isEmpty ? "none" : n.joined(separator: ", ")
+    }
+}
+
+@Generable
+struct ReportSubjectQuery {
+    @Guide(description: "The subject to look up, as listed in the facts, such as Mathematics or Writing")
+    var subject: String
+}
+
+@Generable
+struct ReportUnitQuery {
+    @Guide(description: "Part of the unit's title or theme, or empty for every current unit")
+    var unit: String
+}
+
+struct TeacherNotesTool: Tool {
+    let lookup: ReportLookup
+    let name = "teacherNotes"
+    let description = "The teacher's lesson notes about this student for one subject this semester. Unit of inquiry work is under TDL."
+    func call(arguments: ReportSubjectQuery) async throws -> String { lookup.notesFor(arguments.subject) }
+}
+
+struct TestResultsTool: Tool {
+    let lookup: ReportLookup
+    let name = "testResults"
+    let description = "This student's assessment results for one subject this semester."
+    func call(arguments: ReportSubjectQuery) async throws -> String { lookup.testsFor(arguments.subject) }
+}
+
+struct UnitOfInquiryTool: Tool {
+    let lookup: ReportLookup
+    let name = "unitOfInquiry"
+    let description = "The title, theme and central idea of the unit of inquiry running this semester."
+    func call(arguments: ReportUnitQuery) async throws -> String {
+        let q = arguments.unit.trimmed.lowercased()
+        let hits = q.isEmpty ? lookup.units : lookup.units.filter { $0.lowercased().contains(q) }
+        return (hits.isEmpty ? lookup.units : hits).joined(separator: "\n")
+    }
+}
+
+extension CommentDrafter {
+    static func lookupTools(_ lookup: ReportLookup) -> [any Tool] {
+        [TeacherNotesTool(lookup: lookup), TestResultsTool(lookup: lookup), UnitOfInquiryTool(lookup: lookup)]
+    }
+}
+
 // MARK: - English and Mathematics comments
 
 @Generable
@@ -529,14 +794,40 @@ enum DotPointDrafter {
             : "Across the points, cover number and at least one other area, such as measurement, space, statistics or algebra.")
     }
 
+    static let warmPrefix = "points-"
+    private static func warmKey(_ sid: String, _ kind: ReportComment) -> String { "points-\(kind.rawValue)-" + sid }
+
+    /// Makes the session for the first draft of these points now and starts loading the model.
+    @MainActor
+    static func prewarm(_ db: Database, sid: String, sem: String, kind: ReportComment) {
+        guard Intelligence.can(.drafts, db), kind != .general, let st = db.student(sid) else { return }
+        let base = rules + "\n" + coverage(kind)
+        let tag = CommentDrafter.warmTag(base: base, rules: db.reportRules, tools: false)
+        let fingerprint = db.warmFingerprint(sid, sem: sem, for: kind)
+        if WarmSessions.has(warmKey(sid, kind), instructions: tag, fingerprint: fingerprint) { return }
+        let examples = db.voiceExamples(excluding: sid, kind: kind)
+        let chat = CommentDrafter.session(base: base, rules: db.reportRules, examples: examples)
+        WarmSessions.put(warmKey(sid, kind), session: chat, instructions: tag,
+                         fingerprint: fingerprint, payload: examples)
+        Intelligence.prewarm(chat, prefix: "Write the \(kind == .english ? "English" : "Mathematics") comment points for \(st.usualName).\nWhat the teacher has recorded:\n")
+    }
+
     @MainActor
     static func draft(_ db: Database, sid: String, sem: String, kind: ReportComment) async throws -> String {
         guard let st = db.student(sid), kind != .general else { throw CancellationError() }
         let name = st.usualName
         var last: Error? = nil
         for (detail, withExamples) in [(3, true), (1, false)] {
-            let examples = withExamples ? db.voiceExamples(excluding: sid, kind: kind) : []
-            let session = CommentDrafter.session(base: rules + "\n" + coverage(kind), rules: db.reportRules, examples: examples)
+            var examples = withExamples ? db.voiceExamples(excluding: sid, kind: kind) : []
+            let base = rules + "\n" + coverage(kind)
+            var warmed: LanguageModelSession? = nil
+            // The session warmed when the teacher opened the Report tab, for the first request only.
+            if withExamples, let w = WarmSessions.take(warmKey(sid, kind), instructions: CommentDrafter.warmTag(base: base, rules: db.reportRules, tools: false),
+                                                       fingerprint: db.warmFingerprint(sid, sem: sem, for: kind)) {
+                warmed = w.session
+                examples = w.payload
+            }
+            let session = warmed ?? CommentDrafter.session(base: base, rules: db.reportRules, examples: examples)
             do {
                 let prompt = "Write the \(kind == .english ? "English" : "Mathematics") comment points for \(name).\n"
                     + "What the teacher has recorded:\n" + db.reportFacts(sid, sem: sem, for: kind, detail: detail)
@@ -617,12 +908,22 @@ struct DraftedIntent {
 }
 
 enum IntentDrafter {
+    private static let instructions = """
+        You help a Year 6 teacher in Australia, at an IB PYP school, plan a lesson. Write a learning intention and \
+        success criteria in Australian English, matched to the lesson described. Do not add content that is not \
+        suggested by the description.
+        """
+
+    /// Loads the model when a lesson form opens, so the draft starts sooner.
+    static func prewarm() {
+        guard Intelligence.isAvailable else { return }
+        let session = LanguageModelSession(instructions: instructions)
+        WarmSessions.put("intent", session: session, instructions: instructions)
+        Intelligence.prewarm(session, prefix: "Subject: ")
+    }
+
     static func draft(subject: String, summary: String, unit: Row?, teaching: String) async throws -> DraftedIntent {
-        let session = LanguageModelSession(instructions: """
-            You help a Year 6 teacher in Australia, at an IB PYP school, plan a lesson. Write a learning intention and \
-            success criteria in Australian English, matched to the lesson described. Do not add content that is not \
-            suggested by the description.
-            """)
+        let session = WarmSessions.take("intent", instructions: instructions)?.session ?? LanguageModelSession(instructions: instructions)
         var about = "Subject: \(subject)"
         if !summary.trimmed.isEmpty { about += "\nLesson: \(summary.trimmed.prefix(400))" }
         if !teaching.trimmed.isEmpty { about += "\nExplicit teaching: \(teaching.trimmed.prefix(400))" }

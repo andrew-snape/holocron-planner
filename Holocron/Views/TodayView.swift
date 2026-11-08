@@ -270,12 +270,29 @@ struct TodoPanel: View {
     @State private var text = ""
     @State private var hasDue = false
     @State private var due = Date()
+    /// True once the teacher has changed the due date or switched it off, so typing no longer sets it.
+    @State private var manual = false
     private var canAdd: Bool { !text.trimmed.isEmpty }
+
+    /// What the typed words say: the to-do and a due date such as "Friday", worked out in code.
+    private var parsed: TodoParse.Result { TodoParse.parse(text) }
+
+    /// The due date as yyyy-mm-dd that Add would use, or empty.
+    private func dueNow(_ p: TodoParse.Result) -> String {
+        if manual {
+            guard hasDue else { return "" }
+            let c = Calendar.current.dateComponents([.year, .month, .day], from: due)
+            return Cal.make(c.year ?? 1970, c.month ?? 1, c.day ?? 1)
+        }
+        return p.due ?? ""
+    }
 
     var body: some View {
         let db = model.db
         let open = db.openTodos()
         let done = db.doneTodayTodos()
+        let p = parsed
+        let dueText = dueNow(p)
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("To-do").font(.system(size: 13, weight: .semibold))
@@ -292,27 +309,47 @@ struct TodoPanel: View {
                         .disabled(!canAdd)
                 }
                 HStack(spacing: 6) {
-                    Toggle("Due", isOn: $hasDue).toggleStyle(.checkbox).font(.system(size: 12))
-                    if hasDue {
-                        DatePicker("", selection: $due, displayedComponents: .date).labelsHidden().datePickerStyle(.compact)
+                    Toggle("Due", isOn: Binding(get: { !dueText.isEmpty }, set: { on in
+                        manual = true
+                        hasDue = on
+                        if on, let d = Self.date(p.due ?? todayISO()) { due = d }
+                    })).toggleStyle(.checkbox).font(.system(size: 12))
+                    if !dueText.isEmpty {
+                        DatePicker("", selection: Binding(get: { Self.date(dueText) ?? due }, set: { d in
+                            manual = true
+                            hasDue = true
+                            due = d
+                        }), displayedComponents: .date).labelsHidden().datePickerStyle(.compact)
+                            .accessibilityLabel("Due date")
                     }
+                }
+                if canAdd && !manual, let d = p.due {
+                    Text((p.text != text.trimmed ? "Will add \u{201C}\(p.text)\u{201D}. " : "") + "Due \(longDate(d)). Change the date or untick Due to keep your words as typed.")
+                        .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .card(padding: 10)
         }
     }
 
+    private static func date(_ iso: String) -> Date? {
+        guard let p = Cal.parts(iso) else { return nil }
+        return Calendar.current.date(from: DateComponents(year: p.0, month: p.1, day: p.2))
+    }
+
     private func add() {
-        let t = text.trimmed
+        guard canAdd else { return }
+        let p = parsed
+        let dueISO = dueNow(p)
+        // The date words come out of the text only when the saved date is the one they said.
+        // A date the teacher set by hand, or none, keeps their words as typed.
+        let t = (!dueISO.isEmpty && dueISO == p.due && !p.text.isEmpty) ? p.text : p.keepingDate
         guard !t.isEmpty else { return }
-        var dueISO = ""
-        if hasDue {
-            let c = Calendar.current.dateComponents([.year, .month, .day], from: due)
-            dueISO = Cal.make(c.year ?? 1970, c.month ?? 1, c.day ?? 1)
-        }
         model.db.addTodo(text: t, due: dueISO)
         text = ""
         hasDue = false
+        manual = false
     }
 
     @ViewBuilder

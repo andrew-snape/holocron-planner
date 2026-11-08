@@ -450,15 +450,16 @@ struct PlanSheet: View {
 
     @ViewBuilder
     private func form(subj: String, stored: LessonContent) -> some View {
-        NoteBox(label: "Summary", hint: "shows on Today and Week", text: $draft.summary, lines: 2, placeholder: "A sentence or a link")
+        NoteBox(label: "Summary", hint: "shows on Today and Week", text: $draft.summary, lines: 2, placeholder: "A sentence or a link", scannable: true)
         NoteBox(label: "Learning intention", text: $draft.li, lines: 2, placeholder: "We are learning to...")
         NoteBox(label: "Success criteria", hint: "one per line", text: $draft.sc, lines: 3, placeholder: "I can...")
         IntentDraftArea(subject: subj, date: date, content: $draft)
+        LessonDraftArea(subject: subj, date: date, content: $draft)
         NoteBox(label: "Tuning in", text: $draft.tuning, lines: 3)
         NoteBox(label: "Explicit teaching", text: $draft.teaching, lines: 3)
         NoteBox(label: "Independent work", text: $draft.independent, lines: 3)
         NoteBox(label: "Reflection", text: $draft.reflection, lines: 3)
-        NoteBox(label: "Resources and links", hint: "one per line, a label then the link", text: $draft.resources, lines: 3, placeholder: "Slides https://...")
+        NoteBox(label: "Resources and links", hint: "one per line, a label then the link", text: $draft.resources, lines: 3, placeholder: "Slides https://...", scannable: true)
         LineField(label: "Curriculum codes", text: $draft.codes, placeholder: "AC9M6N05, AC9E6LY06")
         VStack(alignment: .leading, spacing: 6) {
             FieldLabel(text: "ATL skills")

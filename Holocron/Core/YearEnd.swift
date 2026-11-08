@@ -143,7 +143,7 @@ extension ArchivePlan {
         }
         lines += [
             "",
-            "To use this copy again, choose Settings, then Data, then Import from folder, and pick this folder.",
+            "To use this copy again, choose Settings, then Year End, then Import from folder, and pick this folder.",
             "",
             "It holds real student information. Keep it only where your school's policy allows."
         ]
