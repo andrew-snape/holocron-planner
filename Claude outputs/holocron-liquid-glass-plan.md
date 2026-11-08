@@ -106,8 +106,9 @@ Each phase: its own branch from `main`, build on Xcode 26 and 27, run `ui-design
 
 - Add the colour, radius, space and font tokens to `Theme.swift`.
 - Replace literal colours and radii in `Theme.swift` and `Sheets.swift` first, then the rest of `Views`, keeping values identical so nothing moves on screen.
-- Set `AccentColor` in `Assets.xcassets` to `appBlue`.
-- Done when a grep for `Color.white`, `Color.black.opacity` and `cornerRadius: <number>` in `Views` returns only `Theme.swift` and `PrintWeek.swift` (print stays as it is).
+- Set `AccentColor` in `Assets.xcassets` to `appBlue`. Moved to phase 2: it changes the colour of every system control and overrides the Mac's own accent setting, so it is a visible change.
+- Done when a grep for `Color.white`, `Color.black.opacity` and `cornerRadius: <number>` in `Views` returns only `Theme.swift` and `PrintWeek.swift` (print stays as it is), apart from the 2 pt bar in Students.
+- Status: done on 8 Nov 2026. Values are unchanged, except that faint fills of 0.025 to 0.045 now share one value (0.03), and two strokes and a legend swatch moved to the nearest token. None of these are visible. Card shadows and the toast shadow stay until phases 3 and 5.
 
 ### Phase 2. Window, toolbar and titles (M)
 

@@ -38,24 +38,68 @@ extension Color {
     static let appRed = Color(red: 0.8, green: 0.2, blue: 0.19)
     static let weekB = Color(red: 0.48, green: 0.31, blue: 0.66)
     static let weekBBG = Color(red: 0.95, green: 0.925, blue: 0.976)
+
+    /// Text box fill and border.
+    static let fieldBG = Color.white
+    static let fieldStroke = Color.black.opacity(0.14)
+    /// Quiet fills for chips that are off, empty states and placeholders, from faint to strong.
+    static let fillFaint = Color.black.opacity(0.03)
+    static let fill = Color.black.opacity(0.06)
+    static let fillStrong = Color.black.opacity(0.08)
+    /// Text and symbols on a solid accent or subject colour.
+    static let onAccent = Color.white
+}
+
+// MARK: - Shape, space and type
+
+/// Corner radii. Use these instead of numbers so the house look changes in one place.
+enum Radius {
+    static let tiny: CGFloat = 6
+    /// Lesson blocks in the week grid and the term overview.
+    static let block: CGFloat = 7
+    /// Text boxes and small chips.
+    static let field: CGFloat = 8
+    static let inset: CGFloat = 10
+    static let panel: CGFloat = 12
+    /// Cards (`.card()`) and full-width panels.
+    static let card: CGFloat = 14
+    static let large: CGFloat = 16
+    /// Class screen tiles and panels, read from across the room.
+    static let boardTile: CGFloat = 18
+    static let board: CGFloat = 22
+}
+
+enum Space {
+    static let page: CGFloat = 24
+    static let card: CGFloat = 14
+    static let gap: CGFloat = 12
+}
+
+extension Font {
+    /// Screen title.
+    static let hPage = Font.system(size: 26, weight: .bold)
+    /// Sheet title.
+    static let hSheet = Font.system(size: 18, weight: .bold)
+    /// Heading above a group on a screen.
+    static let hSection = Font.system(size: 15, weight: .semibold)
 }
 
 // MARK: - Card style
 
 struct CardStyle: ViewModifier {
-    var padding: CGFloat = 14
+    var padding: CGFloat = Space.card
     func body(content: Content) -> some View {
         content
             .padding(padding)
             .background(Color.cardBG)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             .shadow(color: Color.black.opacity(0.05), radius: 1, x: 0, y: 1)
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.hairline, lineWidth: 0.5))
+            .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).stroke(Color.hairline, lineWidth: 0.5))
     }
 }
 
 extension View {
-    func card(padding: CGFloat = 14) -> some View { modifier(CardStyle(padding: padding)) }
+    func card(padding: CGFloat = Space.card) -> some View { modifier(CardStyle(padding: padding)) }
 }
 
 // MARK: - Small shared views
@@ -72,7 +116,7 @@ struct SubjectChip: View {
             .padding(.vertical, 4)
             .padding(.horizontal, 9)
             .background(tone.tintColor)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.field, style: .continuous))
     }
 }
 
@@ -118,7 +162,7 @@ struct PageHeader<Trailing: View>: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(title).font(.system(size: 26, weight: .bold)).tracking(-0.4)
+            Text(title).font(.hPage).tracking(-0.4)
             if !subtitle.isEmpty {
                 Text(subtitle).font(.system(size: 13)).foregroundStyle(Color.ink2)
             }
@@ -144,8 +188,8 @@ struct EmptyNote: View {
         }
         .frame(maxWidth: .infinity)
         .padding(28)
-        .background(Color.black.opacity(0.03))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color.fillFaint)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
     }
 }
 
@@ -153,7 +197,7 @@ struct SectionTitle: View {
     var text: String
     init(_ t: String) { text = t }
     var body: some View {
-        Text(text).font(.system(size: 15, weight: .semibold)).padding(.top, 6)
+        Text(text).font(.hSection).padding(.top, 6)
     }
 }
 
@@ -207,9 +251,9 @@ struct NoteBox: View {
                 .textFieldStyle(.plain)
                 .writingToolsBehavior(.complete)
                 .padding(8)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.black.opacity(0.14), lineWidth: 0.5))
+                .background(Color.fieldBG)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.field, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Radius.field, style: .continuous).stroke(Color.fieldStroke, lineWidth: 0.5))
         }
         .scanText(scannable, scanner: scanner) { text = TextScan.appending($0, to: text) }
         .onChange(of: text) { _, _ in if !scanner.error.isEmpty { scanner.error = "" } }
@@ -250,8 +294,8 @@ struct ChipToggles: View {
                         .font(.system(size: 12, weight: .medium))
                         .padding(.vertical, 4)
                         .padding(.horizontal, 10)
-                        .background(isOn ? Color.appBlue : Color.black.opacity(0.06))
-                        .foregroundStyle(isOn ? Color.white : Color.primary)
+                        .background(isOn ? Color.appBlue : Color.fill)
+                        .foregroundStyle(isOn ? Color.onAccent : Color.primary)
                         .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -271,7 +315,7 @@ struct ChipRow: View {
                     .font(.system(size: 12, weight: .medium))
                     .padding(.vertical, 3)
                     .padding(.horizontal, 9)
-                    .background(tinted ? Color.appBlue.opacity(0.14) : Color.black.opacity(0.06))
+                    .background(tinted ? Color.appBlue.opacity(0.14) : Color.fill)
                     .clipShape(Capsule())
             }
         }
@@ -331,7 +375,7 @@ struct Avatar: View {
                     .frame(width: size, height: size, alignment: .top)
                     .clipShape(Circle())
             } else {
-                Circle().fill(Color.black.opacity(0.08))
+                Circle().fill(Color.fillStrong)
                 Text(initials)
                     .font(.system(size: size * 0.38, weight: .semibold, design: .rounded))
                     .foregroundStyle(Color.ink2)
@@ -369,7 +413,7 @@ func tintedBlock(_ tone: Tone, release: Bool) -> some View {
     ZStack {
         tone.tintColor
         if release {
-            Stripes(color: Color.white.opacity(0.55))
+            Stripes(color: Color.cardBG.opacity(0.55))
         }
     }
 }

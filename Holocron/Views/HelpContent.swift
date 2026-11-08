@@ -229,7 +229,7 @@ struct HelpFileTable: View {
                             .font(.system(size: 12.5, weight: .semibold, design: .monospaced))
                         TagLabel(text: t.isPlanner ? "Planner" : "Student",
                                  fg: t.isPlanner ? Color.appBlue : Color.ink2,
-                                 bg: t.isPlanner ? Color.appBlue.opacity(0.12) : Color.black.opacity(0.06))
+                                 bg: t.isPlanner ? Color.appBlue.opacity(0.12) : Color.fill)
                     }
                     .frame(width: 180, alignment: .leading)
                     Text(CSVGuide.summary(t))
@@ -240,9 +240,9 @@ struct HelpFileTable: View {
                 .padding(.vertical, 9).padding(.horizontal, 12)
             }
         }
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.hairline, lineWidth: 0.5))
+        .background(Color.cardBG)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous).stroke(Color.hairline, lineWidth: 0.5))
     }
 }
 

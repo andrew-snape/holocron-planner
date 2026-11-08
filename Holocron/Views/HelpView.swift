@@ -221,7 +221,7 @@ struct HelpSteps: View {
                 HStack(alignment: .top, spacing: 11) {
                     Text(String(i + 1))
                         .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundStyle(Color.white)
+                        .foregroundStyle(Color.onAccent)
                         .frame(width: 22, height: 22)
                         .background(Circle().fill(Color.appBlue))
                     helpText(t)
@@ -256,7 +256,7 @@ struct HelpCallout: View {
         }
         .padding(12)
         .background((kind == .info ? Color.appBlue : Color.appAmber).opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
     }
 }
 
@@ -280,8 +280,8 @@ struct HelpCode: View {
             .controlSize(.small)
         }
         .padding(12)
-        .background(Color.black.opacity(0.045))
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(Color.fillFaint)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous))
     }
 }
 
@@ -303,8 +303,8 @@ struct HelpKeyRow: View {
             Text(keys)
                 .font(.system(size: 12.5, weight: .medium, design: .rounded))
                 .padding(.vertical, 3).padding(.horizontal, 9)
-                .background(Color.black.opacity(0.06))
-                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .background(Color.fill)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.tiny, style: .continuous))
                 .frame(width: 170, alignment: .leading)
             Text(action).font(.system(size: 13.5))
             Spacer(minLength: 0)

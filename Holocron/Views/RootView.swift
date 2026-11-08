@@ -202,9 +202,9 @@ struct WeekBox: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.hairline, lineWidth: 0.5))
+        .background(Color.cardBG)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous).stroke(Color.hairline, lineWidth: 0.5))
     }
 }
 
@@ -310,7 +310,7 @@ struct MiniCalendar: View {
             } label: {
                 Text(String(Cal.parts(d)?.2 ?? 0))
                     .font(.system(size: 11.5, weight: isToday ? .bold : .regular, design: .rounded))
-                    .foregroundStyle(isToday ? Color.white : (nt ? Color.appRed : (school ? Color.primary : Color.ink3.opacity(0.6))))
+                    .foregroundStyle(isToday ? Color.onAccent : (nt ? Color.appRed : (school ? Color.primary : Color.ink3.opacity(0.6))))
                     .frame(width: 24, height: 22)
                     .background(
                         Circle().fill(isToday ? Color.appBlue : (sel ? Color.appBlue.opacity(0.15) : Color.clear))

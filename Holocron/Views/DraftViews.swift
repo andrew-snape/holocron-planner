@@ -66,8 +66,8 @@ struct DraftBox<Extra: View>: View {
         }
         .padding(12)
         .background(Color.appBlue.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.appBlue.opacity(0.25)))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous).stroke(Color.appBlue.opacity(0.25)))
     }
 }
 

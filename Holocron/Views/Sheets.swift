@@ -18,7 +18,7 @@ struct SheetFrame<Content: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.system(size: 18, weight: .bold))
+                    Text(title).font(.hSheet)
                     if !subtitle.isEmpty { Text(subtitle).font(.system(size: 12.5)).foregroundStyle(Color.ink2) }
                 }
                 Spacer()
@@ -373,7 +373,7 @@ struct PlanSheet: View {
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(uTone.tintColor)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
         }
         if !c.summary.isEmpty { Text(linkified(c.summary)).font(.system(size: 14)).textSelection(.enabled) }
         if !c.li.isEmpty {
@@ -384,7 +384,7 @@ struct PlanSheet: View {
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(tone.tintColor)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         }
         let sc = linesOf(c.sc)
         if !sc.isEmpty {
@@ -562,8 +562,8 @@ struct ResourceRow: View {
                     Spacer()
                 }
                 .padding(10)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .background(Color.cardBG)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous))
             }
         } else {
             Text(line).font(.system(size: 13)).textSelection(.enabled)

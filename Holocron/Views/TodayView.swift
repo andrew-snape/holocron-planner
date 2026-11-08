@@ -152,7 +152,7 @@ struct BlockRow: View {
                     Text(subj.isEmpty ? "Not set" : subj)
                         .font(.system(size: 15, weight: .semibold)).foregroundStyle(tone.inkColor)
                         .accessibilityValue(isNow ? "Happening now" : "")
-                    if c.hasPlan { TagLabel(text: "Plan", fg: tone.inkColor, bg: Color.white.opacity(0.7)) }
+                    if c.hasPlan { TagLabel(text: "Plan", fg: tone.inkColor, bg: Color.cardBG.opacity(0.7)) }
                     if moved { Circle().fill(Color.appAmber).frame(width: 6, height: 6).help("Moved for today") }
                 }
                 Text("\(info.isRelease ? "Release" : "Face to face") · \(period.minutes) min" + (moved ? " · changed for today" : ""))
@@ -184,9 +184,9 @@ struct BlockRow: View {
             .padding(10)
         }
         .background(tintedBlock(tone, release: info.isRelease))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.panel, style: .continuous)
                 .stroke(Color.appBlue, lineWidth: isNow ? 2 : 0)
         )
     }
@@ -202,8 +202,8 @@ struct QuoteCard: View {
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.7))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(Color.cardBG.opacity(0.7))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
         .help(row.s("source"))
     }
 }

@@ -134,8 +134,8 @@ struct MarkClassView: View {
                             Divider()
                         }
                     }
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .background(Color.cardBG)
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
                     HStack(spacing: 12) {
                         Button("Save the whole class") { save() }
                             .buttonStyle(.borderedProminent)
@@ -276,8 +276,8 @@ struct RubricDescriptors: View {
                     }
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.black.opacity(0.03))
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .background(Color.fillFaint)
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous))
                 }
             }
         }

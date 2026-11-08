@@ -176,7 +176,7 @@ struct ClassScreenView: View {
                                 .foregroundStyle(ut.inkColor)
                                 .padding(.vertical, 8).padding(.horizontal, 14)
                                 .background(ut.tintColor)
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
                         }
                         if !c.li.isEmpty {
                             heading("We are learning to", tone)
@@ -228,7 +228,7 @@ struct ClassScreenView: View {
                 .padding(.top, 14)
         }
         .padding(24)
-        .background(Color.white)
+        .background(Color.cardBG)
         .onExitCommand { if !embedded { dismiss() } }
         .onChange(of: ClassTarget(date: date, per: pn)) { stepsOpen = false; activeStep = 0 }
         .onAppear { model.classScreens.insert(screenID) }
@@ -281,7 +281,7 @@ struct ClassScreenView: View {
         }
         .padding(.vertical, 12).padding(.horizontal, 18)
         .background(tint)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
     }
 
     /// What follows a period: the next lesson, or Recess, Lunch or Home time when there is a gap.
@@ -371,7 +371,7 @@ struct TimerCard: View {
                 .foregroundStyle(t.total > 0 && t.left == 0 ? Color.appRed : (t.running ? tone.inkColor : Color.primary))
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.black.opacity(0.08))
+                    Capsule().fill(Color.fillStrong)
                     Capsule().fill(tone.barColor)
                         .frame(width: t.total > 0 ? geo.size.width * CGFloat(t.left) / CGFloat(t.total) : 0)
                 }
@@ -393,7 +393,7 @@ struct TimerCard: View {
         .padding(18)
         .frame(maxWidth: .infinity)
         .background(Color.appBG)
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.board, style: .continuous))
     }
 }
 
@@ -422,11 +422,11 @@ struct WorkCard: View {
                             Image(systemName: w.symbol).font(.system(size: 24))
                             Text(w.label).font(.system(size: 12, weight: .semibold)).lineLimit(1)
                         }
-                        .foregroundStyle(on ? Color.white : Color(hex: w.hex))
+                        .foregroundStyle(on ? Color.onAccent : Color(hex: w.hex))
                         .padding(.vertical, 12)
                         .frame(maxWidth: .infinity)
-                        .background(on ? Color(hex: w.hex) : Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .background(on ? Color(hex: w.hex) : Color.cardBG)
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                         .accessibilityValue(on ? "Selected" : "")
                     }
                     .buttonStyle(.plain)
@@ -436,7 +436,7 @@ struct WorkCard: View {
         .padding(18)
         .frame(maxWidth: .infinity)
         .background(Color.appBG)
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.board, style: .continuous))
     }
 }
 
@@ -457,9 +457,9 @@ struct StepCard: View {
                 HStack(spacing: 8) {
                     Text("\(number)")
                         .font(.system(size: 15, weight: .bold, design: .rounded))
-                        .foregroundStyle(active ? Color.white : tone.inkColor)
+                        .foregroundStyle(active ? Color.onAccent : tone.inkColor)
                         .frame(width: 28, height: 28)
-                        .background(Circle().fill(active ? tone.barColor : Color.white))
+                        .background(Circle().fill(active ? tone.barColor : Color.cardBG))
                     Text(label).font(.system(size: 22, weight: .bold)).foregroundStyle(tone.inkColor)
                     Spacer(minLength: 0)
                     if active {
@@ -478,8 +478,8 @@ struct StepCard: View {
         .padding(16)
         .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
         .background(tone.tintColor)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.boardTile, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.boardTile, style: .continuous)
             .stroke(active ? tone.barColor : Color.clear, lineWidth: 3))
     }
 }

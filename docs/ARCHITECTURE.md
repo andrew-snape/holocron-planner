@@ -196,7 +196,7 @@ Every draft appears in a `DraftBox` with Use, Try again and Discard (the lesson 
 
 ## Theme
 
-[Views/Theme.swift](../Holocron/Views/Theme.swift) holds colour tokens, `CardStyle`, headers, chips, `FlowLayout`, `Avatar`, `NoteBox` and the other shared views. `Tone` (in [Core/Tone.swift](../Holocron/Core/Tone.swift)) works out a subject's bar, background and text colours from its hex code with a contrast search.
+[Views/Theme.swift](../Holocron/Views/Theme.swift) holds colour, corner radius (`Radius`), spacing (`Space`) and heading font tokens, `CardStyle`, headers, chips, `FlowLayout`, `Avatar`, `NoteBox` and the other shared views. `Tone` (in [Core/Tone.swift](../Holocron/Core/Tone.swift)) works out a subject's bar, background and text colours from its hex code with a contrast search.
 
 ## File map
 

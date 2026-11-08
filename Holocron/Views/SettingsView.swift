@@ -106,7 +106,7 @@ struct SettingsIcon: View {
             .overlay {
                 Image(systemName: symbol)
                     .font(.system(size: size * 0.55, weight: .medium))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.onAccent)
             }
             .accessibilityHidden(true)
     }

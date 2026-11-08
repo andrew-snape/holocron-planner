@@ -62,8 +62,8 @@ struct HoursView: View {
                          hrs(termStats.reduce(0) { $0 + $1.full.teach }),
                          hrs(termStats.reduce(0) { $0 + $1.full.release })], bold: true)
                 }
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(Color.cardBG)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
 
                 if !dtSorted.isEmpty {
                     SectionTitle("DOTTL by type this term")
@@ -80,8 +80,8 @@ struct HoursView: View {
                             row([kv.key, hrs(kv.value) + " hrs"], bold: false)
                         }
                     }
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .background(Color.cardBG)
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
                 }
 
                 if log.isEmpty {
@@ -103,8 +103,8 @@ struct HoursView: View {
                             Divider()
                         }
                     }
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .background(Color.cardBG)
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
                 }
             }
             .padding(24)
@@ -129,7 +129,7 @@ struct HoursView: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 12)
-        .background(Color.black.opacity(0.03))
+        .background(Color.fillFaint)
     }
 
     private func row(_ cols: [String], bold: Bool) -> some View {
@@ -200,8 +200,8 @@ private struct DottlChart: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(Color.cardBG)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
     }
 }
 

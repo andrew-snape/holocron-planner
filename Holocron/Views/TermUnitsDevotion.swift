@@ -148,8 +148,8 @@ private struct TermGridScroller: View {
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { viewport = $0 }
         .padding(10)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color.cardBG)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
     }
 }
 
@@ -164,7 +164,7 @@ struct TermStatBar: View {
                 HStack(spacing: 0) {
                     Rectangle().fill(tone.barColor).frame(width: geo.size.width * CGFloat(build.plan) / CGFloat(total))
                     Rectangle().fill(tone.barColor.opacity(0.4)).frame(width: geo.size.width * CGFloat(build.summary) / CGFloat(total))
-                    Rectangle().fill(Color.black.opacity(0.06))
+                    Rectangle().fill(Color.fill)
                 }
                 .clipShape(Capsule())
             }
@@ -175,7 +175,7 @@ struct TermStatBar: View {
             HStack(spacing: 16) {
                 legend(tone.barColor, "\(build.plan) full plan\(build.plan == 1 ? "" : "s")")
                 legend(tone.barColor.opacity(0.4), "\(build.summary) summary only")
-                legend(Color.black.opacity(0.1), "\(build.empty) not planned")
+                legend(Color.fillStrong, "\(build.empty) not planned")
                 Spacer()
                 if let g = build.nextGap {
                     Text("Next gap: \(Cal.weekdayShort[dayIdx(g)]) \(shortDate(g))").font(.system(size: 12)).foregroundStyle(Color.ink2)
@@ -234,12 +234,12 @@ struct TermGrid: View {
                                 .foregroundStyle(ut.inkColor)
                                 .padding(.vertical, 2).padding(.horizontal, 6)
                                 .background(ut.tintColor)
-                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                .clipShape(RoundedRectangle(cornerRadius: Radius.tiny, style: .continuous))
                         }
                     }
                     .frame(width: TermGrid.labelW, alignment: .leading)
                     .padding(.top, 4)
-                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous)
                         .fill(w.monday == thisMonday ? Color.appBlue.opacity(0.06) : Color.clear))
                     ForEach(w.cells) { c in
                         cell(c.date, c.cell, today: today, current: w.monday == thisMonday)
@@ -260,8 +260,8 @@ struct TermGrid: View {
             case .note(let n):
                 Text(n).font(.system(size: 11.5)).foregroundStyle(Color.ink2)
                     .padding(6).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.black.opacity(0.04))
-                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .background(Color.fillFaint)
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.block, style: .continuous))
             case .lessons(let ls):
                 ForEach(ls) { l in lessonButton(l) }
             }
@@ -269,8 +269,8 @@ struct TermGrid: View {
         .padding(6)
         .frame(width: colW, alignment: .topLeading)
         .frame(minHeight: 66, maxHeight: .infinity, alignment: .topLeading)
-        .background(date == today ? Color.appBlue.opacity(0.08) : (current ? Color.appBlue.opacity(0.045) : Color.black.opacity(0.025)))
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(date == today ? Color.appBlue.opacity(0.08) : (current ? Color.appBlue.opacity(0.045) : Color.fillFaint))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous))
     }
 
     private func lessonButton(_ l: TermLesson) -> some View {
@@ -280,7 +280,7 @@ struct TermGrid: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     Text(l.name).font(.system(size: 10.5, weight: .bold)).foregroundStyle(tone.inkColor)
-                    if l.status == .plan { TagLabel(text: "Plan", fg: tone.inkColor, bg: Color.white.opacity(0.7)) }
+                    if l.status == .plan { TagLabel(text: "Plan", fg: tone.inkColor, bg: Color.cardBG.opacity(0.7)) }
                     Spacer(minLength: 0)
                 }
                 Text(l.text).font(.system(size: 11.5)).lineLimit(3)
@@ -289,10 +289,10 @@ struct TermGrid: View {
             }
             .padding(6)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(l.status == .empty ? Color.white : (l.status == .plan ? tone.tintColor : tone.tintColor.opacity(0.55)))
-            .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .stroke(l.status == .empty ? Color.black.opacity(0.15) : Color.clear, style: StrokeStyle(lineWidth: 0.8, dash: [3, 2])))
-            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .background(l.status == .empty ? Color.cardBG : (l.status == .plan ? tone.tintColor : tone.tintColor.opacity(0.55)))
+            .overlay(RoundedRectangle(cornerRadius: Radius.block, style: .continuous)
+                .stroke(l.status == .empty ? Color.fieldStroke : Color.clear, style: StrokeStyle(lineWidth: 0.8, dash: [3, 2])))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.block, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityValue(l.status == .plan ? "Full plan" : (l.status == .summary ? "Summary only" : "Not planned"))
@@ -368,8 +368,8 @@ struct UnitCard: View {
             HStack(spacing: 8) {
                 Text(unit.s("theme").isEmpty ? "No theme" : unit.s("theme"))
                     .font(.system(size: 11.5, weight: .bold)).foregroundStyle(tone.inkColor)
-                if !status.isEmpty { TagLabel(text: status, fg: tone.inkColor, bg: Color.white.opacity(0.7)) }
-                if inThisWeek { TagLabel(text: "This week", fg: tone.inkColor, bg: Color.white.opacity(0.7)) }
+                if !status.isEmpty { TagLabel(text: status, fg: tone.inkColor, bg: Color.cardBG.opacity(0.7)) }
+                if inThisWeek { TagLabel(text: "This week", fg: tone.inkColor, bg: Color.cardBG.opacity(0.7)) }
                 Spacer()
                 Button("Edit") { model.sheet = .unit(id: unit.s("id")) }
             }
@@ -404,8 +404,8 @@ struct UnitCard: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(tone.tintColor)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.large, style: .continuous)
             .stroke(status == "Now" ? tone.barColor : Color.clear, lineWidth: 2))
     }
 
@@ -428,7 +428,7 @@ struct UnitCard: View {
                     }
                     .font(.system(size: 12, weight: .medium))
                     .padding(.vertical, 3).padding(.horizontal, 9)
-                    .background(Color.white.opacity(isFocus ? 0.9 : 0.5))
+                    .background(Color.cardBG.opacity(isFocus ? 0.9 : 0.5))
                     .overlay(Capsule().stroke(isFocus ? tone.barColor : Color.clear, lineWidth: 1.5))
                     .clipShape(Capsule())
                     .accessibilityValue(isFocus ? "Focus" : "")
@@ -633,7 +633,7 @@ struct DevotionCard: View {
                     Text(d.s("reading")).font(.system(size: 15, design: .serif)).italic().textSelection(.enabled)
                         .padding(12).frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.appBlue.opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous))
                     Text(d.s("scripture")).font(.system(size: 12.5, weight: .semibold)).foregroundStyle(Color.ink2)
                     Text("The message").font(.system(size: 13.5, weight: .semibold))
                     paras(d.s("message"))
@@ -664,8 +664,8 @@ struct DevotionCard: View {
         }
         .padding(22)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(Color.cardBG)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
     }
 
     private func section<C: View>(_ n: Int, _ title: String, @ViewBuilder _ body: () -> C) -> some View {

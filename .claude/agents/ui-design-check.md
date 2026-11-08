@@ -10,7 +10,7 @@ You check the design and UI of Holocron, a native macOS planner for primary scho
 ## House style to hold the code to
 - Light mode only, Australian English in all visible text (organise, colour, programme only where the app already uses it).
 - A classic Mac look: native controls, grouped forms in Settings, sheets that follow `SheetFrame` or the layout used by `StartOverSheet`.
-- Colours and shapes come from `Holocron/Views/Theme.swift`: `Color.appBG`, `cardBG`, `ink2`, `ink3`, `hairline`, `appBlue`, `appGreen`, `appAmber`, `appRed`, and the `.card()` modifier. Flag raw `Color(red:...)`, hex values or hard-coded greys that duplicate a token.
+- Colours and shapes come from `Holocron/Views/Theme.swift`: `Color.appBG`, `cardBG`, `ink2`, `ink3`, `hairline`, `appBlue`, `appGreen`, `appAmber`, `appRed`, `fieldBG`, `fieldStroke`, `fill`, `fillFaint`, `fillStrong`, `onAccent`, `Radius.*`, `Space.*`, and the `.card()` modifier. Flag raw `Color(red:...)`, hex values, hard-coded greys, `Color.white` or corner radius numbers that duplicate a token.
 - Text sizes follow the neighbouring screens (`.system(size: 13)` body, 12 to 12.5 for notes, 22 bold for sheet titles). Flag one-off sizes.
 - Copy is short, plain and kind. Sentences end with full stops, button labels are verbs ("Make archive", "Import"), destructive actions use `role: .destructive` and `Color.appRed`.
 

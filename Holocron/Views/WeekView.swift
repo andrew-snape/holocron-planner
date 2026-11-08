@@ -52,8 +52,8 @@ struct WeekView: View {
                 }
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { viewport = $0 }
                 .padding(10)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(Color.cardBG)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             }
             .padding(24)
         }
@@ -80,7 +80,7 @@ struct WeekGrid: View {
                         Text(Cal.weekdayLong[i]).font(.system(size: 12.5, weight: .semibold))
                         Text(shortDate(d)).font(.system(size: 12))
                     }
-                    .foregroundStyle(isToday ? Color.white : Color.primary)
+                    .foregroundStyle(isToday ? Color.onAccent : Color.primary)
                     .padding(.vertical, 3)
                     .padding(.horizontal, 9)
                     .background(isToday ? Color.appBlue : Color.clear)
@@ -108,7 +108,7 @@ struct WeekGrid: View {
                             .frame(width: WeekGrid.labelW, alignment: .leading)
                         HStack(spacing: 10) {
                             Text(label).font(.system(size: 11)).foregroundStyle(Color.ink3)
-                            Rectangle().fill(Color.black.opacity(0.14)).frame(height: 0.5)
+                            Rectangle().fill(Color.fieldStroke).frame(height: 0.5)
                         }
                         .padding(.horizontal, 8)
                         .gridCellColumns(5)
@@ -174,9 +174,9 @@ struct SlotCell: View {
                     .padding(.vertical, 5)
                     .padding(.horizontal, 7)
                     .frame(maxWidth: .infinity, alignment: .topLeading)
-                    .background(Color.white.opacity(focused ? 1 : (c.summary.isEmpty ? 0.4 : 0.8)))
-                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .background(Color.cardBG.opacity(focused ? 1 : (c.summary.isEmpty ? 0.4 : 0.8)))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.block, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: Radius.block, style: .continuous)
                         .stroke(focused ? tone.barColor : Color.clear, lineWidth: 1.5))
                     .disabled(subj.isEmpty)
                 if !subj.isEmpty {
@@ -203,9 +203,9 @@ struct SlotCell: View {
                             }
                             .padding(.vertical, 3)
                             .padding(.horizontal, 8)
-                            .background(Color.white.opacity(c.hasPlan ? 1 : 0.62))
-                            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).stroke(Color.black.opacity(0.08), lineWidth: 0.5))
+                            .background(Color.cardBG.opacity(c.hasPlan ? 1 : 0.62))
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.block, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: Radius.block, style: .continuous).stroke(Color.hairline, lineWidth: 0.5))
                             .frame(minWidth: 28, minHeight: 28)
                             .contentShape(Rectangle())
                             .padding(-5)
@@ -220,7 +220,7 @@ struct SlotCell: View {
         .frame(width: colW, alignment: .topLeading)
         .frame(minHeight: 92, maxHeight: .infinity, alignment: .topLeading)
         .background(tintedBlock(tone, release: info.isRelease))
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous))
         .opacity(dim ? 0.4 : 1)
         .dropDestination(for: SlotRef.self) { items, _ in
             guard let a = items.first, a != ref else { return false }

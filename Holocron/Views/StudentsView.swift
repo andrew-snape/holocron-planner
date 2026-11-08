@@ -84,7 +84,7 @@ struct StudentsView: View {
                 }
             }
             .frame(width: 236)
-            .background(Color.white.opacity(0.6))
+            .background(Color.cardBG.opacity(0.6))
             Divider()
             detail
         }
@@ -161,7 +161,7 @@ struct StudentListRow: View {
         .padding(.vertical, 5)
         .padding(.horizontal, 8)
         .background(selected ? Color.appBlue.opacity(0.14) : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.field, style: .continuous))
         .contentShape(Rectangle())
     }
 }
@@ -197,8 +197,8 @@ struct StudentDetail: View {
                                         .font(.system(size: 13, weight: tab == t ? .semibold : .regular))
                                         .padding(.vertical, 5)
                                         .padding(.horizontal, 12)
-                                        .foregroundStyle(tab == t ? Color.white : Color.primary)
-                                        .background(tab == t ? Color.appBlue : Color.black.opacity(0.06))
+                                        .foregroundStyle(tab == t ? Color.onAccent : Color.primary)
+                                        .background(tab == t ? Color.appBlue : Color.fill)
                                         .clipShape(Capsule())
                                 }
                                 .buttonStyle(.plain)
@@ -338,8 +338,8 @@ struct EntryCard: View {
             }
         }
         .padding(10)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(Color.cardBG)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous))
     }
 }
 
@@ -730,8 +730,8 @@ struct ReportTab: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 6)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(Color.cardBG)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
 
         if Intelligence.can(.drafts, db) {
             NoteBox(label: "Notes for drafting", hint: "only used for drafts, such as the unit project, a goal or a specialist's comment",
@@ -919,8 +919,8 @@ struct PackSheet: View {
                         .padding(12)
                 }
                 .frame(minHeight: 260, maxHeight: 360)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .background(Color.cardBG)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous))
                 HStack {
                     Button("Copy") { model.copyText(text) }
                     .buttonStyle(.borderedProminent)
@@ -1007,7 +1007,7 @@ struct QuickLogView: View {
                     if today > 0 {
                         Text("\(today)")
                             .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.white)
+                            .foregroundStyle(Color.onAccent)
                             .frame(minWidth: 20, minHeight: 20)
                             .background(Color.appBlue)
                             .clipShape(Circle())
@@ -1018,9 +1018,9 @@ struct QuickLogView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(on ? Color.appBlue.opacity(0.16) : Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .background(on ? Color.appBlue.opacity(0.16) : Color.cardBG)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                 .stroke(on ? Color.appBlue : Color.clear, lineWidth: 2))
         }
         .buttonStyle(.plain)

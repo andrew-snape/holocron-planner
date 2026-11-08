@@ -272,8 +272,8 @@ extension View {
     /// A white writing area with a hairline edge, as in NoteBox.
     func textBox() -> some View {
         self.padding(8)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.black.opacity(0.14), lineWidth: 0.5))
+            .background(Color.fieldBG)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.field, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Radius.field, style: .continuous).stroke(Color.fieldStroke, lineWidth: 0.5))
     }
 }
