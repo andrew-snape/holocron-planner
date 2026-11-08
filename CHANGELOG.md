@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.14
 
 - Settings now looks like System Settings, with a sidebar and search. The Data tab is split into Folders, Privacy and Year End.
 - Holocron writes a guide for AI assistants into each data folder, and Help has Copy Guide for AI Assistants.
