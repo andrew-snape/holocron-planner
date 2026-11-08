@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Sheets have a title bar with Cancel on the left and the main button on the right, such as Save, Add student, Swap or Done. Esc still cancels, Return still confirms, and a sheet with unsaved changes still asks before it closes. The unit sheet keeps Cmd+S.
 - The Class screen buttons (previous and next lesson, Pop out, Full screen, Done) now sit in a floating bar at the bottom. On the projector window the bar fades after a few seconds and returns when you move the mouse or press a key. The left and right arrow keys still change lesson while it is hidden. Messages at the bottom of the window use the same glass look.
 - Pages are now plain white. Cards are rounder, have no shadow and keep a thin edge. The week and term grids sit on a faint grey panel so they still stand out.
 - Screen titles and buttons now sit in the window toolbar, in the new macOS style. Today, Week, Term, Units, Devotion, Students, Quick log and Mark class have lost their big headings, and the date or week shows under the title. The Go menu has Previous and Next (Cmd+[ and Cmd+]) and Go to Today (Cmd+T). Blue buttons and the sidebar highlight now use Holocron's own blue.
