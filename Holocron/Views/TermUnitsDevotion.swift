@@ -588,6 +588,12 @@ struct DevotionView: View {
             let d = all[i]
             let t = db.termOf(date)
             let thisWeek = mondayOf(date) == mondayOf(todayISO())
+            let sub: String = {
+                var x = "\(Cal.weekdayLong[dayIdx(date)]) \(shortDate(date))"
+                if let t { x += " · Term \(t.term), week \(db.termWeek(date) ?? 0)" }
+                if thisWeek { x += " · This week" }
+                return x
+            }()
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     DevotionCard(d: d)
@@ -596,9 +602,7 @@ struct DevotionView: View {
                 .frame(maxWidth: 900, alignment: .leading)
             }
             .navigationTitle("Devotion")
-            .navigationSubtitle("\(Cal.weekdayLong[dayIdx(date)]) \(shortDate(date))"
-                                + (t.map { " · Term \($0.term), week \(db.termWeek(date) ?? 0)" } ?? "")
-                                + (thisWeek ? " · This week" : ""))
+            .navigationSubtitle(sub)
             .toolbar {
                 ToolbarItemGroup(placement: .navigation) {
                     Button { model.devotionDate = dates[i - 1] } label: { Label("Previous", systemImage: "chevron.left") }
