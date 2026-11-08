@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Screen titles and buttons now sit in the window toolbar, in the new macOS style. Today, Week, Term, Units, Devotion, Students, Quick log and Mark class have lost their big headings, and the date or week shows under the title. The Go menu has Previous and Next (Cmd+[ and Cmd+]) and Go to Today (Cmd+T). Blue buttons and the sidebar highlight now use Holocron's own blue.
+
 ## 1.14
 
 - Settings now looks like System Settings, with a sidebar and search. The Data tab is split into Folders, Privacy and Year End.
