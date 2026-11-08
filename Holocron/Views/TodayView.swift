@@ -9,8 +9,12 @@ struct TodayView: View {
         let date = model.cursor
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                header(date)
-                dayBar(date)
+                if let q = model.quote() {
+                    HStack {
+                        Spacer(minLength: 0)
+                        QuoteCard(row: q).frame(maxWidth: 340)
+                    }
+                }
                 ViewThatFits(in: .horizontal) {
                     HStack(alignment: .top, spacing: 18) {
                         dayBody(date).frame(maxWidth: .infinity)
@@ -24,46 +28,49 @@ struct TodayView: View {
             }
             .padding(24)
         }
+        .navigationTitle(title(date))
+        .navigationSubtitle(subtitle(date))
+        .toolbar {
+            ToolbarItemGroup(placement: .navigation) {
+                Button { model.cursor = addDays(date, -1) } label: { Label("Yesterday", systemImage: "chevron.left") }
+                    .help("Go to the day before")
+                Button("Today") { model.cursor = todayISO() }
+                    .help("Go to today")
+                Button { model.cursor = addDays(date, 1) } label: { Label("Tomorrow", systemImage: "chevron.right") }
+                    .help("Go to the next day")
+                DatePicker("Date", selection: isoBinding({ model.cursor }, { model.cursor = $0 }), displayedComponents: .date)
+                    .labelsHidden()
+                    .datePickerStyle(.compact)
+                    .fixedSize()
+                    .help("Pick a date")
+            }
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button { model.copyDay(date) } label: { Label("Copy lessons", systemImage: "doc.on.doc") }
+                    .help("Copy every lesson and time for this day as rich text, ready to paste into the school LMS")
+                Button {
+                    if let t = ClassTarget.pick(model, date: date) { openWindow(id: "classscreen", value: t) }
+                    else { model.showToast("No lessons on this day") }
+                } label: { Label("Class screen", systemImage: "tv") }
+                    .help("Show this day's lessons on the class screen")
+                Button { model.sheet = .dayType(date: date) } label: { Label("Set day type", systemImage: "calendar.badge.clock") }
+                    .help("Set what kind of day this is")
+            }
+        }
     }
 
-    // MARK: Header
+    // MARK: Title
 
-    private func header(_ date: String) -> some View {
-        let db = model.db
-        let t = db.termOf(date)
-        let wk = db.weekLetter(date)
+    private func title(_ date: String) -> String {
         let di = dayIdx(date)
-        var sub = longDate(date)
-        if let wk = wk { sub += " · Week \(wk)" }
-        if let t = t { sub += " · Term \(t.term), week \(db.termWeek(date) ?? 0)" }
-        let title = date == todayISO() ? "Today" : (di < 5 ? Cal.weekdayLong[di] : "Weekend")
-        return HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 28, weight: .bold)).tracking(-0.5)
-                Text(sub).font(.system(size: 13)).foregroundStyle(Color.ink2)
-            }
-            Spacer(minLength: 0)
-            if let q = model.quote() { QuoteCard(row: q).frame(maxWidth: 340) }
-        }
+        return date == todayISO() ? "Today" : (di < 5 ? Cal.weekdayLong[di] : "Weekend")
     }
 
-    private func dayBar(_ date: String) -> some View {
-        HStack(spacing: 8) {
-            Button("Yesterday") { model.cursor = addDays(date, -1) }
-            Button("Today") { model.cursor = todayISO() }
-            Button("Tomorrow") { model.cursor = addDays(date, 1) }
-            DatePicker("", selection: isoBinding({ model.cursor }, { model.cursor = $0 }), displayedComponents: .date)
-                .labelsHidden()
-                .datePickerStyle(.compact)
-            Spacer()
-            Button("Copy lessons") { model.copyDay(date) }
-                .help("Copy every lesson and time for this day as rich text, ready to paste into the school LMS")
-            Button("Class screen") {
-                if let t = ClassTarget.pick(model, date: date) { openWindow(id: "classscreen", value: t) }
-                else { model.showToast("No lessons on this day") }
-            }
-            Button("Set day type") { model.sheet = .dayType(date: date) }
-        }
+    private func subtitle(_ date: String) -> String {
+        let db = model.db
+        var sub = longDate(date)
+        if let wk = db.weekLetter(date) { sub += " · Week \(wk)" }
+        if let t = db.termOf(date) { sub += " · Term \(t.term), week \(db.termWeek(date) ?? 0)" }
+        return sub
     }
 
     // MARK: Body of the day
