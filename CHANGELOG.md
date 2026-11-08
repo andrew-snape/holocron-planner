@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Pages are now plain white. Cards are rounder, have no shadow and keep a thin edge. The week and term grids sit on a faint grey panel so they still stand out.
 - Screen titles and buttons now sit in the window toolbar, in the new macOS style. Today, Week, Term, Units, Devotion, Students, Quick log and Mark class have lost their big headings, and the date or week shows under the title. The Go menu has Previous and Next (Cmd+[ and Cmd+]) and Go to Today (Cmd+T). Blue buttons and the sidebar highlight now use Holocron's own blue.
 
 ## 1.14
