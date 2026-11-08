@@ -50,6 +50,15 @@ struct HolocronApp: App {
                             .keyboardShortcut(KeyEquivalent(Character(String((idx + 1) % 10))), modifiers: .command)
                     }
                 }
+                Divider()
+                Button(model.stepUnit.map { "Previous \($0)" } ?? "Previous") { model.step(-1) }
+                    .keyboardShortcut("[", modifiers: .command)
+                    .disabled(!model.canStep(-1))
+                Button(model.stepUnit.map { "Next \($0)" } ?? "Next") { model.step(1) }
+                    .keyboardShortcut("]", modifiers: .command)
+                    .disabled(!model.canStep(1))
+                Button("Go to Today") { model.goToday() }
+                    .keyboardShortcut("t", modifiers: .command)
             }
             CommandGroup(after: .pasteboard) {
                 Button("Copy Day as Rich Text") { model.copyDay(model.cursor) }

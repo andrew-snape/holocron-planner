@@ -768,6 +768,71 @@ final class AppModel {
         return t?.id ?? ""
     }
 
+    // MARK: Stepping through time (toolbar buttons and the Go menu)
+
+    /// What Previous and Next move by on the screen on show, or nil when the screen has nothing to step through.
+    var stepUnit: String? {
+        switch nav {
+        case .today: return "Day"
+        case .week: return "Week"
+        case .term: return db.termsSorted.isEmpty ? nil : "Term"
+        case .devotion: return db.rows(.devotion).isEmpty ? nil : "Devotion"
+        default: return nil
+        }
+    }
+
+    private var devotionDates: [String] { db.rows(.devotion).map { $0.s("date") }.sorted() }
+
+    /// The devotion date on show, using the same rule as the Devotion screen.
+    private func shownDevotion(_ dates: [String]) -> String {
+        if let d = devotionDate, dates.contains(d) { return d }
+        let today = todayISO()
+        return dates.first(where: { $0 >= today }) ?? dates.last ?? today
+    }
+
+    private var shownTerm: String {
+        let ts = db.termsSorted
+        return ts.contains(where: { $0.id == termKey }) ? termKey : termDefault()
+    }
+
+    func canStep(_ by: Int) -> Bool {
+        switch nav {
+        case .today, .week: return true
+        case .term:
+            let ids = db.termsSorted.map { $0.id }
+            guard let i = ids.firstIndex(of: shownTerm) else { return false }
+            return ids.indices.contains(i + by)
+        case .devotion:
+            let dates = devotionDates
+            guard let i = dates.firstIndex(of: shownDevotion(dates)) else { return false }
+            return dates.indices.contains(i + by)
+        default: return false
+        }
+    }
+
+    /// Moves the screen on show one step back (-1) or forward (+1).
+    func step(_ by: Int) {
+        guard canStep(by) else { return }
+        switch nav {
+        case .today: cursor = addDays(cursor, by)
+        case .week: weekMonday = addDays(shownMonday, 7 * by)
+        case .term:
+            let ids = db.termsSorted.map { $0.id }
+            if let i = ids.firstIndex(of: shownTerm) { termKey = ids[i + by] }
+        case .devotion:
+            let dates = devotionDates
+            if let i = dates.firstIndex(of: shownDevotion(dates)) { devotionDate = dates[i + by] }
+        default: break
+        }
+    }
+
+    /// Goes to Today with today's date showing.
+    func goToday() {
+        cursor = todayISO()
+        weekMonday = nil
+        nav = .today
+    }
+
     /// The Monday of the week on show in the Week view. Weekends open the coming week.
     var shownMonday: String {
         if let m = weekMonday { return m }
