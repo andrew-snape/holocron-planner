@@ -339,6 +339,8 @@ struct HelpShortcutsPage: View {
                 HelpTitle("Keyboard shortcuts")
                 HelpHeading("Moving around")
                 HelpKeyRow(keys: "Cmd+1 to Cmd+0", action: "Jump between screens, in sidebar order: Today, Week, Term, Units, Devotion, Class screen, Students, Quick log, Mark class, Hours")
+                HelpKeyRow(keys: "Cmd+[ and Cmd+]", action: "Go back or forward by a day on Today, a week on Week, a term on Term, or a devotion on Devotion")
+                HelpKeyRow(keys: "Cmd+T", action: "Go to Today")
                 HelpKeyRow(keys: "Cmd+,", action: "Open Settings")
                 HelpKeyRow(keys: "Shift+Cmd+/", action: "Open Help")
                 HelpPara("Each screen keeps its own number. If you switch a screen off in Settings, its number is simply unused. The Go menu always shows what is available.", secondary: true)
