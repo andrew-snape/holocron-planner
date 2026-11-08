@@ -18,7 +18,7 @@ struct WeekView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Type into a slot, click a subject to change it, drag to swap")
-                    .font(.system(size: 12)).foregroundStyle(Color.ink3).lineLimit(1)
+                    .font(.system(size: 12)).foregroundStyle(Color.ink3).fixedSize(horizontal: false, vertical: true)
                 ScrollView(.horizontal, showsIndicators: true) {
                     WeekGrid(mon: mon, wk: wk, colW: colWidth)
                 }

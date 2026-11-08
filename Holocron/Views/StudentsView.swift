@@ -30,9 +30,12 @@ struct StudentsView: View {
         .navigationTitle("Students")
         .navigationSubtitle(studentCount)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button { model.sheet = .newStudent } label: { Label("Add student", systemImage: "plus") }
-                    .help("Add a student")
+            // The empty screen and the narrow layout have their own Add student button.
+            if !model.db.roster.isEmpty && !narrow {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { model.sheet = .newStudent } label: { Label("Add student", systemImage: "plus") }
+                        .help("Add a student")
+                }
             }
         }
         .modifier(StudentSearch(query: $query, active: !model.db.roster.isEmpty && !narrow))
