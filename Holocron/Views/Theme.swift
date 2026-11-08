@@ -96,13 +96,17 @@ struct CardStyle: ViewModifier {
         content
             .padding(padding)
             .background(Color.cardBG)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            .shadow(color: Color.black.opacity(0.05), radius: 1, x: 0, y: 1)
-            .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).stroke(Color.hairline, lineWidth: 0.5))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
+            .hairlineEdge(Radius.large)
     }
 }
 
 extension View {
+    /// A hairline edge for a white panel that sits on the white page.
+    func hairlineEdge(_ radius: CGFloat) -> some View {
+        overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).stroke(Color.hairline, lineWidth: 0.5))
+    }
+
     func card(padding: CGFloat = Space.card) -> some View { modifier(CardStyle(padding: padding)) }
 }
 
