@@ -2,9 +2,7 @@
 
 ## 1.15
 
-Holocron now follows the new macOS look (Liquid Glass).
-
-- Screen titles and buttons now sit in the window toolbar. Today, Week, Term, Units, Devotion, Students, Quick log and Mark class have lost their big headings, and the date or week shows under the title.
+- Holocron now follows the new macOS look (Liquid Glass). Screen titles and buttons sit in the window toolbar. Today, Week, Term, Units, Devotion, Students, Quick log and Mark class have lost their big headings, and the date or week shows under the title.
 - The Go menu has Previous and Next (Cmd+[ and Cmd+]) and Go to Today (Cmd+T). Help lists them.
 - Blue buttons and the sidebar highlight now use Holocron's own blue.
 - Pages are plain white. Cards are rounder, have no shadow and keep a thin edge. The week and term grids sit on a faint grey panel so they still stand out.
