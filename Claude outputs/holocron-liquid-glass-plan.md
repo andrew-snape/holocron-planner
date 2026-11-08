@@ -1,5 +1,7 @@
 # Holocron: Liquid Glass and theme update plan
 
+Step-by-step instructions for phases 2 to 6, with files, code shapes, traps and fixes, are in [holocron-liquid-glass-handoff.md](holocron-liquid-glass-handoff.md). Follow that file when doing the work.
+
 A plan to move Holocron's look to the macOS 26 and 27 Liquid Glass design, and to tidy the theme so the change happens in one place. Nothing here has been built yet.
 
 ## Summary
@@ -143,7 +145,7 @@ The biggest visible change.
 ### Phase 5. Floating controls and small glass (S)
 
 - Toast in `RootView`: replace `.regularMaterial` and the shadow with `.glassEffect(.regular, in: .capsule)`.
-- Class screen: put its controls (timer, next slide, hide names, close) in a floating glass bar at the bottom using `GlassEffectContainer` so the buttons blend as one shape. The bar fades after a few seconds of no mouse movement and returns on hover. The projected content underneath stays solid.
+- Class screen: put its controls (previous and next lesson, Pop out, Full screen, Done) in a floating glass bar at the bottom using `GlassEffectContainer` so the buttons blend as one shape. The bar fades after a few seconds of no mouse movement and returns on hover. The projected content underneath stays solid.
 - Update banner and folder banner: keep as content-layer banners (they are messages, not controls), using tokens.
 - Do not add glass anywhere else without a reason written in the PR.
 
