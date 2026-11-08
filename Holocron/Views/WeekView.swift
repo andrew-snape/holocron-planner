@@ -176,7 +176,7 @@ struct SlotCell: View {
                     .padding(.vertical, 5)
                     .padding(.horizontal, 7)
                     .frame(maxWidth: .infinity, alignment: .topLeading)
-                    .background(Color.cardBG.opacity(focused ? 1 : (c.summary.isEmpty ? 0.4 : 0.8)))
+                    .background(Color.veil.opacity(focused ? 1 : (c.summary.isEmpty ? 0.4 : 0.8)))
                     .clipShape(RoundedRectangle(cornerRadius: Radius.block, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: Radius.block, style: .continuous)
                         .stroke(focused ? tone.barColor : Color.clear, lineWidth: 1.5))
@@ -205,7 +205,7 @@ struct SlotCell: View {
                             }
                             .padding(.vertical, 3)
                             .padding(.horizontal, 8)
-                            .background(Color.cardBG.opacity(c.hasPlan ? 1 : 0.62))
+                            .background(Color.veil.opacity(c.hasPlan ? 1 : 0.62))
                             .clipShape(RoundedRectangle(cornerRadius: Radius.block, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: Radius.block, style: .continuous).stroke(Color.hairline, lineWidth: 0.5))
                             .frame(minWidth: 28, minHeight: 28)

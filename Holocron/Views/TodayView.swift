@@ -159,7 +159,7 @@ struct BlockRow: View {
                     Text(subj.isEmpty ? "Not set" : subj)
                         .font(.system(size: 15, weight: .semibold)).foregroundStyle(tone.inkColor)
                         .accessibilityValue(isNow ? "Happening now" : "")
-                    if c.hasPlan { TagLabel(text: "Plan", fg: tone.inkColor, bg: Color.cardBG.opacity(0.7)) }
+                    if c.hasPlan { TagLabel(text: "Plan", fg: tone.inkColor, bg: Color.veil.opacity(0.7)) }
                     if moved { Circle().fill(Color.appAmber).frame(width: 6, height: 6).help("Moved for today") }
                 }
                 Text("\(info.isRelease ? "Release" : "Face to face") · \(period.minutes) min" + (moved ? " · changed for today" : ""))

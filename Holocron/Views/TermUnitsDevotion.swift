@@ -283,7 +283,7 @@ struct TermGrid: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     Text(l.name).font(.system(size: 10.5, weight: .bold)).foregroundStyle(tone.inkColor)
-                    if l.status == .plan { TagLabel(text: "Plan", fg: tone.inkColor, bg: Color.cardBG.opacity(0.7)) }
+                    if l.status == .plan { TagLabel(text: "Plan", fg: tone.inkColor, bg: Color.veil.opacity(0.7)) }
                     Spacer(minLength: 0)
                 }
                 Text(l.text).font(.system(size: 11.5)).lineLimit(3)
@@ -374,8 +374,8 @@ struct UnitCard: View {
             HStack(spacing: 8) {
                 Text(unit.s("theme").isEmpty ? "No theme" : unit.s("theme"))
                     .font(.system(size: 11.5, weight: .bold)).foregroundStyle(tone.inkColor)
-                if !status.isEmpty { TagLabel(text: status, fg: tone.inkColor, bg: Color.cardBG.opacity(0.7)) }
-                if inThisWeek { TagLabel(text: "This week", fg: tone.inkColor, bg: Color.cardBG.opacity(0.7)) }
+                if !status.isEmpty { TagLabel(text: status, fg: tone.inkColor, bg: Color.veil.opacity(0.7)) }
+                if inThisWeek { TagLabel(text: "This week", fg: tone.inkColor, bg: Color.veil.opacity(0.7)) }
                 Spacer()
                 Button("Edit") { model.sheet = .unit(id: unit.s("id")) }
             }
@@ -434,7 +434,7 @@ struct UnitCard: View {
                     }
                     .font(.system(size: 12, weight: .medium))
                     .padding(.vertical, 3).padding(.horizontal, 9)
-                    .background(Color.cardBG.opacity(isFocus ? 0.9 : 0.5))
+                    .background(Color.veil.opacity(isFocus ? 0.9 : 0.5))
                     .overlay(Capsule().stroke(isFocus ? tone.barColor : Color.clear, lineWidth: 1.5))
                     .clipShape(Capsule())
                     .accessibilityValue(isFocus ? "Focus" : "")

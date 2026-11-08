@@ -50,6 +50,8 @@ extension Color {
     static let fillStrong = Color.black.opacity(0.08)
     /// Text and symbols on a solid accent or subject colour.
     static let onAccent = Color.white
+    /// White veil over a subject tint (tags, plan chips, release stripes). Kept apart from `cardBG` so the page can change without touching subject blocks.
+    static let veil = Color.white
 }
 
 // MARK: - Shape, space and type
@@ -415,7 +417,7 @@ func tintedBlock(_ tone: Tone, release: Bool) -> some View {
     ZStack {
         tone.tintColor
         if release {
-            Stripes(color: Color.cardBG.opacity(0.55))
+            Stripes(color: Color.veil.opacity(0.55))
         }
     }
 }
