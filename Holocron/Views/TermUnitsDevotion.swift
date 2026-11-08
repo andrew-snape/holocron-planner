@@ -328,12 +328,6 @@ struct UnitsView: View {
         let us = db.unitsSorted.sorted { rank($0) < rank($1) }
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text("Units of inquiry").font(.system(size: 28, weight: .bold)).tracking(-0.5)
-                    Text("\(us.count) unit\(us.count == 1 ? "" : "s")").font(.system(size: 13)).foregroundStyle(Color.ink2)
-                    Spacer()
-                    Button("New unit") { model.sheet = .unit(id: UnitSheet.newID) }.buttonStyle(.borderedProminent)
-                }
                 if us.isEmpty {
                     EmptyNote(title: "No units yet",
                               message: "Add your unit of inquiry with its theme, central idea and dates. TDL lessons in those dates will show it, and Term will mark the weeks.")
@@ -346,6 +340,15 @@ struct UnitsView: View {
                     .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
             }
             .padding(24)
+        }
+        .navigationTitle("Units of inquiry")
+        .navigationSubtitle("\(us.count) unit\(us.count == 1 ? "" : "s")")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { model.sheet = .unit(id: UnitSheet.newID) } label: { Label("New unit", systemImage: "plus") }
+                    .buttonStyle(.borderedProminent)
+                    .help("Add a unit of inquiry")
+            }
         }
     }
 }
