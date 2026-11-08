@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.15
 
 - Each screen has its own icon colour in the sidebar. The week box in the sidebar is softer, Settings uses the standard Mac look, and Help shows the page name in the window title.
 - Sheets have Cancel on the left and the main button on the right, such as Save or Add student. Esc still cancels, Return still confirms, and a sheet with unsaved changes still asks before it closes. The unit sheet keeps Cmd+S. Change subject, Move and Swap keep both their choices in the sheet, so Return does not change the timetable by accident. Draft comments for the class has one Close button, which asks before unused drafts are lost.
