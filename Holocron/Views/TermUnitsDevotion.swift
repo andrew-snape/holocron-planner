@@ -151,7 +151,7 @@ private struct TermGridScroller: View {
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { viewport = $0 }
         .padding(10)
-        .background(Color.cardBG)
+        .background(Color.fillFaint)
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
     }
 }
@@ -680,6 +680,7 @@ struct DevotionCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.cardBG)
         .clipShape(RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
+        .hairlineEdge(Radius.large)
     }
 
     private func section<C: View>(_ n: Int, _ title: String, @ViewBuilder _ body: () -> C) -> some View {

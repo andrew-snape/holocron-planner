@@ -127,6 +127,7 @@ struct MarkClassView: View {
                     }
                     .background(Color.cardBG)
                     .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
+                    .hairlineEdge(Radius.panel)
                     HStack(spacing: 12) {
                         Button("Save the whole class") { save() }
                             .buttonStyle(.borderedProminent)

@@ -13,7 +13,7 @@ struct RootView: View {
                 .navigationSplitViewColumnWidth(min: 210, ideal: 236, max: 290)
         } detail: {
             ZStack(alignment: .bottom) {
-                Color.appBG.ignoresSafeArea()
+                Color.cardBG.ignoresSafeArea()
                 VStack(spacing: 0) {
                     if !model.folderOK { FolderBanner() }
                     UpdateBanner()

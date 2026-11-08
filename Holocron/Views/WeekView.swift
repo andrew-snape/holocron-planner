@@ -24,7 +24,7 @@ struct WeekView: View {
                 }
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { viewport = $0 }
                 .padding(10)
-                .background(Color.cardBG)
+                .background(Color.fillFaint)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             }
             .padding(24)

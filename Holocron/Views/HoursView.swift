@@ -58,6 +58,7 @@ struct HoursView: View {
                 }
                 .background(Color.cardBG)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
+                .hairlineEdge(Radius.panel)
 
                 if !dtSorted.isEmpty {
                     SectionTitle("DOTTL by type this term")
@@ -76,6 +77,7 @@ struct HoursView: View {
                     }
                     .background(Color.cardBG)
                     .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
+                    .hairlineEdge(Radius.panel)
                 }
 
                 if log.isEmpty {
@@ -99,6 +101,7 @@ struct HoursView: View {
                     }
                     .background(Color.cardBG)
                     .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
+                    .hairlineEdge(Radius.panel)
                 }
             }
             .padding(24)
@@ -198,6 +201,7 @@ private struct DottlChart: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.cardBG)
         .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
+        .hairlineEdge(Radius.panel)
     }
 }
 

@@ -209,7 +209,7 @@ struct QuoteCard: View {
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.cardBG.opacity(0.7))
+        .background(Color.fillFaint)
         .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
         .help(row.s("source"))
     }

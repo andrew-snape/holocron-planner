@@ -89,7 +89,7 @@ struct StudentsView: View {
                 }
             }
             .frame(width: 236)
-            .background(Color.cardBG.opacity(0.6))
+            .background(Color.fillFaint)
             Divider()
             detail
         }
@@ -345,6 +345,7 @@ struct EntryCard: View {
         .padding(10)
         .background(Color.cardBG)
         .clipShape(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous))
+        .hairlineEdge(Radius.inset)
     }
 }
 
@@ -737,6 +738,7 @@ struct ReportTab: View {
         .padding(.vertical, 6)
         .background(Color.cardBG)
         .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
+        .hairlineEdge(Radius.panel)
 
         if Intelligence.can(.drafts, db) {
             NoteBox(label: "Notes for drafting", hint: "only used for drafts, such as the unit project, a goal or a specialist's comment",
@@ -926,6 +928,7 @@ struct PackSheet: View {
                 .frame(minHeight: 260, maxHeight: 360)
                 .background(Color.cardBG)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous))
+                .hairlineEdge(Radius.inset)
                 HStack {
                     Button("Copy") { model.copyText(text) }
                     .buttonStyle(.borderedProminent)
@@ -1024,7 +1027,7 @@ struct QuickLogView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(on ? Color.appBlue.opacity(0.16) : Color.cardBG)
+            .background(on ? Color.appBlue.opacity(0.16) : Color.fillFaint)
             .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                 .stroke(on ? Color.appBlue : Color.clear, lineWidth: 2))
