@@ -109,7 +109,6 @@ struct ClassScreenModule: View {
             ClassScreenView(initial: t, embedded: true)
         } else {
             VStack(alignment: .leading, spacing: 14) {
-                PageHeader("Class screen")
                 EmptyNote(title: "No lessons today", message: "The Class screen shows what the class is learning, the steps to follow, what comes next and a timer. It appears on school days.")
                 Spacer()
             }

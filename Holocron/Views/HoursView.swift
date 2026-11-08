@@ -38,12 +38,6 @@ struct HoursView: View {
         }
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text("Hours").font(.system(size: 28, weight: .bold)).tracking(-0.5)
-                    Text("Face to face worked out from the timetable, DOTTL from your log")
-                        .font(.system(size: 13)).foregroundStyle(Color.ink2)
-                    Spacer()
-                }
                 HStack(spacing: 12) {
                     stat(hrs(fn.teach), "Face to face per fortnight")
                     stat(hrs(Double(fn.teach) / 2), "Face to face, weekly average")
@@ -109,6 +103,8 @@ struct HoursView: View {
             }
             .padding(24)
         }
+        .navigationTitle("Hours")
+        .navigationSubtitle("Face to face from the timetable, DOTTL from your log")
     }
 
     private func stat(_ n: String, _ label: String) -> some View {
