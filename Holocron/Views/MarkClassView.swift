@@ -24,15 +24,6 @@ struct MarkClassView: View {
         let started = startedTasks(db)
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text("Mark class").font(.system(size: 28, weight: .bold)).tracking(-0.5)
-                    Text("One task, the whole roll, saved in a single pass").font(.system(size: 13)).foregroundStyle(Color.ink2)
-                        .lineLimit(2)
-                    Spacer()
-                    Button { chooseResultsFile(model) } label: { Label("Import results…", systemImage: "square.and.arrow.down") }
-                        .fixedSize()
-                        .help("Bring in results from a spreadsheet, such as an Essential Assessment export")
-                }
                 VStack(alignment: .leading, spacing: 12) {
                     FlowLayout(spacing: 14) {
                         VStack(alignment: .leading, spacing: 4) {
@@ -146,6 +137,14 @@ struct MarkClassView: View {
                 }
             }
             .padding(24)
+        }
+        .navigationTitle("Mark class")
+        .navigationSubtitle("One task, the whole roll, saved in a single pass")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { chooseResultsFile(model) } label: { Label("Import results…", systemImage: "square.and.arrow.down") }
+                    .help("Bring in results from a spreadsheet, such as an Essential Assessment export")
+            }
         }
         .onChange(of: date) { _, _ in loadExisting() }
         .onChange(of: task) { _, _ in if rubOn { loadExisting() } }
