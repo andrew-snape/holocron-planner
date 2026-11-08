@@ -38,7 +38,7 @@ enum NoteTagger {
             it is about. Only pick a subject when the note clearly refers to it.
             """)
         let out = try await session.respond(to: "Note: " + String(note.trimmed.prefix(600)), schema: schema,
-                                            options: GenerationOptions(samplingMode: .greedy)).content
+                                            options: GenerationOptions(sampling: .greedy)).content
         try Task.checkCancellation()
         let kindWord = try out.value(String.self, forProperty: "kind")
         let subjectWord = try out.value(String.self, forProperty: "subject")
