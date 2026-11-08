@@ -133,6 +133,10 @@ struct ClassScreenView: View {
     @State private var activeStep = 0
     /// Marks this screen as showing, so Siri leaves student names out.
     @State private var screenID = UUID()
+    /// The floating control bar fades after a few seconds of no mouse or key activity (own window only).
+    @State private var barVisible = true
+    @State private var overBar = false
+    @State private var hideTask: Task<Void, Never>?
 
     init(initial: ClassTarget, embedded: Bool = false) {
         self.initial = initial
@@ -228,10 +232,73 @@ struct ClassScreenView: View {
         }
         .padding(24)
         .background(Color.cardBG)
+        .overlay(alignment: .bottom) {
+            controlBar(ps: ps, ix: ix)
+                .padding(.bottom, 84)
+                .opacity(barVisible ? 1 : 0)
+                .allowsHitTesting(barVisible)
+                .animation(.easeInOut(duration: 0.25), value: barVisible)
+        }
+        .focusable()
+        .focusEffectDisabled()
+        .onKeyPress(.leftArrow) { wakeBar(); stepLesson(-1, ps: ps, ix: ix); return .handled }
+        .onKeyPress(.rightArrow) { wakeBar(); stepLesson(1, ps: ps, ix: ix); return .handled }
+        .onKeyPress { _ in wakeBar(); return .ignored }
+        .onContinuousHover { phase in
+            if case .active = phase { wakeBar() }
+        }
         .onExitCommand { if !embedded { dismiss() } }
         .onChange(of: ClassTarget(date: date, per: pn)) { stepsOpen = false; activeStep = 0 }
-        .onAppear { model.classScreens.insert(screenID) }
-        .onDisappear { model.classScreens.remove(screenID) }
+        .onAppear { model.classScreens.insert(screenID); wakeBar() }
+        .onDisappear { model.classScreens.remove(screenID); hideTask?.cancel() }
+    }
+
+    // MARK: Floating control bar
+
+    /// Shows the bar and, in the projector window, starts the countdown to hide it again.
+    /// The embedded screen is used at the Mac, so its bar stays put.
+    private func wakeBar() {
+        barVisible = true
+        hideTask?.cancel()
+        guard !embedded, !overBar else { return }
+        hideTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(3))
+            if !Task.isCancelled { barVisible = false }
+        }
+    }
+
+    private func stepLesson(_ by: Int, ps: [Period], ix: Int?) {
+        guard let i = ix, ps.indices.contains(i + by) else { return }
+        pn = ps[i + by].period
+    }
+
+    private func controlBar(ps: [Period], ix: Int?) -> some View {
+        GlassEffectContainer(spacing: 8) {
+            HStack(spacing: 8) {
+                Button { stepLesson(-1, ps: ps, ix: ix) } label: { Image(systemName: "chevron.left") }
+                    .disabled((ix ?? 0) <= 0)
+                    .help("Go to the previous lesson")
+                    .accessibilityLabel("Previous lesson")
+                Button { stepLesson(1, ps: ps, ix: ix) } label: { Image(systemName: "chevron.right") }
+                    .disabled(ix == nil || (ix ?? 0) >= ps.count - 1)
+                    .help("Go to the next lesson")
+                    .accessibilityLabel("Next lesson")
+                if embedded {
+                    Button("Pop out") { openWindow(id: "classscreen", value: ClassTarget(date: date, per: pn)) }
+                        .help("Open on its own window for the projector")
+                } else {
+                    Button("Full screen") { NSApp.keyWindow?.toggleFullScreen(nil) }
+                    Button("Done") { dismiss() }.buttonStyle(.glassProminent)
+                }
+            }
+            .buttonStyle(.glass)
+        }
+        .padding(10)
+        .glassEffect(.regular, in: .capsule)
+        .onHover { over in
+            overBar = over
+            if over { hideTask?.cancel() } else { wakeBar() }
+        }
     }
 
     private func heading(_ s: String, _ tone: Tone) -> some View {
@@ -316,21 +383,6 @@ struct ClassScreenView: View {
             Spacer(minLength: 8)
             TimelineView(.periodic(from: Date(), by: 10)) { _ in
                 Text(fmtTime(nowHHMM())).font(.system(size: 22, weight: .semibold, design: .rounded)).foregroundStyle(Color.ink2)
-            }
-            Button { if let i = ix, i > 0 { pn = ps[i - 1].period } } label: { Image(systemName: "chevron.left") }
-                .disabled((ix ?? 0) <= 0)
-                .help("Go to the previous lesson")
-                .accessibilityLabel("Previous lesson")
-            Button { if let i = ix, i < ps.count - 1 { pn = ps[i + 1].period } } label: { Image(systemName: "chevron.right") }
-                .disabled(ix == nil || (ix ?? 0) >= ps.count - 1)
-                .help("Go to the next lesson")
-                .accessibilityLabel("Next lesson")
-            if embedded {
-                Button("Pop out") { openWindow(id: "classscreen", value: ClassTarget(date: date, per: pn)) }
-                    .help("Open on its own window for the projector")
-            } else {
-                Button("Full screen") { NSApp.keyWindow?.toggleFullScreen(nil) }
-                Button("Done") { dismiss() }.buttonStyle(.borderedProminent)
             }
         }
     }

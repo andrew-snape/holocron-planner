@@ -25,9 +25,7 @@ struct RootView: View {
                         .font(.system(size: 12.5, weight: .medium))
                         .padding(.vertical, 7)
                         .padding(.horizontal, 14)
-                        .background(.regularMaterial)
-                        .clipShape(Capsule())
-                        .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
+                        .glassEffect(.regular, in: .capsule)
                         .padding(.bottom, 18)
                         .transition(.opacity)
                 }
