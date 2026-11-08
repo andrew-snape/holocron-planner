@@ -137,6 +137,8 @@ struct ClassScreenView: View {
     @State private var barVisible = true
     @State private var overBar = false
     @State private var hideTask: Task<Void, Never>?
+    /// True while the screen itself has keyboard focus (not a step field), so the arrow keys change lesson.
+    @FocusState private var screenFocused: Bool
 
     init(initial: ClassTarget, embedded: Bool = false) {
         self.initial = initial
@@ -237,20 +239,30 @@ struct ClassScreenView: View {
                 .padding(.bottom, 84)
                 .opacity(barVisible ? 1 : 0)
                 .allowsHitTesting(barVisible)
+                .disabled(!barVisible)
+                .accessibilityHidden(!barVisible)
                 .animation(.easeInOut(duration: 0.25), value: barVisible)
         }
         .focusable()
         .focusEffectDisabled()
-        .onKeyPress(.leftArrow) { wakeBar(); stepLesson(-1, ps: ps, ix: ix); return .handled }
-        .onKeyPress(.rightArrow) { wakeBar(); stepLesson(1, ps: ps, ix: ix); return .handled }
+        .focused($screenFocused)
+        .defaultFocus($screenFocused, true)
+        .onKeyPress(.leftArrow) {
+            guard screenFocused else { return .ignored }
+            wakeBar(); stepLesson(-1, ps: ps, ix: ix); return .handled
+        }
+        .onKeyPress(.rightArrow) {
+            guard screenFocused else { return .ignored }
+            wakeBar(); stepLesson(1, ps: ps, ix: ix); return .handled
+        }
         .onKeyPress { _ in wakeBar(); return .ignored }
         .onContinuousHover { phase in
             if case .active = phase { wakeBar() }
         }
         .onExitCommand { if !embedded { dismiss() } }
         .onChange(of: ClassTarget(date: date, per: pn)) { stepsOpen = false; activeStep = 0 }
-        .onAppear { model.classScreens.insert(screenID); wakeBar() }
-        .onDisappear { model.classScreens.remove(screenID); hideTask?.cancel() }
+        .onAppear { model.classScreens.insert(screenID); screenFocused = true; wakeBar() }
+        .onDisappear { model.classScreens.remove(screenID); hideTask?.cancel(); overBar = false }
     }
 
     // MARK: Floating control bar

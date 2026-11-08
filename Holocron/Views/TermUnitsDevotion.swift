@@ -461,7 +461,7 @@ struct UnitSheet: View {
     }
 
     var body: some View {
-        SheetFrame(title: isNew ? "New unit" : "Edit unit", subtitle: u["title"] ?? "", width: 620,
+        SheetFrame(title: isNew ? "New unit" : "Edit unit", subtitle: String((u["title"] ?? "").prefix(40)), width: 620,
                    confirmTitle: "Save", onConfirm: { save() },
                    confirmKey: KeyboardShortcut("s", modifiers: .command)) {
             LineField(label: "Unit title", text: b("title"), placeholder: "What's my business?")
