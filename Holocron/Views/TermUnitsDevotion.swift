@@ -95,7 +95,6 @@ struct TermView: View {
         let ts = db.termsSorted
         if ts.isEmpty {
             VStack(alignment: .leading, spacing: 14) {
-                PageHeader("Term")
                 EmptyNote(title: "No terms yet", message: "Add term dates in Settings.")
                 Spacer()
             }
@@ -110,26 +109,30 @@ struct TermView: View {
             let tone = subj.isEmpty ? Tone.unset : db.tone(forSubject: subj)
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    HStack(alignment: .firstTextBaseline, spacing: 12) {
-                        Text("Term \(t.term)").font(.system(size: 28, weight: .bold)).tracking(-0.5)
-                        Text("\(t.year) · \(shortDate(t.start)) to \(shortDate(t.end))").font(.system(size: 13)).foregroundStyle(Color.ink2)
-                        Spacer()
-                    }
-                    HStack(spacing: 8) {
-                        Button("Previous term") { model.termKey = ts[ix - 1].id }.disabled(ix <= 0)
-                        Button("Next term") { model.termKey = ts[ix + 1].id }.disabled(ix >= ts.count - 1)
-                        Spacer()
-                        Picker("", selection: Binding(get: { subj }, set: { model.termSubject = $0 })) {
-                            ForEach(subs, id: \.self) { Text($0).tag($0) }
-                        }
-                        .labelsHidden()
-                        .frame(width: 160)
-                        .accessibilityLabel("Subject")
-                    }
                     TermStatBar(build: b, tone: tone)
                     TermGridScroller(build: b, tone: tone)
                 }
                 .padding(24)
+            }
+            .navigationTitle("Term \(t.term)")
+            .navigationSubtitle("\(t.year) · \(shortDate(t.start)) to \(shortDate(t.end))")
+            .toolbar {
+                ToolbarItemGroup(placement: .navigation) {
+                    Button { model.termKey = ts[ix - 1].id } label: { Label("Previous term", systemImage: "chevron.left") }
+                        .disabled(ix <= 0)
+                        .help("Go to the term before")
+                    Button { model.termKey = ts[ix + 1].id } label: { Label("Next term", systemImage: "chevron.right") }
+                        .disabled(ix >= ts.count - 1)
+                        .help("Go to the next term")
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Picker("Subject", selection: Binding(get: { subj }, set: { model.termSubject = $0 })) {
+                        ForEach(subs, id: \.self) { Text($0).tag($0) }
+                    }
+                    .labelsHidden()
+                    .frame(width: 160)
+                    .help("Choose the subject to show")
+                }
             }
         }
     }
