@@ -577,7 +577,6 @@ struct DevotionView: View {
         let all = db.rows(.devotion).sorted { $0.s("date") < $1.s("date") }
         if all.isEmpty {
             VStack(alignment: .leading, spacing: 14) {
-                PageHeader("Devotion")
                 EmptyNote(title: "No devotions loaded", message: "Add the Circle Time lessons to devotion.csv in the data folder.")
                 Spacer()
             }
@@ -591,31 +590,36 @@ struct DevotionView: View {
             let thisWeek = mondayOf(date) == mondayOf(todayISO())
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    HStack(alignment: .firstTextBaseline, spacing: 12) {
-                        Text("Devotion").font(.system(size: 28, weight: .bold)).tracking(-0.5)
-                        Text("\(Cal.weekdayLong[dayIdx(date)]) \(shortDate(date))"
-                             + (t.map { " · Term \($0.term), week \(db.termWeek(date) ?? 0)" } ?? ""))
-                            .font(.system(size: 13)).foregroundStyle(Color.ink2)
-                        if thisWeek { TagLabel(text: "This week") }
-                        Spacer()
-                    }
-                    FlowLayout(spacing: 8) {
-                        Button("Previous") { model.devotionDate = dates[i - 1] }.disabled(i <= 0)
-                        Button("Today") { model.devotionDate = defaultFor(todayISO(), dates) }
-                        Button("Next") { model.devotionDate = dates[i + 1] }.disabled(i >= dates.count - 1)
-                        Picker("", selection: Binding(get: { date }, set: { model.devotionDate = $0 })) {
-                            ForEach(all, id: \Row.["date"]) { x in
-                                Text("\(Cal.weekdayShort[dayIdx(x.s("date"))]) \(shortDate(x.s("date"))): \(x.s("theme"))").tag(x.s("date"))
-                            }
-                        }
-                        .labelsHidden()
-                        .frame(width: 300)
-                        .accessibilityLabel("Devotion date")
-                    }
                     DevotionCard(d: d)
                 }
                 .padding(24)
                 .frame(maxWidth: 900, alignment: .leading)
+            }
+            .navigationTitle("Devotion")
+            .navigationSubtitle("\(Cal.weekdayLong[dayIdx(date)]) \(shortDate(date))"
+                                + (t.map { " · Term \($0.term), week \(db.termWeek(date) ?? 0)" } ?? "")
+                                + (thisWeek ? " · This week" : ""))
+            .toolbar {
+                ToolbarItemGroup(placement: .navigation) {
+                    Button { model.devotionDate = dates[i - 1] } label: { Label("Previous", systemImage: "chevron.left") }
+                        .disabled(i <= 0)
+                        .help("Go to the devotion before")
+                    Button("Today") { model.devotionDate = defaultFor(todayISO(), dates) }
+                        .help("Go to the devotion for today, or the next one")
+                    Button { model.devotionDate = dates[i + 1] } label: { Label("Next", systemImage: "chevron.right") }
+                        .disabled(i >= dates.count - 1)
+                        .help("Go to the next devotion")
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Picker("Devotion date", selection: Binding(get: { date }, set: { model.devotionDate = $0 })) {
+                        ForEach(all, id: \Row.["date"]) { x in
+                            Text("\(Cal.weekdayShort[dayIdx(x.s("date"))]) \(shortDate(x.s("date"))): \(x.s("theme"))").tag(x.s("date"))
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 300)
+                    .help("Pick a devotion by date")
+                }
             }
         }
     }
