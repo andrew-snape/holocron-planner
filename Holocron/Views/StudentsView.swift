@@ -1053,7 +1053,8 @@ struct QuickLogSheet: View {
         let db = model.db
         let names = ids.map { db.studentName($0) }.joined(separator: ", ")
         SheetFrame(title: ids.count == 1 ? db.studentName(ids[0]) : "\(ids.count) students",
-                   subtitle: ids.count == 1 ? "" : names, width: 480) {
+                   subtitle: ids.count == 1 ? "" : names, width: 480,
+                   confirmTitle: "Save", confirmDisabled: note.trimmed.isEmpty, onConfirm: { save() }) {
             Picker("", selection: $kind) {
                 ForEach(QuickKind.allCases) { Text($0.rawValue).tag($0) }
             }
@@ -1089,14 +1090,6 @@ struct QuickLogSheet: View {
                 kind = s.kind
                 if s.kind == .lesson && !s.subject.isEmpty { subject = s.subject }
             }
-            HStack {
-                Button("Save") { save() }
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(note.trimmed.isEmpty)
-                Button("Cancel") { dismiss() }
-            }
-
             if ids.count == 1 {
                 let today = db.todaysEntries(ids[0])
                 if !today.isEmpty {
