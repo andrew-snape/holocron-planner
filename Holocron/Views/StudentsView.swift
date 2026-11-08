@@ -27,6 +27,14 @@ struct StudentsView: View {
             }
         }
         .onGeometryChange(for: Bool.self) { $0.size.width < 660 } action: { narrow = $0 }
+        .navigationTitle("Students")
+        .navigationSubtitle(studentCount)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { model.sheet = .newStudent } label: { Label("Add student", systemImage: "plus") }
+                    .help("Add a student")
+            }
+        }
         .modifier(StudentSearch(query: $query, active: !model.db.roster.isEmpty && !narrow))
         .onChange(of: query) { _, _ in
             // Keep the detail pane on someone who is in the filtered list.
@@ -42,6 +50,11 @@ struct StudentsView: View {
         }
     }
 
+    private var studentCount: String {
+        let n = model.db.roster.count
+        return n == 0 ? "" : "\(n) student\(n == 1 ? "" : "s")"
+    }
+
     private var noStudents: some View {
         VStack(spacing: 14) {
             EmptyNote(title: "No students yet", message: "Add your class to log notes, mark work and build report packs.")
@@ -55,17 +68,6 @@ struct StudentsView: View {
     private var wide: some View {
         HStack(spacing: 0) {
             VStack(spacing: 0) {
-                HStack {
-                    Text("Students").font(.system(size: 17, weight: .bold))
-                    Text("\(roster.count)").font(.system(size: 12)).foregroundStyle(Color.ink2)
-                    Spacer()
-                    Button { model.sheet = .newStudent } label: { Image(systemName: "plus") }
-                        .help("Add a student")
-                        .accessibilityLabel("Add a student")
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                Divider()
                 ScrollView {
                     LazyVStack(spacing: 2) {
                         ForEach(roster) { s in
