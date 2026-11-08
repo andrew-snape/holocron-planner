@@ -461,7 +461,9 @@ struct UnitSheet: View {
     }
 
     var body: some View {
-        SheetFrame(title: isNew ? "New unit" : "Edit unit", subtitle: u["title"] ?? "", width: 620) {
+        SheetFrame(title: isNew ? "New unit" : "Edit unit", subtitle: u["title"] ?? "", width: 620,
+                   confirmTitle: "Save", onConfirm: { save() },
+                   confirmKey: KeyboardShortcut("s", modifiers: .command)) {
             LineField(label: "Unit title", text: b("title"), placeholder: "What's my business?")
             VStack(alignment: .leading, spacing: 4) {
                 FieldLabel(text: "Transdisciplinary theme")
@@ -495,8 +497,6 @@ struct UnitSheet: View {
             NoteBox(label: "Reflection", hint: "at the end of the unit", text: b("reflection"), lines: 3)
             if !error.isEmpty { Text(error).font(.system(size: 12.5)).foregroundStyle(Color.appRed) }
             HStack {
-                Button("Save") { save() }.buttonStyle(.borderedProminent).keyboardShortcut("s", modifiers: .command)
-                Button("Cancel") { dismiss() }
                 Spacer()
                 if !isNew {
                     Button(armDelete ? "Click again to delete" : "Delete unit", role: .destructive) {

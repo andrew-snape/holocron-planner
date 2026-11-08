@@ -14,6 +14,8 @@ struct SheetFrame<Content: View>: View {
     var confirmTitle: String? = nil
     var confirmDisabled: Bool = false
     var onConfirm: (() -> Void)? = nil
+    /// Overrides Return as the confirm key, for sheets full of multi-line boxes (Cmd+S on the unit sheet).
+    var confirmKey: KeyboardShortcut? = nil
     @ViewBuilder var content: Content
     @Environment(\.dismiss) private var dismiss
     @State private var askDiscard = false
@@ -39,7 +41,7 @@ struct SheetFrame<Content: View>: View {
                 if let onConfirm, let confirmTitle {
                     ToolbarItem(placement: .confirmationAction) {
                         Button(confirmTitle) { onConfirm() }
-                            .keyboardShortcut(.defaultAction)
+                            .keyboardShortcut(confirmKey ?? .defaultAction)
                             .disabled(confirmDisabled)
                     }
                 }
