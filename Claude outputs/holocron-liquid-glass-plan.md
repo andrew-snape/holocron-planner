@@ -8,7 +8,7 @@ A plan to move Holocron's look to the macOS 26 and 27 Liquid Glass design, and t
 - Most of the work is **removing custom chrome** so the system can draw glass, not adding glass. The biggest win is moving each screen's own row of buttons (Last Week, This Week, Print, filter) into the window toolbar.
 - The theme moves from loose values to **tokens** (colours, corner radii, type sizes) in `Theme.swift`, so later changes are one-line edits.
 - **Light mode only stays.** Dark mode is not part of this plan (CLAUDE.md rule). See the open decisions.
-- Seven phases, each a separate branch and release bullet. About two to three weeks of work in total.
+- Six phases (the seventh, accent themes, was dropped), each with its own release bullet. About two to three weeks of work in total. Decisions are recorded near the end.
 
 ## What Apple says (from the HIG notes and WWDC)
 
@@ -93,10 +93,10 @@ Exact values are a starting point. The rule is: new and touched code uses tokens
 
 Two readings, both possible:
 
-- **A. One new house look** (this plan). Liquid Glass chrome, cleaner content, same colours.
+- **A. One new house look** (this plan, chosen). Liquid Glass chrome, cleaner content, same colours.
 - **B. A choice of accent theme** in Settings, General (for example Blue, Teal, Purple, Graphite). Once colours are tokens this is small: the accent token reads from a setting and every system control and glass tint follows. It is a per-Mac preference, so store it in `UserDefaults` (like `settingsTab`), not in `settings.csv`, which travels with the student folder.
 
-B is phase 7 and optional.
+A was chosen, so B (phase 7) is not planned. Tokens keep it a small job if it is ever wanted.
 
 ## Phases
 
@@ -130,7 +130,7 @@ The biggest visible change.
 - `NoteBox`, `LineField`, inline editors: use `fieldBG` and `fieldStroke`.
 - Week grid: keep its white panel, use `Radius.card`, and check lesson block corners nest inside it.
 - Empty notes, chips and the avatar circle: use `fill`.
-- Today, Units, Students detail: try a single white page instead of grey page plus cards. Decide screen by screen with screenshots.
+- Move to plain white pages (decision 2). Start with Today, Units and Students detail, keep cards only where grouping helps, and confirm with before and after screenshots before doing the rest.
 
 ### Phase 4. Sheets (M)
 
@@ -148,11 +148,11 @@ The biggest visible change.
 
 ### Phase 6. Sidebar and Settings (S)
 
-- Sidebar: remove any background the custom header adds, check `WeekBox` and `MiniCalendar` on the glass sidebar with the macOS 27 opacity slider at both ends. Consider coloured SF Symbol icons per module now that macOS 27 brings sidebar colour back (`.symbolRenderingMode(.multicolor)` or a tint per `NavItem`).
+- Sidebar: remove any background the custom header adds, check `WeekBox` and `MiniCalendar` on the glass sidebar with the macOS 27 opacity slider at both ends. Give each module its own icon colour (decision 6): add a `tint` to `NavItem` and apply it to the sidebar `Label` icon. Keep the colours distinct from subject colours and check them against the selected row highlight.
 - Settings: in `settingsForm()` drop `.scrollContentBackground(.hidden)`, the `appBG` background and the white row background, and let the grouped form draw itself. Check it still matches the redesign in `settings-redesign-plan.md`.
 - Help window: same treatment as the main window (toolbar title, no custom bar).
 
-### Phase 7 (optional). Accent themes (S)
+### Phase 7. Accent themes (not planned, decision 1)
 
 - Settings, General: "Accent colour" picker with four or five choices and a preview swatch.
 - Stored in `UserDefaults` under `appearance_accent`. Applied with `.tint()` at the scene root.
@@ -190,16 +190,18 @@ The biggest visible change.
 | 4 | 5 Toast and Class screen bar | S | 1.15 |
 | 5 | 4 Sheets | M | 1.16 |
 | 6 | 6 Sidebar and Settings | S | 1.16 |
-| 7 | 7 Accent themes | S | Optional |
+| 7 | 7 Accent themes | S | Not planned |
 
-## Open decisions for you
+## Decisions (8 Nov 2026)
 
-1. **Theme meaning.** One new house look (A), or also a choice of accent colours (B, phase 7)?
-2. **Page background.** Keep the light grey with white cards, or move to plain white pages on the list screens?
-3. **Page titles.** Happy for the big in-page titles to go, with the title in the window toolbar instead?
-4. **Class screen controls.** Auto-hiding glass bar, or always visible?
-5. **Dark mode.** Still parked? (Plan assumes yes. Liquid Glass works best with both, but nothing here needs it.)
-6. **Sidebar icon colour** on macOS 27: coloured per module, or keep monochrome?
+| # | Question | Decision |
+|---|---|---|
+| 1 | Theme meaning | One new house look. No accent colour choice, so phase 7 is dropped. |
+| 2 | Page background | Plain white pages, leaning that way. Confirm with before and after screenshots in phase 3. |
+| 3 | Page titles | Yes. The title moves to the window toolbar, and the big in-page titles go. |
+| 4 | Class screen controls | Auto-hiding glass bar. |
+| 5 | Dark mode | Still parked. Light mode only stays. |
+| 6 | Sidebar icon colour | Coloured per module. |
 
 ## API reference (macOS 26 SwiftUI)
 
