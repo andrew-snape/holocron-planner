@@ -17,36 +17,8 @@ struct WeekView: View {
         let colWidth = max(150, (viewport - 20 - WeekGrid.labelW - 4 * 5) / 5)
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text(lead).font(.system(size: 28, weight: .bold)).tracking(-0.5)
-                    Text("\(shortDate(mon)) to \(shortDate(addDays(mon, 4)))").font(.system(size: 13)).foregroundStyle(Color.ink2)
-                    WeekBadge(letter: wk)
-                    Spacer()
-                }
-                HStack(spacing: 8) {
-                    Button("Last Week") { model.weekMonday = addDays(mon, -7) }
-                    Button("This Week") { model.weekMonday = nil }
-                    Button("Next Week") { model.weekMonday = addDays(mon, 7) }
-                    Text("Type into a slot, click a subject to change it, drag to swap")
-                        .font(.system(size: 12)).foregroundStyle(Color.ink3).lineLimit(1)
-                    Spacer()
-                    Menu {
-                        Button("Print Week...") { PrintWeek.open(model: model) }
-                        Button("Save as PDF...") { PrintWeek.save(model: model) }
-                        Divider()
-                        Toggle("Include learning intentions", isOn: $printIntentions)
-                    } label: {
-                        Label("Print", systemImage: "printer")
-                    }
-                    .fixedSize()
-                    .help("Print this week on one A4 page, or save it as a PDF")
-                    Picker("", selection: Binding(get: { model.weekFilter }, set: { model.weekFilter = $0 })) {
-                        Text("All subjects").tag("")
-                        ForEach(subjects, id: \.self) { Text($0).tag($0) }
-                    }
-                    .labelsHidden()
-                    .frame(width: 160)
-                }
+                Text("Type into a slot, click a subject to change it, drag to swap")
+                    .font(.system(size: 12)).foregroundStyle(Color.ink3).lineLimit(1)
                 ScrollView(.horizontal, showsIndicators: true) {
                     WeekGrid(mon: mon, wk: wk, colW: colWidth)
                 }
@@ -56,6 +28,36 @@ struct WeekView: View {
                 .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             }
             .padding(24)
+        }
+        .navigationTitle(lead)
+        .navigationSubtitle("\(shortDate(mon)) to \(shortDate(addDays(mon, 4))) · Week \(wk)")
+        .toolbar {
+            ToolbarItemGroup(placement: .navigation) {
+                Button { model.weekMonday = addDays(mon, -7) } label: { Label("Last Week", systemImage: "chevron.left") }
+                    .help("Go to the week before")
+                Button("This Week") { model.weekMonday = nil }
+                    .help("Go to this week")
+                Button { model.weekMonday = addDays(mon, 7) } label: { Label("Next Week", systemImage: "chevron.right") }
+                    .help("Go to the next week")
+            }
+            ToolbarItemGroup(placement: .primaryAction) {
+                Picker("Subject", selection: Binding(get: { model.weekFilter }, set: { model.weekFilter = $0 })) {
+                    Text("All subjects").tag("")
+                    ForEach(subjects, id: \.self) { Text($0).tag($0) }
+                }
+                .labelsHidden()
+                .frame(width: 160)
+                .help("Show one subject or all of them")
+                Menu {
+                    Button("Print Week...") { PrintWeek.open(model: model) }
+                    Button("Save as PDF...") { PrintWeek.save(model: model) }
+                    Divider()
+                    Toggle("Include learning intentions", isOn: $printIntentions)
+                } label: {
+                    Label("Print", systemImage: "printer")
+                }
+                .help("Print this week on one A4 page, or save it as a PDF")
+            }
         }
     }
 }
