@@ -136,7 +136,15 @@ struct MoveSheet: View {
         let db = model.db
         let others = db.periods.filter { $0.period != per }
         let subj = db.plannedSubject(date, per)
-        SheetFrame(title: "Move \(subj.isEmpty ? "this session" : subj)", subtitle: longDate(date)) {
+        SheetFrame(title: "Move \(subj.isEmpty ? "this session" : subj)", subtitle: longDate(date),
+                   confirmTitle: "Swap",
+                   onConfirm: {
+                       if other >= 0 {
+                           db.swapDates(date, per, date, other)
+                           model.showToast("Swapped for today")
+                       }
+                       dismiss()
+                   }) {
             VStack(alignment: .leading, spacing: 4) {
                 FieldLabel(text: "Swap it with")
                 Picker("", selection: $other) {
@@ -149,21 +157,11 @@ struct MoveSheet: View {
             }
             Text("This changes today only. The standing timetable stays as it is.")
                 .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
-            HStack {
-                Button("Swap") {
-                    if other >= 0 {
-                        db.swapDates(date, per, date, other)
-                        model.showToast("Swapped for today")
-                    }
+            if db.isMoved(date, per) {
+                Button("Put back to normal") {
+                    db.clearDayPlan(date, per)
+                    model.showToast("Put back to normal")
                     dismiss()
-                }
-                .buttonStyle(.borderedProminent)
-                if db.isMoved(date, per) {
-                    Button("Put back to normal") {
-                        db.clearDayPlan(date, per)
-                        model.showToast("Put back to normal")
-                        dismiss()
-                    }
                 }
             }
         }
@@ -182,7 +180,8 @@ struct DayTypeSheet: View {
     @State private var loaded = false
 
     var body: some View {
-        SheetFrame(title: "Day type", subtitle: longDate(date)) {
+        SheetFrame(title: "Day type", subtitle: longDate(date),
+                   confirmTitle: "Save", onConfirm: { save() }) {
             VStack(alignment: .leading, spacing: 4) {
                 FieldLabel(text: "What kind of day is this?")
                 Picker("", selection: $type) {
@@ -191,22 +190,6 @@ struct DayTypeSheet: View {
                 .labelsHidden()
             }
             LineField(label: "Note", text: $note)
-            Button("Save") {
-                let db = model.db
-                db.setDayType(date, type: type, note: note.trimmingCharacters(in: .whitespaces))
-                if type != "Normal" {
-                    let plans = db.dayBumpPlans(date)
-                    if !db.bumpSummary(plans).isEmpty {
-                        model.sheet = .bump(title: "Push this day's lessons forward?", sub: "\(longDate(date)) · \(type)",
-                                            intro: "The timetable does not run on this day. Move its planned lessons to the next lesson of each subject?",
-                                            plans: plans)
-                        return
-                    }
-                }
-                dismiss()
-            }
-            .buttonStyle(.borderedProminent)
-            .keyboardShortcut(.defaultAction)
         }
         .onAppear {
             if !loaded {
@@ -216,6 +199,21 @@ struct DayTypeSheet: View {
                 loaded = true
             }
         }
+    }
+
+    private func save() {
+        let db = model.db
+        db.setDayType(date, type: type, note: note.trimmingCharacters(in: .whitespaces))
+        if type != "Normal" {
+            let plans = db.dayBumpPlans(date)
+            if !db.bumpSummary(plans).isEmpty {
+                model.sheet = .bump(title: "Push this day's lessons forward?", sub: "\(longDate(date)) · \(type)",
+                                    intro: "The timetable does not run on this day. Move its planned lessons to the next lesson of each subject?",
+                                    plans: plans)
+                return
+            }
+        }
+        dismiss()
     }
 }
 
@@ -231,7 +229,13 @@ struct SwapSheet: View {
         let db = model.db
         let s1 = db.plannedSubject(a.date, a.per).isEmpty ? "Not set" : db.plannedSubject(a.date, a.per)
         let s2 = db.plannedSubject(b.date, b.per).isEmpty ? "Not set" : db.plannedSubject(b.date, b.per)
-        SheetFrame(title: "Swap two sessions") {
+        SheetFrame(title: "Swap two sessions",
+                   confirmTitle: "Just these dates",
+                   onConfirm: {
+                       db.swapDates(a.date, a.per, b.date, b.per)
+                       model.showToast("Swapped for these dates")
+                       dismiss()
+                   }) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(s1).font(.system(size: 14, weight: .semibold))
                 Text("\(Cal.weekdayLong[a.day]) \(shortDate(a.date)) · \(db.period(a.per)?.name ?? "") · Week \(a.week)")
@@ -245,22 +249,14 @@ struct SwapSheet: View {
             .card()
             Text("A one-off leaves your standing timetable alone and only changes these two dates. Lesson notes move with the session either way.")
                 .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
-            HStack {
-                Button("Just these dates") {
-                    db.swapDates(a.date, a.per, b.date, b.per)
-                    model.showToast("Swapped for these dates")
-                    dismiss()
-                }
-                .buttonStyle(.borderedProminent)
-                Button("Every cycle from now on") {
-                    db.swapTemplate(a.week, a.day, a.per, b.week, b.day, b.per)
-                    let c1 = db.content(a.date, a.per), c2 = db.content(b.date, b.per)
-                    db.putContent(a.date, a.per, db.plannedSubject(a.date, a.per), c2)
-                    db.putContent(b.date, b.per, db.plannedSubject(b.date, b.per), c1)
-                    db.touch(.lessons)
-                    model.showToast("Timetable updated")
-                    dismiss()
-                }
+            Button("Every cycle from now on") {
+                db.swapTemplate(a.week, a.day, a.per, b.week, b.day, b.per)
+                let c1 = db.content(a.date, a.per), c2 = db.content(b.date, b.per)
+                db.putContent(a.date, a.per, db.plannedSubject(a.date, a.per), c2)
+                db.putContent(b.date, b.per, db.plannedSubject(b.date, b.per), c1)
+                db.touch(.lessons)
+                model.showToast("Timetable updated")
+                dismiss()
             }
         }
     }
