@@ -117,7 +117,9 @@ struct ScanCheckSheet: View {
 
     var body: some View {
         SheetFrame(title: "Check the scanned text", subtitle: "Fix anything that was misread, then add it to the end of the field.",
-                   dirty: text != original, discardMessage: "You have changed the scanned text. Close without adding it?") {
+                   dirty: text != original, discardMessage: "You have changed the scanned text. Close without adding it?",
+                   confirmTitle: "Add to the end", confirmDisabled: text.trimmed.isEmpty,
+                   onConfirm: { insert(text); dismiss() }) {
             TextEditor(text: $text)
                 .font(.system(size: 13))
                 .frame(minHeight: 220)
@@ -126,13 +128,6 @@ struct ScanCheckSheet: View {
                 .accessibilityLabel("Scanned text")
             Text("Read on this Mac. The picture is not kept.")
                 .font(.system(size: 12)).foregroundStyle(Color.ink2)
-            HStack {
-                Button("Add to the end") { insert(text); dismiss() }
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(text.trimmed.isEmpty)
-                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
-            }
         }
     }
 }
