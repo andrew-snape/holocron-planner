@@ -216,13 +216,7 @@ struct SettingsView: View {
         case .general: GeneralPane()
         case .timetable: TimetablePane()
         case .calendar: CalendarPane()
-        case .intelligence:
-            // The pane keeps its own form, so the header sits above it.
-            VStack(spacing: 0) {
-                SettingsPaneTitle(pane: .intelligence).padding(.top, 16)
-                IntelligenceSettings()
-            }
-            .background(Color.appBG)
+        case .intelligence: IntelligenceSettings()
         case .folders: FoldersPane()
         case .privacy: PrivacyPane()
         case .yearend: YearEndPane()

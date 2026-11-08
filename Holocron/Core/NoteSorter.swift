@@ -79,7 +79,7 @@ enum NoteSorter {
         // A session warmed when the Dictate sheet opened is used once, if the roll and subjects are unchanged.
         let session = WarmSessions.take("sort", instructions: instructions)?.session ?? LanguageModelSession(instructions: instructions)
         let out = try await session.respond(to: "Dictated: \(transcript)", generating: DictatedNotes.self,
-                                           options: GenerationOptions(samplingMode: .greedy)).content
+                                           options: GenerationOptions(sampling: .greedy)).content
         let saidList = NameMatcher.fold(transcript)
         let saidWords = Set(saidList)
         // "Whole class" only counts when it was said as such, not for "great in class".

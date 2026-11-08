@@ -10,6 +10,8 @@ struct IntelligenceSettings: View {
         let db = model.db
         let status = Intelligence.status
         Form {
+            SettingsPaneHeader(pane: .intelligence)
+
             Section {
                 Label {
                     Text(Intelligence.statusText).fixedSize(horizontal: false, vertical: true)
