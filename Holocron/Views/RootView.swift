@@ -146,13 +146,13 @@ extension NavItem {
         case .today: return .blue
         case .week: return .indigo
         case .term: return .teal
-        case .units: return .orange
+        case .units: return .brown
         case .devotion: return .purple
         case .classScreen: return .cyan
         case .students: return .green
-        case .quick: return .yellow
+        case .quick: return .orange
         case .assess: return .pink
-        case .hours: return .brown
+        case .hours: return .mint
         }
     }
 }

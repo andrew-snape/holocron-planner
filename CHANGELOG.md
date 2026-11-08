@@ -6,9 +6,11 @@
 - The Go menu has Previous and Next (Cmd+[ and Cmd+]) and Go to Today (Cmd+T). Help lists them.
 - Blue buttons and the sidebar highlight now use Holocron's own blue.
 - Pages are plain white. Cards are rounder, have no shadow and keep a thin edge. The week and term grids sit on a faint grey panel so they still stand out.
-- The Class screen buttons (previous and next lesson, Pop out, Full screen, Done) sit in a floating bar at the bottom. On the projector window the bar fades after a few seconds and returns when you move the mouse or press a key. The left and right arrow keys still change lesson while it is hidden.
+- The Class screen buttons (previous and next lesson, Pop out, Full screen, Done) sit in a glass bar at the bottom. On the projector window the bar floats over the page, fades after a few seconds and returns when you move the mouse or press a key. The left and right arrow keys still change lesson while it is hidden.
 - Messages at the bottom of the window use the same glass look.
-- Sheets have a title bar with Cancel on the left and the main button on the right, such as Save, Add student, Swap or Done. Esc still cancels, Return still confirms, and a sheet with unsaved changes still asks before it closes. The unit sheet keeps Cmd+S.
+- Sheets have Cancel on the left and the main button on the right, such as Save or Add student. Esc still cancels, Return still confirms, and a sheet with unsaved changes still asks before it closes. The unit sheet keeps Cmd+S.
+- Change subject, Move and Swap keep both their choices in the sheet, so Return does not change the timetable by accident.
+- Draft comments for the class has one Close button, which asks before unused drafts are lost.
 - Each screen has its own icon colour in the sidebar. The week box in the sidebar is softer, Settings uses the standard Mac look, and Help shows the page name in the window title.
 
 ## 1.14
