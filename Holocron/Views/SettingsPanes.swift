@@ -84,7 +84,7 @@ struct GeneralPane: View {
                         .frame(width: 200)
                 }
             } footer: {
-                Text("Shown at the top of the sidebar and on student summaries and report packs.")
+                Text("Shown at the top of the main sidebar and on student summaries and report packs.")
             }
 
             Section {
@@ -104,9 +104,6 @@ struct GeneralPane: View {
 
             Section {
                 Button("Reload from folders") { model.reloadFromFolder(toast: "Reloaded") }
-                LabeledContent("Version") {
-                    Text(AppModel.appVersion).foregroundStyle(.secondary)
-                }
             }
         }
         .settingsForm()
@@ -199,7 +196,6 @@ struct CalendarPane: View {
             Section {
                 ForEach(termRows.indices, id: \.self) { i in
                     HStack(spacing: 8) {
-                        Text("Term").foregroundStyle(.secondary)
                         TextField("Term", text: ed.cellBinding(.terms, i, "term"))
                             .textFieldStyle(.roundedBorder)
                             .labelsHidden()
@@ -218,7 +214,7 @@ struct CalendarPane: View {
                             .labelsHidden()
                         Text("\(ed.weeksIn(termRows[i])) weeks")
                             .font(.callout).foregroundStyle(.secondary)
-                            .frame(width: 70, alignment: .trailing)
+                            .fixedSize()
                     }
                 }
                 Button("Add term") {
@@ -292,6 +288,7 @@ struct FoldersPane: View {
             Section {
                 LabeledContent("Folder") {
                     Text(model.folder.url.path)
+                        .help(model.folder.url.path)
                         .foregroundStyle(.secondary)
                         .textSelection(.enabled)
                         .lineLimit(1)
@@ -310,6 +307,7 @@ struct FoldersPane: View {
             Section {
                 LabeledContent("Folder") {
                     Text((model.folder.plannerURL ?? model.folder.url).path)
+                        .help((model.folder.plannerURL ?? model.folder.url).path)
                         .foregroundStyle(.secondary)
                         .textSelection(.enabled)
                         .lineLimit(1)
@@ -331,7 +329,11 @@ struct FoldersPane: View {
             } header: {
                 Text("Planner folder")
             } footer: {
-                Text("Timetable, lessons, terms, non-teaching days, subjects, periods, units, devotions, quotes and rubrics. Point this at a folder shared in iCloud Drive to sync the planner with colleagues. Choosing a folder keeps any planner files already in it and copies across the ones it is missing. To share it, right-click the folder in Finder, choose Share, then Add People. Changes from colleagues appear when you come back to the app or press Reload.")
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Timetable, lessons, terms, non-teaching days, subjects, periods, units, devotions, quotes and rubrics. Point this at a folder shared in iCloud Drive to sync the planner with colleagues. Choosing a folder keeps any planner files already in it and copies across the ones it is missing.")
+                    Text("To share it, right-click the folder in Finder, choose Share, then Add People. Changes from colleagues appear when you come back to the app or press Reload.")
+                }
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
         .settingsForm()
@@ -371,6 +373,9 @@ struct PrivacyPane: View {
                     Text("Subject lessons")
                     Text("Tick a subject to keep the lessons you plan for it to yourself. Colleagues still see the slot on the timetable, and their own lessons are never touched.")
                         .font(.callout).foregroundStyle(.secondary)
+                    if subjectNames.isEmpty {
+                        Text("No subjects yet.").font(.callout).foregroundStyle(.secondary)
+                    }
                     FlowLayout(spacing: 14) {
                         ForEach(subjectNames, id: \.self) { name in
                             Toggle(name, isOn: Binding(
