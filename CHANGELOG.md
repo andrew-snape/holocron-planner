@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Each screen has its own icon colour in the sidebar. The week box in the sidebar is softer, Settings uses the standard Mac look, and Help shows the page name in the window title.
 - Sheets have a title bar with Cancel on the left and the main button on the right, such as Save, Add student, Swap or Done. Esc still cancels, Return still confirms, and a sheet with unsaved changes still asks before it closes. The unit sheet keeps Cmd+S.
 - The Class screen buttons (previous and next lesson, Pop out, Full screen, Done) now sit in a floating bar at the bottom. On the projector window the bar fades after a few seconds and returns when you move the mouse or press a key. The left and right arrow keys still change lesson while it is hidden. Messages at the bottom of the window use the same glass look.
 - Pages are now plain white. Cards are rounder, have no shadow and keep a thin edge. The week and term grids sit on a faint grey panel so they still stand out.

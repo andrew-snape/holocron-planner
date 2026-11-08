@@ -138,6 +138,25 @@ struct FolderBanner: View {
 
 // MARK: - Sidebar
 
+/// Each module has its own icon colour in the sidebar. Kept here so the model stays free of colours.
+/// They are chosen to sit apart from the subject colours and the status colours.
+extension NavItem {
+    var tint: Color {
+        switch self {
+        case .today: return .blue
+        case .week: return .indigo
+        case .term: return .teal
+        case .units: return .orange
+        case .devotion: return .purple
+        case .classScreen: return .cyan
+        case .students: return .green
+        case .quick: return .yellow
+        case .assess: return .pink
+        case .hours: return .brown
+        }
+    }
+}
+
 struct SidebarView: View {
     @Environment(AppModel.self) private var model
     @State private var height: CGFloat = 900
@@ -159,8 +178,12 @@ struct SidebarView: View {
                 get: { model.nav },
                 set: { if let n = $0 { model.nav = n } })) {
                 ForEach(model.visibleNav) { item in
-                    Label(item.title, systemImage: item.symbol)
-                        .tag(item)
+                    Label {
+                        Text(item.title)
+                    } icon: {
+                        Image(systemName: item.symbol).foregroundStyle(item.tint)
+                    }
+                    .tag(item)
                 }
             }
             .listStyle(.sidebar)
@@ -200,9 +223,8 @@ struct WeekBox: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
-        .background(Color.cardBG)
+        .background(Color.fillFaint)
         .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous).stroke(Color.hairline, lineWidth: 0.5))
     }
 }
 

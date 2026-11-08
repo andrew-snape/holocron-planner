@@ -151,6 +151,7 @@ struct HelpView: View {
             }
             .id(topicRaw)
             .background(Color.appBG)
+            .navigationTitle(topic.title)
         }
         .frame(minWidth: 740, minHeight: 520)
     }

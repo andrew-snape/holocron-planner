@@ -3,13 +3,10 @@ import AppKit
 
 // MARK: - Settings
 
-/// Settings forms sit on Holocron's grey background, with white rows like the rest of the app.
+/// Settings forms use the system grouped style, which draws its own background and rows.
 extension View {
     func settingsForm() -> some View {
         self.formStyle(.grouped)
-            .scrollContentBackground(.hidden)
-            .background(Color.appBG)
-            .listRowBackground(Color.cardBG)
     }
 }
 
