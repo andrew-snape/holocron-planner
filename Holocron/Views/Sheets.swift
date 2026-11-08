@@ -10,36 +10,39 @@ struct SheetFrame<Content: View>: View {
     /// True while there are unsaved edits. Closing then asks before throwing them away.
     var dirty: Bool = false
     var discardMessage: String = "You have changes that are not saved."
+    /// The sheet's main button, drawn in the title bar on the trailing side. Leave nil when the sheet keeps its own buttons in the body.
+    var confirmTitle: String? = nil
+    var confirmDisabled: Bool = false
+    var onConfirm: (() -> Void)? = nil
     @ViewBuilder var content: Content
     @Environment(\.dismiss) private var dismiss
     @State private var askDiscard = false
 
+    /// The one way out for Cancel, Close and Esc, so unsaved edits are always asked about.
+    private func close() { if dirty { askDiscard = true } else { dismiss() } }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.hSheet)
-                    if !subtitle.isEmpty { Text(subtitle).font(.system(size: 12.5)).foregroundStyle(Color.ink2) }
-                }
-                Spacer()
-                Button { if dirty { askDiscard = true } else { dismiss() } } label: {
-                    Image(systemName: "xmark.circle.fill").font(.system(size: 18)).foregroundStyle(Color.ink2)
-                        .frame(width: 28, height: 28)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Close")
-                .help("Close (Esc)")
-                .keyboardShortcut(.cancelAction)
-            }
-            .padding(.horizontal, 22)
-            .padding(.top, 18)
-            .padding(.bottom, 12)
-            Divider()
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) { content }
                     .padding(22)
                     .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .navigationTitle(title)
+            .modifier(SheetSubtitle(text: subtitle))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(onConfirm == nil ? "Close" : "Cancel") { close() }
+                        .keyboardShortcut(.cancelAction)
+                        .help("\(onConfirm == nil ? "Close" : "Cancel") (Esc)")
+                }
+                if let onConfirm, let confirmTitle {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(confirmTitle) { onConfirm() }
+                            .keyboardShortcut(.defaultAction)
+                            .disabled(confirmDisabled)
+                    }
+                }
             }
         }
         .frame(minWidth: width, idealWidth: width, minHeight: 280, idealHeight: 420)
@@ -50,6 +53,14 @@ struct SheetFrame<Content: View>: View {
         } message: {
             Text(discardMessage)
         }
+    }
+}
+
+/// Sets the window subtitle only when there is one, so an empty line takes no room.
+private struct SheetSubtitle: ViewModifier {
+    var text: String
+    func body(content: Content) -> some View {
+        if text.isEmpty { content } else { content.navigationSubtitle(text) }
     }
 }
 
