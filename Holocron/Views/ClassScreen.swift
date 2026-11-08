@@ -228,6 +228,15 @@ struct ClassScreenView: View {
                 }
                 .padding(.trailing, 4)
             }
+            // In the projector window the bar floats over the bottom of the page, so leave room to scroll clear of it.
+            .contentMargins(.bottom, embedded ? 0 : 96, for: .scrollContent)
+
+            if embedded {
+                // At the Mac the bar never hides, so it sits in the layout and covers nothing.
+                controlBar(ps: ps, ix: ix)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 14)
+            }
 
             nowNext(subj: subj, p: p, tone: tone)
                 .padding(.top, 14)
@@ -235,13 +244,15 @@ struct ClassScreenView: View {
         .padding(24)
         .background(Color.cardBG)
         .overlay(alignment: .bottom) {
-            controlBar(ps: ps, ix: ix)
-                .padding(.bottom, 84)
-                .opacity(barVisible ? 1 : 0)
-                .allowsHitTesting(barVisible)
-                .disabled(!barVisible)
-                .accessibilityHidden(!barVisible)
-                .animation(.easeInOut(duration: 0.25), value: barVisible)
+            if !embedded {
+                controlBar(ps: ps, ix: ix)
+                    .padding(.bottom, 84)
+                    .opacity(barVisible ? 1 : 0)
+                    .allowsHitTesting(barVisible)
+                    .disabled(!barVisible)
+                    .accessibilityHidden(!barVisible)
+                    .animation(.easeInOut(duration: 0.25), value: barVisible)
+            }
         }
         .focusable()
         .focusEffectDisabled()
