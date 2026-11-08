@@ -82,7 +82,13 @@ struct ChangeSheet: View {
     var body: some View {
         let db = model.db
         let wk = db.weekLetter(date) ?? "A"
-        SheetFrame(title: "Change subject", subtitle: slotTitle(model, date, per) + " · Week \(wk)") {
+        SheetFrame(title: "Change subject", subtitle: slotTitle(model, date, per) + " · Week \(wk)",
+                   confirmTitle: "This date only",
+                   onConfirm: {
+                       db.changeSubjectOnce(date: date, per: per, subject: subject)
+                       model.showToast("Changed for this date only")
+                       dismiss()
+                   }) {
             VStack(alignment: .leading, spacing: 4) {
                 FieldLabel(text: "Subject")
                 Picker("", selection: $subject) {
@@ -94,12 +100,6 @@ struct ChangeSheet: View {
             Text("\u{201C}This date only\u{201D} leaves the standing timetable alone. \u{201C}Every \(wk) week\u{201D} changes the standing timetable from now on.")
                 .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
             HStack {
-                Button("This date only") {
-                    db.changeSubjectOnce(date: date, per: per, subject: subject)
-                    model.showToast("Changed for this date only")
-                    dismiss()
-                }
-                .buttonStyle(.borderedProminent)
                 Button("Every \(wk) week") {
                     db.changeSubjectStanding(date: date, per: per, subject: subject)
                     model.showToast("Standing timetable updated")

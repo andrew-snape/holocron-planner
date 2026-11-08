@@ -872,22 +872,23 @@ struct NewStudentSheet: View {
     @State private var surname = ""
 
     var body: some View {
-        SheetFrame(title: "New student", width: 400) {
+        SheetFrame(title: "New student", width: 400,
+                   confirmTitle: "Add student",
+                   confirmDisabled: first.trimmingCharacters(in: .whitespaces).isEmpty,
+                   onConfirm: { add() }) {
             LineField(label: "First name", text: $first)
             LineField(label: "Surname", text: $surname)
-            Button("Add student") {
-                let f = first.trimmingCharacters(in: .whitespaces)
-                guard !f.isEmpty else { return }
-                let id = model.db.addStudent(first: f, surname: surname.trimmingCharacters(in: .whitespaces))
-                model.selectedStudent = id
-                model.nav = .students
-                model.showToast("Student added")
-                dismiss()
-            }
-            .buttonStyle(.borderedProminent)
-            .keyboardShortcut(.defaultAction)
-            .disabled(first.trimmingCharacters(in: .whitespaces).isEmpty)
         }
+    }
+
+    private func add() {
+        let f = first.trimmingCharacters(in: .whitespaces)
+        guard !f.isEmpty else { return }
+        let id = model.db.addStudent(first: f, surname: surname.trimmingCharacters(in: .whitespaces))
+        model.selectedStudent = id
+        model.nav = .students
+        model.showToast("Student added")
+        dismiss()
     }
 }
 
