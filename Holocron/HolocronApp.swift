@@ -123,6 +123,9 @@ struct AppCommands: Commands {
     @Environment(\.openSettings) private var openSettings
 
     var body: some Commands {
+        CommandGroup(replacing: .appInfo) {
+            Button("About Holocron") { AboutPanel.show() }
+        }
         CommandGroup(after: .appInfo) {
             Button("Check for Updates…") {
                 UserDefaults.standard.set(SettingsTab.updates.rawValue, forKey: "settingsTab")

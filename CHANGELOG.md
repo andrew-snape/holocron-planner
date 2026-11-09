@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.21
+
+- The About Holocron window has a description of the app, the frameworks it is built on, a link to the source code on GitHub, and the licence.
+
 ## 1.20
 
 - Work has photos and scans of students' work. Choose the students for each one, add the date, lesson, unit, task and a caption, and link a result if there is one. A group photo is stored once and shared.
