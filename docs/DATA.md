@@ -79,7 +79,7 @@ For an AI assistant that has to edit a teacher's live files, the operational sou
 | Key | Value |
 |---|---|
 | `class_name` | Shown in the sidebar and on exports. Default `6AS`. |
-| `module_<screen>` | `off` hides a screen. Missing means on. Screens: `week term units devotion classScreen students quick assess hours`. |
+| `module_<screen>` | `off` hides a screen. Missing means on. Screens: `week term units devotion classScreen board students work quick assess hours`. |
 | `private_subject_<name>` | `on` keeps that subject's lessons in `lessonsprivate.csv`. |
 | `private_devotion` | `on` keeps Devotion and quotes in the student folder. |
 | `ai_dictation`, `ai_drafts`, `ai_columns`, `ai_lessonDraft`, `ai_noteTags` | `off` switches the feature off. |

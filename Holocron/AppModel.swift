@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 import ImageIO
 
 enum NavItem: String, CaseIterable, Identifiable {
-    case today, week, term, units, devotion, classScreen, students, work, quick, assess, hours
+    case today, week, term, units, devotion, classScreen, board, students, work, quick, assess, hours
 
     var id: String { rawValue }
 
@@ -23,7 +23,7 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .quick: return "8"
         case .assess: return "9"
         case .hours: return "0"
-        case .work: return nil
+        case .work, .board: return nil
         }
     }
 
@@ -32,6 +32,7 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .today: return "Today"
         case .week: return "Week"
         case .classScreen: return "Class screen"
+        case .board: return "Classroom"
         case .term: return "Term"
         case .units: return "Units"
         case .devotion: return "Devotion"
@@ -48,6 +49,7 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .today: return "clock"
         case .week: return "calendar"
         case .classScreen: return "tv"
+        case .board: return "display"
         case .term: return "tablecells"
         case .units: return "magnifyingglass"
         case .devotion: return "plus"
@@ -144,12 +146,18 @@ final class AppModel {
     // Toast
     var toast: String? = nil
 
+    /// Set while a save has failed and is waiting to be tried again. Cleared when a save works.
+    var saveProblem: String? = nil
+
     // Photos change counter, so a replaced photo shows straight away
     var photoVersion = 0
 
     /// The Class screen timer, shared by the sidebar module and the pop-out window.
     let classTimer = ClassTimer()
-    /// The Class screens on show, in the window or popped out. Siri leaves names out while any are.
+    /// The Classroom stopwatch. Kept here, so it keeps running when you leave the board and come back.
+    let stopwatch = Stopwatch()
+    /// The Class screens and Classroom boards on show, in the window, popped out or in the sidebar.
+    /// Siri leaves names out while any are.
     var classScreens: Set<UUID> = []
     /// The students and subjects last given to Siri, so they are only sent again when they change.
     @ObservationIgnored private var siriVocabulary = ""
@@ -196,6 +204,7 @@ final class AppModel {
         }
 
         NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.flushNow()   // try again any save that failed earlier
             self?.reloadIfIdle()
             self?.updater.checkIfDue()
         }
@@ -218,7 +227,7 @@ final class AppModel {
     @discardableResult
     func usePlannerFolder(_ url: URL?) -> String {
         if let u = url, !DataFolder.isDirectory(u) { return "That folder could not be opened." }
-        flushNow(wait: true)
+        guard flushOrStop() else { return "Your changes could not be saved, so the planner folder was not changed." }
         var next = folder
         next.plannerURL = url
         let (copied, kept) = copyMissingFiles(TableName.allCases.filter { $0.isPlanner }, from: folder, to: next)
@@ -246,7 +255,7 @@ final class AppModel {
 
     /// Saves anything waiting, then reads every file again.
     func reloadFromFolder(toast: String? = "Reloaded from folder") {
-        flushNow(wait: true)
+        guard flushOrStop() else { showToast("Your changes could not be saved, so nothing was reloaded"); return }
         loadAll()
         if let toast { showToast(toast) }
     }
@@ -285,7 +294,10 @@ final class AppModel {
             folderOK = false
             return
         }
-        flushNow(wait: true)
+        guard flushOrStop() else {
+            showToast("Your changes could not be saved, so the folder was not changed")
+            return
+        }
         folder = f
         UserDefaults.standard.set(url.path, forKey: AppModel.folderKey)
         imageCache.removeAll()
@@ -303,7 +315,15 @@ final class AppModel {
         if force { fileSigs.removeAll() }
         var messages: [String] = []
         let folderThere = folder.exists()
-        readPrivacy()
+        let privacyProblem = readPrivacy()
+        if let problem = privacyProblem {
+            // Without the privacy rule, lessons and Devotion could be read or written to the wrong folder,
+            // so none of them is written until settings.csv can be read again.
+            for name in [TableName.settings, .lessons, .lessonsprivate, .devotion, .quotes] {
+                badLoads.insert(name.rawValue)
+            }
+            messages.append(problem)
+        }
         for t in TableName.allCases {
             // Private lessons are read together with the shared ones, below.
             if t == .lessonsprivate { continue }
@@ -314,6 +334,8 @@ final class AppModel {
                     && fileSigs[.lessonsprivate] == folder.signature(.lessonsprivate)
             }
             if unchanged { continue }
+            // settings.csv was already reported by readPrivacy, so it is not reported twice.
+            if t == .settings, privacyProblem != nil { continue }
             switch folder.read(t) {
             case .ok(let header, let rows):
                 db.load(t, header: header, rows: t == .lessons ? mergeLessons(shared: rows, messages: &messages) : rows)
@@ -322,7 +344,8 @@ final class AppModel {
                 let starter = Starter.rows(for: t)
                 db.load(t, header: t.header, rows: t == .lessons ? mergeLessons(shared: starter, messages: &messages) : starter)
                 fileSigs[t] = nil
-                if folderThere {
+                // Never create a blank file where the folder's rules are unknown or the file is unreadable.
+                if folderThere, !badLoads.contains(t.rawValue) {
                     try? folder.write(t, header: t.header, rows: starter)
                     fileSigs[t] = folder.signature(t)
                 }
@@ -376,13 +399,19 @@ final class AppModel {
 
     /// Reads which subjects (and whether the Devotion scripts) are private, straight from settings.csv,
     /// before the other files are read. If the answer has changed since the last read, every file is read again.
-    private func readPrivacy() {
+    /// Returns a message when settings.csv could not be read. The last good answer is then kept.
+    private func readPrivacy() -> String? {
         var subjects = Set<String>()
         var devotion = false
-        if case .ok(_, let rows) = folder.read(.settings) {
+        switch folder.read(.settings) {
+        case .ok(_, let rows):
             let p = Database.privacy(from: rows)
             subjects = p.subjects
             devotion = p.devotion
+        case .missing:
+            break
+        case .failed(let msg):
+            return msg
         }
         privateSubjects = subjects
         let privateTables: Set<TableName> = devotion ? [.devotion, .quotes] : []
@@ -392,6 +421,7 @@ final class AppModel {
             privacySnapshot = snapshot
             fileSigs.removeAll()
         }
+        return nil
     }
 
     /// Lessons sit in two files. lessons.csv is the planner folder's copy, shared with colleagues, and
@@ -428,7 +458,7 @@ final class AppModel {
     /// Marks a subject private or shared. With `copyLessons`, the subject's current lessons are also
     /// copied into the private file the first time it is made private. The shared copies are left alone.
     func setSubjectPrivate(_ subject: String, _ on: Bool, copyLessons: Bool = false) {
-        flushNow(wait: true)
+        guard flushOrStop() else { showToast("Your changes could not be saved, so the setting was not changed"); return }
         if on && copyLessons {
             let existing = db.rows(.lessons).filter { $0.s("subject") == subject }
             let have = Set(hiddenPrivate.filter { $0.s("subject") == subject }.map { Database.SlotKey(date: $0.s("date"), per: Int($0.s("period")) ?? 0) })
@@ -437,7 +467,7 @@ final class AppModel {
         db.setSetting(Database.privateSubjectPrefix + subject, on ? "on" : "off")
         // Save the settings and the private file, then read everything again under the new rule.
         if on && copyLessons { pending.insert(.lessons) }
-        flushNow(wait: true)
+        guard flushOrStop() else { showToast("Your changes could not be saved, so the setting was not changed"); return }
         loadAll()
     }
 
@@ -445,7 +475,7 @@ final class AppModel {
     /// Files are copied across when the new place does not have them yet. Anything already there is kept.
     @discardableResult
     func setDevotionPrivate(_ on: Bool) -> String {
-        flushNow(wait: true)
+        guard flushOrStop() else { return "Your changes could not be saved, so the setting was not changed." }
         db.setSetting(Database.privateDevotionKey, on ? "on" : "off")
         flushNow(wait: true)
         var next = folder
@@ -477,6 +507,8 @@ final class AppModel {
         pending.removeAll()
         guard !list.isEmpty else { return }
         guard folder.exists() else {
+            // Keep the changes waiting until the folder is back.
+            pending.formUnion(list)
             folderOK = false
             if showToast { self.showToast("No data folder. Nothing was saved.") }
             return
@@ -537,8 +569,17 @@ final class AppModel {
     private func saveFinished(sigs: [(TableName, DataFolder.Signature?)], failed: [TableName], quiet: Bool) {
         inFlight -= 1
         for (t, s) in sigs { fileSigs[t] = s }
-        for t in failed { showToast("Could not write \(t.rawValue).csv") }
-        if failed.isEmpty && !quiet { showToast("Saved") }
+        guard !failed.isEmpty else {
+            if pending.isEmpty { saveProblem = nil }
+            if !quiet { showToast("Saved") }
+            return
+        }
+        // Keep the changes waiting. The next change, quitting, or coming back to the app tries again,
+        // and reloads stay off until then, so the unsaved rows are not replaced by the old file.
+        for t in failed { pending.insert(t == .lessonsprivate ? .lessons : t) }
+        let names = failed.map { "\($0.rawValue).csv" }.joined(separator: ", ")
+        saveProblem = "Could not save \(names). Your changes are still in Holocron. Keep the app open and check that your data folder is available."
+        showToast("Could not save \(names)")
     }
 
     func showToast(_ text: String) {
@@ -625,6 +666,13 @@ final class AppModel {
         return (target ?? folder).importPlan(from: source, scope: scope, includeSharedPlanner: includeSharedPlanner)
     }
 
+    /// Saves anything waiting now. Returns false, with the changes still waiting, when a save fails, so
+    /// that a folder change, reload, import or Start over never replaces rows that have not been saved.
+    func flushOrStop() -> Bool {
+        flushNow(wait: true)
+        return pending.isEmpty
+    }
+
     /// Call on the main thread before running `plan.carryOut()` off it, so pending edits are on disk.
     func prepareImport() { flushNow(wait: true) }
 
@@ -691,7 +739,7 @@ final class AppModel {
     /// Saves imported results. assessments.csv is first copied into a dated "Before results import"
     /// folder in Holocron archive, and nothing is changed if that copy cannot be made.
     func importResults(_ changes: ResultsChanges, remember: [String: String], fm: FileManager = .default) -> ResultsOutcome {
-        flushNow(wait: true)
+        guard flushOrStop() else { return .failed("Your changes could not be saved, so nothing was imported.") }
         guard folder.exists() else { return .failed("The data folder could not be found, so nothing was changed.") }
         guard !badLoads.contains(TableName.assessments.rawValue) else {
             return .failed("assessments.csv could not be read, so it was not changed. Fix or move the file, then press Shift+Cmd+R.")
@@ -750,7 +798,7 @@ final class AppModel {
     /// moved into a dated folder in "Holocron archive" beside the data folder, never deleted. A
     /// separate (often shared) planner folder is only disconnected, so colleagues keep their planner.
     func startOver(_ scope: StartOverScope) -> StartOverOutcome {
-        flushNow(wait: true)
+        guard flushOrStop() else { return .failed("Your changes could not be saved, so nothing was changed.") }
         guard folder.exists() else {
             return .failed("The data folder could not be found, so nothing was changed.")
         }

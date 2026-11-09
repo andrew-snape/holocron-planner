@@ -83,10 +83,21 @@ struct DataFolder {
         }
         do {
             let data = try Data(contentsOf: f)
+            // UTF-16 exports are not plain text here, and would be rewritten as garbage, so they are left alone.
+            if data.starts(with: [0xFF, 0xFE]) || data.starts(with: [0xFE, 0xFF]) {
+                return .failed("\(t.rawValue).csv is saved as UTF-16. Save it again as CSV (UTF-8), then press Shift+Cmd+R")
+            }
             guard let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) else {
                 return .failed("\(t.rawValue).csv is not text")
             }
             let p = CSV.parse(text)
+            // Rows with none of the columns Holocron knows (a CR-only or otherwise wrong file) are not read,
+            // so the next save cannot rewrite them.
+            let known = Set(t.header.map { $0.lowercased() })
+            if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+               !p.header.contains(where: { known.contains($0.trimmingCharacters(in: .whitespaces).lowercased()) }) {
+                return .failed("\(t.rawValue).csv does not have the columns Holocron expects, so it was not changed")
+            }
             return .ok(header: p.header, rows: p.rows)
         } catch {
             return .failed("\(t.rawValue).csv could not be read")
