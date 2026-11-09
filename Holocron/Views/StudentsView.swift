@@ -1085,7 +1085,7 @@ struct QuickLogSheet: View {
                     }
                 }
             }
-            NoteBox(label: "Note", text: $note, lines: 3, scannable: true)
+            NoteBox(label: "Note", text: $note, lines: 3, scannable: true, dictatable: true)
             NoteSuggestBar(note: note, kind: kind, subject: subject) { s in
                 kind = s.kind
                 if s.kind == .lesson && !s.subject.isEmpty { subject = s.subject }

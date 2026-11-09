@@ -229,15 +229,52 @@ struct NoteBox: View {
     var placeholder: String = ""
     /// Adds a Scan text button that reads a photo, scan or PDF and adds the words to the end of the box.
     var scannable = false
+    /// Adds a Dictate button that types what the teacher says into the box, on this Mac.
+    var dictatable = false
     @State private var scanner = TextScanner()
+    @State private var dictation = Dictation()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 FieldLabel(text: label, hint: hint)
+                if scannable || dictatable { Spacer(minLength: 8) }
+                if dictatable {
+                    Button { Task { await toggleDictation() } } label: {
+                        Label(dictation.isBusy ? "Stop" : "Dictate…", systemImage: dictation.isBusy ? "stop.circle.fill" : "mic")
+                    }
+                    .buttonStyle(.bordered).controlSize(.small)
+                    .tint(dictation.isBusy ? Color.appRed : Color.appBlue)
+                    .disabled(dictation.state == .stopping)
+                    .help("Speak and your words are typed into this box. Nothing leaves this Mac.")
+                    .accessibilityLabel(dictation.isBusy ? "Stop dictating" : "Dictate")
+                    if dictation.state == .preparing {
+                        ProgressView().controlSize(.small).accessibilityLabel("Getting ready")
+                    }
+                    if dictation.state == .listening {
+                        Label("Listening", systemImage: "waveform")
+                            .font(.system(size: 12.5, weight: .semibold))
+                            .foregroundStyle(Color.appRed)
+                            .accessibilityLabel("Listening")
+                    }
+                }
                 if scannable {
-                    Spacer(minLength: 8)
                     ScanTextButton(scanner: scanner)
+                        .disabled(dictation.isBusy)
+                }
+            }
+            if dictatable, case .failed(let why) = dictation.state {
+                HStack(alignment: .top, spacing: 6) {
+                    Label(why, systemImage: "exclamationmark.triangle")
+                        .font(.system(size: 12)).foregroundStyle(Color.appRed)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button { dictation.cancel() } label: {
+                        Image(systemName: "xmark").font(.system(size: 10)).frame(minWidth: 22, minHeight: 22).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.ink3)
+                    .accessibilityLabel("Dismiss the message")
+                    .help("Dismiss the message")
                 }
             }
             if scannable && !scanner.error.isEmpty {
@@ -258,13 +295,32 @@ struct NoteBox: View {
                 .lineLimit(lines...max(lines, lines + 6))
                 .textFieldStyle(.plain)
                 .writingToolsBehavior(.complete)
+                // Locked while listening, so the words heard cannot overwrite an edit.
+                .disabled(dictation.isBusy)
                 .padding(8)
                 .background(Color.fieldBG)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.field, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: Radius.field, style: .continuous).stroke(Color.fieldStroke, lineWidth: 0.5))
         }
         .scanText(scannable, scanner: scanner) { text = TextScan.appending($0, to: text) }
-        .onChange(of: text) { _, _ in if !scanner.error.isEmpty { scanner.error = "" } }
+        .onChange(of: text) { _, _ in
+            if !scanner.error.isEmpty { scanner.error = "" }
+            // Typing after a dictation failure clears its message.
+            if case .failed = dictation.state { dictation.cancel() }
+        }
+        .onChange(of: dictation.text) { _, heard in
+            // Words go after what is already typed, and show as they are heard.
+            if dictatable && dictation.isBusy { text = heard }
+        }
+        .onDisappear { if dictatable { dictation.cancel() } }
+    }
+
+    private func toggleDictation() async {
+        if dictation.isBusy {
+            await dictation.stop()
+        } else {
+            await dictation.start(keeping: text)
+        }
     }
 }
 

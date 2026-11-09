@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.16
+
+- Quick log has a Dictate… button in the note box. Say the note and the words are typed in, after anything already there, and you can edit them before you Save. Everything stays on this Mac.
+
 ## 1.15.1
 
 - A maintenance release with the same features as 1.15. The release notes are tidied.
