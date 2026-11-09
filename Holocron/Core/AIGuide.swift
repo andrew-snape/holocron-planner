@@ -421,6 +421,7 @@ enum AIGuide {
         case .dayplan: return "One-off changes to the timetable for a single date and period. They override the template."
         case .lessons: return "Lesson plans by date and period: summary, learning intention, success criteria, teaching sequence, reflection, resources, curriculum codes."
         case .assessments: return "Results and comments for a student's task in a subject."
+        case .taskdone: return "Tasks a student has finished, ticked as Done in Mark class. Keyed by student, subject, task and date, the same as assessments.csv."
         case .rubrics: return "Rubric descriptors by rubric, element and level."
         case .plannotes: return "ILP and NCCD notes for a student: goals, reviews, meetings, adjustments and evidence."
         case .wellbeing: return "Wellbeing entries for a student, with the period lost and the minutes."

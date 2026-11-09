@@ -20,6 +20,9 @@ enum TableName: String, CaseIterable {
     /// has one row for each student, with the same file and batch. The image is kept in the student
     /// folder's work folder, by year. Private, never shared.
     case work
+    /// Mac app only: which students have finished a task, ticked as Done in Mark class. Keyed like assessments
+    /// (student, subject, task and date). Kept in the student folder and never shared.
+    case taskdone
 
     /// Which folder a table lives in. Planner tables can be shared with other staff;
     /// student tables (and personal ones such as the hours log and to-do) stay private.
@@ -62,6 +65,7 @@ enum TableName: String, CaseIterable {
         case .interviews:    return ["id", "student_id", "date", "time", "minutes", "audio", "transcript", "summary", "not_private"]
         case .settings:      return ["key", "value"]
         case .work:          return ["id", "student_id", "date", "period", "subject", "unit_id", "task", "caption", "file", "assessment_id", "batch", "sha", "added"]
+        case .taskdone:      return ["id", "student_id", "date", "subject", "task"]
         }
     }
 }

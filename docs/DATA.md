@@ -58,6 +58,7 @@ For an AI assistant that has to edit a teacher's live files, the operational sou
 | File | Columns | Meaning |
 |---|---|---|
 | `students.csv` | `id`, `first`, `surname`, `birthdate`, `parents`, `house`, `roles`, `adjustments`, `nccd`, `medical`, `notes`, `preferred`, `ilp` | One row per student. `birthdate` is a date. `house` is a name such as those in `Lists.houseColours`. `preferred` is the name used at school when different. `ilp` is `yes` or empty. Photos are `photos/<id>.jpg`. |
+| `taskdone.csv` | `id`, `student_id`, `date`, `subject`, `task` | A student has finished a task. Ticked as Done in Mark class. Keyed like `assessments.csv`, but it holds no result, so it never counts as a mark. Private, in the student folder. |
 | `assessments.csv` | `id`, `student_id`, `date`, `subject`, `task`, `result`, `comment` | A result. `result` is a score such as `18/20`, a percentage such as `72%`, or one of `Lists.achievement`. Imports add an imported part to `comment` after ` · `. |
 | `plannotes.csv` | `id`, `student_id`, `date`, `type`, `note` | Plan notes. `type` is one of `Lists.planNoteTypes`. |
 | `wellbeing.csv` | `id`, `student_id`, `date`, `period_lost`, `minutes`, `note` | A wellbeing entry. `period_lost` is a period number or empty. `minutes` counts as DOTTL time of type Wellbeing. |
