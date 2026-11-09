@@ -182,6 +182,32 @@ enum StudentTab: String, CaseIterable, Identifiable {
     case report = "Report"
     case details = "Details"
     var id: String { rawValue }
+
+    /// The icon and colour that mark this tab. The selected tab glows in its own colour.
+    var icon: String {
+        switch self {
+        case .summary: return "person.text.rectangle"
+        case .lessons: return "pencil"
+        case .interviews: return "mic"
+        case .assess: return "checkmark.seal"
+        case .plan: return "doc.text"
+        case .wellbeing: return "heart"
+        case .behaviour: return "exclamationmark.bubble"
+        case .report: return "doc.richtext"
+        case .details: return "info.circle"
+        }
+    }
+
+    var colour: Color {
+        switch self {
+        case .summary, .lessons, .report: return .appBlue
+        case .interviews: return .appBlue
+        case .assess, .wellbeing: return .appGreen
+        case .plan: return .weekB
+        case .behaviour: return .appAmber
+        case .details: return .ink2
+        }
+    }
 }
 
 struct StudentDetail: View {
@@ -195,20 +221,31 @@ struct StudentDetail: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     header(s)
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 6) {
-                            ForEach(StudentTab.allCases) { t in
-                                Button { tab = t } label: {
+                    FlowLayout(spacing: 6) {
+                        ForEach(StudentTab.allCases) { t in
+                            let on = tab == t
+                            Button { tab = t } label: {
+                                Label {
                                     Text(t.rawValue)
-                                        .font(.system(size: 13, weight: tab == t ? .semibold : .regular))
-                                        .padding(.vertical, 5)
-                                        .padding(.horizontal, 12)
-                                        .foregroundStyle(tab == t ? Color.onAccent : Color.primary)
-                                        .background(tab == t ? Color.appBlue : Color.fill)
-                                        .clipShape(Capsule())
+                                } icon: {
+                                    // Selected tabs use their own colour and a filled icon, so the selection
+                                    // does not rely on colour alone.
+                                    Image(systemName: t.icon)
+                                        .symbolVariant(on ? .fill : .none)
+                                        .foregroundStyle(on ? t.colour : Color.ink2)
                                 }
-                                .buttonStyle(.plain)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Color.primary)
+                                .padding(.vertical, 5)
+                                .padding(.horizontal, 12)
+                                .background(on ? Color.cardBG : Color.fill)
+                                .clipShape(Capsule())
+                                .overlay(Capsule().stroke(on ? t.colour : Color.clear, lineWidth: 1.5))
+                                .shadow(color: on ? t.colour.opacity(0.35) : .clear, radius: 4)
                             }
+                            .buttonStyle(.plain)
+                            .accessibilityAddTraits(on ? .isSelected : [])
+                            .animation(.easeInOut(duration: 0.15), value: on)
                         }
                     }
                     switch tab {

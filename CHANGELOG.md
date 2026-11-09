@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.19
+
+- A student's tabs wrap onto a second line, so Report and Details are no longer cut off.
+- Each student tab has its own icon and colour. The selected tab shows its colour with a soft glow and a filled icon.
+- Interviews is blue, to match the other note tabs.
+
 ## 1.18.1
 
 - The date box in the Today toolbar sits level with the buttons beside it.
