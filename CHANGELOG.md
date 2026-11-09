@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Mark class has a Done tick for each student. Use it to show who has finished a task, such as a TDL project, without giving it a mark. Ticks save with the rest of the class.
+
 ## 1.23
 
 - The date picker in the Today toolbar uses its normal size and spacing.

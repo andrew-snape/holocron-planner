@@ -11,6 +11,7 @@ struct MarkClassView: View {
     @State private var rubric = ""
     @State private var results: [String: String] = [:]
     @State private var comments: [String: String] = [:]
+    @State private var done: Set<String> = []
     @State private var reopen = ""
     @AppStorage("resultMode") private var mode = ResultMode.score
 
@@ -80,7 +81,7 @@ struct MarkClassView: View {
                             Picker("", selection: $reopen) {
                                 Text("Choose a task").tag("")
                                 ForEach(started, id: \.key) { t in
-                                    Text("\(t.subject): \(t.task) · \(shortDate(t.date)) · \(t.n) marked").tag(t.key)
+                                    Text("\(t.subject): \(t.task) · \(shortDate(t.date)) · \(t.n) \(t.n == 1 ? "student" : "students")").tag(t.key)
                                 }
                             }
                             .labelsHidden()
@@ -102,6 +103,11 @@ struct MarkClassView: View {
                                     Text(s.fullName).font(.system(size: 13.5))
                                 }
                                 .frame(width: 210, alignment: .leading)
+                                Toggle("Done", isOn: bindDone(s.id))
+                                    .toggleStyle(.checkbox)
+                                    .frame(width: 70, alignment: .leading)
+                                    .accessibilityLabel("Done, \(s.fullName)")
+                                    .help("Tick when \(s.fullName) has finished the task")
                                 if rubOn {
                                     Picker("", selection: bindResult(s.id)) {
                                         Text("Not yet").tag("")
@@ -132,8 +138,9 @@ struct MarkClassView: View {
                         Button("Save the whole class") { save() }
                             .buttonStyle(.borderedProminent)
                             .keyboardShortcut("s", modifiers: .command)
-                        Text("Blank rows are skipped. Clearing a row that was saved before removes it.")
+                        Text("Blank rows are skipped. Clearing a row that was saved before removes it. Ticks for Done are saved too.")
                             .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
@@ -150,7 +157,7 @@ struct MarkClassView: View {
         .onChange(of: date) { _, _ in loadExisting() }
         .onChange(of: task) { _, _ in if rubOn { loadExisting() } }
         .onChange(of: subject) { _, _ in loadExisting() }
-        .onChange(of: rubric) { _, _ in task = ""; results = [:]; comments = [:] }
+        .onChange(of: rubric) { _, _ in task = ""; results = [:]; comments = [:]; done = [] }
     }
 
     // MARK: Bindings and data
@@ -163,6 +170,12 @@ struct MarkClassView: View {
         Binding(get: { comments[sid] ?? "" }, set: { comments[sid] = $0 })
     }
 
+    private func bindDone(_ sid: String) -> Binding<Bool> {
+        Binding(get: { done.contains(sid) }, set: { on in
+            if on { done.insert(sid) } else { done.remove(sid) }
+        })
+    }
+
     private func matches(_ a: Row) -> Bool {
         a.s("subject") == subject && a.s("task") == task && a.s("date") == date
     }
@@ -170,10 +183,14 @@ struct MarkClassView: View {
     private func loadExisting() {
         results = [:]
         comments = [:]
+        done = []
         guard !task.isEmpty else { return }
         for a in model.db.rows(.assessments) where matches(a) {
             results[a.s("student_id")] = a.s("result")
             comments[a.s("student_id")] = a.s("comment")
+        }
+        for d in model.db.rows(.taskdone) where matches(d) {
+            done.insert(d.s("student_id"))
         }
         // Show a task the way it was marked: as levels when every result is a level, otherwise as typed text.
         let vals = results.values.filter { !$0.isEmpty }
@@ -192,12 +209,22 @@ struct MarkClassView: View {
 
     private func startedTasks(_ db: Database) -> [Started] {
         var map: [String: Started] = [:]
-        for a in db.rows(.assessments) {
+        // Count each student once per task, even when they have both a result and a Done tick.
+        var people: [String: Set<String>] = [:]
+        for a in db.rows(.assessments) + db.rows(.taskdone) {
             let k = a.s("subject") + "|" + a.s("task") + "|" + a.s("date")
-            if var x = map[k] { x.n += 1; map[k] = x }
-            else { map[k] = Started(key: k, subject: a.s("subject"), task: a.s("task"), date: a.s("date"), n: 1) }
+            people[k, default: []].insert(a.s("student_id"))
+            if map[k] == nil {
+                map[k] = Started(key: k, subject: a.s("subject"), task: a.s("task"), date: a.s("date"), n: 0)
+            }
         }
-        return Array(map.values.sorted { $0.date > $1.date }.prefix(15))
+        return map.values.map { x in
+            var x = x
+            x.n = people[x.key]?.count ?? 0
+            return x
+        }
+        .sorted { $0.date > $1.date }
+        .prefix(15).map { $0 }
     }
 
     private func openStarted(_ key: String, _ list: [Started]) {
@@ -240,7 +267,35 @@ struct MarkClassView: View {
             }
         }
         db.touch(.assessments)
-        model.showToast(removed > 0 ? "Saved \(saved), removed \(removed)" : "Saved \(saved) result\(saved == 1 ? "" : "s")")
+
+        // Done ticks are one row per student, kept apart from results so they never count as a mark.
+        let ticked = Set(db.rows(.taskdone).filter {
+            $0.s("subject") == sub && $0.s("task") == tk && $0.s("date") == date
+        }.map { $0.s("student_id") })
+        var ticksChanged = 0
+        for s in db.roster {
+            let isMine: (Row) -> Bool = {
+                $0.s("student_id") == s.id && $0.s("subject") == sub && $0.s("task") == tk && $0.s("date") == date
+            }
+            let on = done.contains(s.id)
+            if on && !ticked.contains(s.id) {
+                db.append(.taskdone, ["id": uid(), "student_id": s.id, "date": date, "subject": sub, "task": tk])
+                ticksChanged += 1
+            } else if !on && ticked.contains(s.id) {
+                db.remove(.taskdone, where: isMine)
+                ticksChanged += 1
+            }
+        }
+        if ticksChanged > 0 { db.touch(.taskdone) }
+
+        var parts: [String] = []
+        if saved > 0 || removed > 0 || ticksChanged == 0 {
+            parts.append(removed > 0 ? "Saved \(saved), removed \(removed)" : "Saved \(saved) result\(saved == 1 ? "" : "s")")
+        }
+        if ticksChanged > 0 {
+            parts.append("updated \(ticksChanged) Done tick\(ticksChanged == 1 ? "" : "s")")
+        }
+        model.showToast(parts.joined(separator: ", "))
     }
 }
 

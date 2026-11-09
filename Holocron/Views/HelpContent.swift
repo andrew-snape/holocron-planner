@@ -71,7 +71,7 @@ struct HelpUsingPage: View {
                     "**Class screen:** a student friendly view for the projector. It shows what we are learning (We are learning to), the success criteria (I can), First, Then and Next steps you can type straight onto the screen, what is on now and what comes next, and a timer. Click a step's heading to highlight the one the class is on. **Pop out** opens it in its own window.",
                     "**Students:** the class list on the left and a record on the right, with tabs for notes, assessments, wellbeing, behaviour and plan notes, plus a report pack.",
                     "**Quick log:** pick several students from the photo grid and add one note to all of them.",
-                    "**Mark class:** mark the whole class on one task. Type a score or pick an achievement level. **Import results…** brings in results from a spreadsheet such as an Essential Assessment export, or Essential Assessment's report comments for a strand, which are then used to draft the Mathematics or English points. You check the columns, subjects and students before anything is saved, and students who are not on your roll are left out.",
+                    "**Mark class:** mark the whole class on one task. Type a score or pick an achievement level. Tick **Done** when a student has finished a task, such as a project, without giving it a mark. **Import results…** brings in results from a spreadsheet such as an Essential Assessment export, or Essential Assessment's report comments for a strand, which are then used to draft the Mathematics or English points. You check the columns, subjects and students before anything is saved, and students who are not on your roll are left out.",
                     "**Hours:** face to face time, release time and duties other than teaching and learning (DOTTL), by term and for the year. Wellbeing entries record which period was lost.",
                     "**Settings:** tabs across the top for your class name, which screens are switched on, periods, subjects, terms, non-teaching days, updates and your data folders.",
                 ])
@@ -399,6 +399,7 @@ enum CSVGuide {
         case .strandcomments: return "Report comments imported from Essential Assessment"
         case .interviews: return "Interviews with a student: the transcript, any summary and the file name of the recording in the recordings folder"
         case .work: return "Photos and scans of students' work, with the lesson, task and caption, and the image file in the work folder"
+        case .taskdone: return "Tasks each student has finished, ticked as Done in Mark class"
         case .lessonsprivate, .settings: return ""
         }
     }
@@ -458,6 +459,8 @@ enum CSVGuide {
             return "One row for each student a piece of work is linked to. student_id matches students.csv. file is the image name in work/<year of added>/, and a group photo has one row per student with the same file and batch. date is yyyy-mm-dd, period matches periods.csv, unit_id matches units.csv and assessment_id matches a row in assessments.csv. caption can be used in report drafts. Private to the student folder. Do not edit file, batch or sha by hand."
         case .classsteps:
             return "Steps typed on the Class screen for one lesson. date is yyyy-mm-dd and period matches periods.csv. first, then and next are short pieces of text. A lesson with no steps has no row."
+        case .taskdone:
+            return "One row for each student who has finished a task. student_id matches students.csv. date is yyyy-mm-dd. subject matches subjects.csv and task is the task name, the same as in assessments.csv. It is ticked as Done in Mark class. It is private to the student folder."
         case .lessonsprivate, .settings:
             return ""
         }
