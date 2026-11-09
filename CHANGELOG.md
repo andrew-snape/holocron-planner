@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.22
 
 - Classroom is a new screen for the projector. It shows a large clock and date, today's timetable from Holocron with the current block highlighted, Now and Next, and a timer and stopwatch.
 - Open on screen opens Classroom in its own window. Use the green button for full screen. Pressing it again brings the same window forward.
