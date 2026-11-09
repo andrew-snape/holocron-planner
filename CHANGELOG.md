@@ -2,11 +2,23 @@
 
 ## 1.15
 
+- Holocron now follows the new macOS look (Liquid Glass). Screen titles and buttons sit in the window toolbar. Today, Week, Term, Units, Devotion, Students, Quick log and Mark class have lost their big headings, and the date or week shows under the title.
+- The Go menu has Previous and Next (Cmd+[ and Cmd+]) and Go to Today (Cmd+T). Help lists them.
+- Blue buttons and the sidebar highlight now use Holocron's own blue.
+- Pages are plain white. Cards are rounder, have no shadow and keep a thin edge. The week and term grids sit on a faint grey panel so they still stand out.
+- The Class screen buttons (previous and next lesson, Pop out, Full screen, Done) sit in a glass bar at the bottom. On the projector window the bar floats over the page, fades after a few seconds and returns when you move the mouse or press a key. The left and right arrow keys still change lesson while it is hidden.
+- Messages at the bottom of the window use the same glass look.
+- Sheets have Cancel on the left and the main button on the right, such as Save or Add student. Esc still cancels, Return still confirms, and a sheet with unsaved changes still asks before it closes. The unit sheet keeps Cmd+S.
+- Change subject, Move and Swap keep both their choices in the sheet, so Return does not change the timetable by accident.
+- Draft comments for the class has one Close button, which asks before unused drafts are lost.
 - Each screen has its own icon colour in the sidebar. The week box in the sidebar is softer, Settings uses the standard Mac look, and Help shows the page name in the window title.
+<<<<<<< HEAD
 - Sheets have Cancel on the left and the main button on the right, such as Save or Add student. Esc still cancels, Return still confirms, and a sheet with unsaved changes still asks before it closes. The unit sheet keeps Cmd+S. Change subject, Move and Swap keep both their choices in the sheet, so Return does not change the timetable by accident. Draft comments for the class has one Close button, which asks before unused drafts are lost.
 - The Class screen buttons (previous and next lesson, Pop out, Full screen, Done) now sit in a glass bar at the bottom. On the projector window the bar floats over the page, fades after a few seconds and returns when you move the mouse or press a key. The left and right arrow keys still change lesson while it is hidden. Messages at the bottom of the window use the same glass look.
 - Pages are now plain white. Cards are rounder, have no shadow and keep a thin edge. The week and term grids sit on a faint grey panel so they still stand out.
 - Screen titles and buttons now sit in the window toolbar, in the new macOS style. Today, Week, Term, Units, Devotion, Students, Quick log and Mark class have lost their big headings, and the date or week shows under the title. The Go menu has Previous and Next (Cmd+[ and Cmd+]) and Go to Today (Cmd+T). Blue buttons and the sidebar highlight now use Holocron's own blue.
+=======
+>>>>>>> claude/brave-feynman-ebgil9
 
 ## 1.14
 
