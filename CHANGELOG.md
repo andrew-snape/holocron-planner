@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.20
 
 - Work has photos and scans of students' work. Choose the students for each one, add the date, lesson, unit, task and a caption, and link a result if there is one. A group photo is stored once and shared.
 - A student's Work tab shows their work with filters for subject, term and unit, and a search over task and caption. The Work screen shows the whole class and can be switched off in Settings.
