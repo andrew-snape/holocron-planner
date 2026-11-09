@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The date picker in the Today toolbar uses its normal size and spacing.
+
 ## 1.22
 
 - Classroom is a new screen for the projector. It shows a large clock and date, today's timetable from Holocron with the current block highlighted, Now and Next, and a timer and stopwatch.

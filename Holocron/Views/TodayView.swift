@@ -41,8 +41,6 @@ struct TodayView: View {
                 DatePicker("Date", selection: isoBinding({ model.cursor }, { model.cursor = $0 }), displayedComponents: .date)
                     .labelsHidden()
                     .datePickerStyle(.compact)
-                    .fixedSize()
-                    .frame(height: 28)
                     .help("Pick a date")
             }
             ToolbarItemGroup(placement: .primaryAction) {
