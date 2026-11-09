@@ -41,6 +41,12 @@ struct DataFolder {
 
     var photosURL: URL { url.appendingPathComponent("photos", isDirectory: true) }
 
+    /// Interview recordings. Private to the student folder, never shared with the planner.
+    var recordingsURL: URL { url.appendingPathComponent("recordings", isDirectory: true) }
+
+    /// Where a recording goes when its interview is removed. Nothing is deleted, so it is moved here.
+    var removedRecordingsURL: URL { recordingsURL.appendingPathComponent("removed", isDirectory: true) }
+
     func exists() -> Bool { studentExists && plannerExists }
 
     func ensureExists() throws {

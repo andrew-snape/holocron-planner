@@ -11,6 +11,9 @@ enum TableName: String, CaseIterable {
     case classsteps
     /// Mac app only: report comments imported from Essential Assessment, by student, semester and strand.
     case strandcomments
+    /// Mac app only: an interview recorded for a student, with its transcript and an optional summary.
+    /// The audio file is kept in the student folder's recordings folder. Private, never shared.
+    case interviews
     /// Mac app only: key and value pairs such as which modules are switched off.
     case settings
 
@@ -52,6 +55,7 @@ enum TableName: String, CaseIterable {
         case .reportcomment: return ["id", "student_id", "sem", "general", "english", "maths", "context"]
         case .classsteps:    return ["date", "period", "first", "then", "next"]
         case .strandcomments: return ["id", "student_id", "sem", "strand", "substrand", "success", "growth", "improve", "imported"]
+        case .interviews:    return ["id", "student_id", "date", "time", "minutes", "audio", "transcript", "summary", "not_private"]
         case .settings:      return ["key", "value"]
         }
     }

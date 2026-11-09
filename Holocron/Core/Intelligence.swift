@@ -100,6 +100,8 @@ enum AIFeature: String, CaseIterable, Identifiable {
     case lessonDraft
     /// A typed note gets a suggested subject and kind of note.
     case noteTags
+    /// A recorded interview's transcript is summarised, only when the teacher marks it as not private.
+    case interviewSummary
 
     var id: String { rawValue }
 
@@ -110,6 +112,7 @@ enum AIFeature: String, CaseIterable, Identifiable {
         case .columns: return "Suggest columns when importing results"
         case .lessonDraft: return "Draft lessons"
         case .noteTags: return "Suggest a subject and kind for typed notes"
+        case .interviewSummary: return "Summarise interviews marked not private"
         }
     }
 
@@ -120,6 +123,7 @@ enum AIFeature: String, CaseIterable, Identifiable {
         case .columns: return "Reads the headers of a spreadsheet Holocron does not recognise and suggests which column is which."
         case .lessonDraft: return "Drafts tuning in, explicit teaching, independent work and reflection from a lesson's summary. Student names are never used. Nothing is saved until you choose Use."
         case .noteTags: return "Reads a note you have typed for a student and suggests the subject and the kind of note, for you to accept with one click."
+        case .interviewSummary: return "Summarises the transcript of an interview you have marked not private. Private topics are never sent, and nothing is saved until you choose Use."
         }
     }
 }

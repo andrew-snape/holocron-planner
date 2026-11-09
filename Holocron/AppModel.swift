@@ -71,6 +71,7 @@ enum ActiveSheet: Identifiable {
     case newStudent
     case importResults(url: URL)
     case dictate
+    case interview(sid: String)
 
     var id: String {
         switch self {
@@ -86,6 +87,7 @@ enum ActiveSheet: Identifiable {
         case .newStudent: return "newstudent"
         case .importResults(let u): return "importresults-" + u.path
         case .dictate: return "dictate"
+        case .interview(let s): return "interview-" + s
         }
     }
 }

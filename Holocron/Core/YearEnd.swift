@@ -20,8 +20,10 @@ struct ArchivePlan {
     var sharedPlannerLeftOut: Bool
     /// Files that are in iCloud but not yet downloaded to this Mac. Copying waits until they are.
     var waitingOnICloud: [String]
+    /// The interview recordings folder, when there is one to copy.
+    var recordingsFrom: URL? = nil
 
-    var isEmpty: Bool { copies.isEmpty && photosFrom == nil }
+    var isEmpty: Bool { copies.isEmpty && photosFrom == nil && recordingsFrom == nil }
     var canRun: Bool { waitingOnICloud.isEmpty && !isEmpty }
 }
 
@@ -62,8 +64,9 @@ extension DataFolder {
             waiting.append(stubs.count == 1 ? "1 photo" : "\(stubs.count) photos")
         }
         let photos = DataFolder.isDirectory(photosURL) ? photosURL : nil
+        let recordings = DataFolder.isDirectory(recordingsURL) ? recordingsURL : nil
         return ArchivePlan(archive: archive, label: clean, copies: copies, photosFrom: photos,
-                           sharedPlannerLeftOut: leftOut, waitingOnICloud: waiting)
+                           sharedPlannerLeftOut: leftOut, waitingOnICloud: waiting, recordingsFrom: recordings)
     }
 }
 
@@ -125,6 +128,14 @@ extension ArchivePlan {
             guard photoCount == ArchivePlan.jpgCount(src, fm) else { return abandon(.checkFailed("photos")) }
         }
 
+        var recordingCount = 0
+        if let src = recordingsFrom {
+            let dst = staging.appendingPathComponent("recordings", isDirectory: true)
+            do { try fm.copyItem(at: src, to: dst) } catch { return abandon(.copyFailed("recordings")) }
+            recordingCount = ArchivePlan.fileCount(dst, fm)
+            guard recordingCount == ArchivePlan.fileCount(src, fm) else { return abandon(.checkFailed("recordings")) }
+        }
+
         let stamp = StartOverPlan.stamp(now, calendar)
         var lines = [
             "Holocron year end archive",
@@ -138,6 +149,7 @@ extension ArchivePlan {
         ]
         lines += counts.map { "  \($0.name): \($0.rows) rows" }
         lines.append("  photos: \(photoCount)")
+        if recordingsFrom != nil { lines.append("  recordings: \(recordingCount)") }
         if sharedPlannerLeftOut {
             lines += ["", "The shared planner folder was not copied. Its files belong to everyone who uses it."]
         }
@@ -184,5 +196,11 @@ extension ArchivePlan {
 
     static func jpgCount(_ dir: URL, _ fm: FileManager) -> Int {
         ((try? fm.contentsOfDirectory(atPath: dir.path)) ?? []).filter { $0.lowercased().hasSuffix(".jpg") }.count
+    }
+
+    /// Every file under a folder, including the ones in its subfolders, for checking a copy.
+    static func fileCount(_ dir: URL, _ fm: FileManager) -> Int {
+        guard let e = fm.enumerator(at: dir, includingPropertiesForKeys: [.isRegularFileKey]) else { return 0 }
+        return e.compactMap { $0 as? URL }.filter { (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true }.count
     }
 }

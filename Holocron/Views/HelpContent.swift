@@ -397,6 +397,7 @@ enum CSVGuide {
         case .reportcomment: return "Report general comments"
         case .classsteps: return "First, Then and Next steps typed on the Class screen"
         case .strandcomments: return "Report comments imported from Essential Assessment"
+        case .interviews: return "Interviews with a student: the transcript, any summary and the file name of the recording in the recordings folder"
         case .lessonsprivate, .settings: return ""
         }
     }
@@ -450,6 +451,8 @@ enum CSVGuide {
             return "Semester report comments. general is the general comment; english and maths are dot points, one per line starting with - ; context is the teacher's notes for drafting. Copy the pattern of an existing row."
         case .strandcomments:
             return "Report comments imported from Essential Assessment. sem is like 2026-S2. strand and substrand name the area, such as Number and General All. success, growth and improve list the concepts, separated by commas. imported is the date of the import."
+        case .interviews:
+            return "One row per recorded interview. id must be unique. student_id is a student's id from students.csv. date is yyyy-mm-dd and time is HH:mm. minutes is a whole number. audio is the file name in the recordings folder. not_private is yes only when the teacher marked the interview as not private. Interviews are private and stay in the student folder."
         case .classsteps:
             return "Steps typed on the Class screen for one lesson. date is yyyy-mm-dd and period matches periods.csv. first, then and next are short pieces of text. A lesson with no steps has no row."
         case .lessonsprivate, .settings:

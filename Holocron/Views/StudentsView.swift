@@ -174,6 +174,7 @@ struct StudentListRow: View {
 enum StudentTab: String, CaseIterable, Identifiable {
     case summary = "Summary"
     case lessons = "Lesson notes"
+    case interviews = "Interviews"
     case assess = "Assessment"
     case plan = "ILP and NCCD"
     case wellbeing = "Wellbeing"
@@ -213,6 +214,7 @@ struct StudentDetail: View {
                     switch tab {
                     case .summary: SummaryTab(sid: sid)
                     case .lessons: LessonNotesTab(sid: sid)
+                    case .interviews: InterviewsTab(sid: sid)
                     case .assess: AssessTab(sid: sid)
                     case .plan: PlanNotesTab(sid: sid)
                     case .wellbeing: WellbeingTab(sid: sid)
@@ -287,6 +289,7 @@ struct StudentDetail: View {
             Button("SSG or report pack") { model.sheet = .pack(studentID: sid) }
                 .buttonStyle(.borderedProminent)
             HStack {
+                Button { model.sheet = .interview(sid: sid) } label: { Label("Record interview…", systemImage: "mic") }
                 Button("Change photo") { pickPhoto() }
                 Button("Copy as text") { model.copyText(model.db.timelineText(sid)) }
             }

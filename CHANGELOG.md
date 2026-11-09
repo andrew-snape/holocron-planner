@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.17
+
+- A student's header has Record interview…. Record, stop, and Holocron turns the recording into words on this Mac for you to check. The recording is kept in the student's folder, and the transcript starts with a note that it was recorded and needs checking.
+- An interview can be summarised with Apple Intelligence only when you mark it not private. Private topics, such as wellbeing or plan details, are never sent, and a transcript with a private word is not summarised.
+- The Interviews tab lists a student's interviews. Removing one moves its recording to `recordings/removed`, so nothing is deleted.
+
 ## 1.16
 
 - Quick log has a Dictate… button in the note box. Say the note and the words are typed in, after anything already there, and you can edit them before you Save. Everything stays on this Mac.

@@ -111,6 +111,7 @@ struct SheetRouter: View {
         case .newStudent: NewStudentSheet()
         case .importResults(let u): ImportResultsSheet(url: u)
         case .dictate: DictateSheet()
+        case .interview(let sid): InterviewSheet(studentID: sid)
         }
     }
 }

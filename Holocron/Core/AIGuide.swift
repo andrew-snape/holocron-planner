@@ -431,6 +431,7 @@ enum AIGuide {
         case .lessonsprivate: return "Lessons for subjects marked private. Same columns as `lessons.csv`."
         case .classsteps: return "The First, Then and Next steps typed on the Class screen for a lesson."
         case .strandcomments: return "Report comments imported from Essential Assessment, by student, semester and strand."
+        case .interviews: return "Interviews recorded for a student: the date, minutes, the audio file in `recordings/`, the transcript and an optional summary. Private to the student folder."
         case .settings: return "Holocron's own key and value settings, such as which subjects are private. Leave this file alone."
         }
     }

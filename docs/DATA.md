@@ -66,6 +66,7 @@ For an AI assistant that has to edit a teacher's live files, the operational sou
 | `reportjudge.csv` | `id`, `student_id`, `sem`, `subject`, `achievement`, `engagement` | A report rating per student, semester and subject. `achievement` is one of `Lists.achievement`, `engagement` one of `Lists.engagement`. |
 | `reportcomment.csv` | `id`, `student_id`, `sem`, `general`, `english`, `maths`, `context` | One row per student and semester. `english` and `maths` are dot points, one per line starting with `- `. `context` is the teacher's notes for drafting. |
 | `strandcomments.csv` | `id`, `student_id`, `sem`, `strand`, `substrand`, `success`, `growth`, `improve`, `imported` | Essential Assessment report comments by strand. One row per student, semester, strand and substrand. `imported` is the import date. |
+| `interviews.csv` | `id`, `student_id`, `date`, `time`, `minutes`, `audio`, `transcript`, `summary`, `not_private` | An interview recorded for a student. `audio` is the file name in `recordings/` in the student folder. `not_private` is `yes` only when the teacher marked it not private, which allows a summary. Private. |
 | `classsteps.csv` | `date`, `period`, `first`, `then`, `next` | Class screen steps for one lesson. A lesson with no steps has no row. |
 | `dottl.csv` | `id`, `date`, `type`, `minutes`, `note` | Hours log. `type` is one of `Lists.dottlTypes`. |
 | `todo.csv` | `id`, `text`, `due`, `done`, `created` | To-do items. `due` may be empty. `done` is the date ticked off. `created` is a date. |
@@ -88,7 +89,7 @@ For an AI assistant that has to edit a teacher's live files, the operational sou
 
 ## Relationships
 
-- `student_id` in `assessments`, `plannotes`, `wellbeing`, `behaviour`, `lessonnotes`, `reportjudge`, `reportcomment`, `strandcomments` refers to `students.id`. `removeStudent` deletes those rows with the student. There is no foreign key check when files are edited by hand.
+- `student_id` in `assessments`, `plannotes`, `wellbeing`, `behaviour`, `lessonnotes`, `reportjudge`, `reportcomment`, `strandcomments`, `interviews` refers to `students.id`. `removeStudent` deletes those rows with the student (its recordings are left in `recordings/`). There is no foreign key check when files are edited by hand.
 - `subject` in `timetable`, `dayplan`, `lessons`, `lessonsprivate`, `lessonnotes`, `assessments`, `reportjudge` refers to `subjects.subject` by name.
 - `period` in `timetable`, `dayplan`, `lessons`, `classsteps`, `wellbeing.period_lost` refers to `periods.period`.
 - A lesson, one-off change and Class screen step are all found by (`date`, `period`).
