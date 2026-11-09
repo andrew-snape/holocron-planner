@@ -1,8 +1,10 @@
 # Changelog
 
-## Unreleased
+## 1.23.1
 
 - Mark class has a Done tick for each student. Use it to show who has finished a task, such as a TDL project, without giving it a mark. Ticks save with the rest of the class.
+- Today's timetable on the Class screen is shorter and fits the window. Breaks show on one line, and the current lesson has a border and the word NOW.
+- The stopwatch is one row under the timer, so the timer card fits on the screen.
 
 ## 1.23
 
