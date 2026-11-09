@@ -87,6 +87,7 @@ struct DetailRouter: View {
         case .units: UnitsView()
         case .devotion: DevotionView()
         case .students: StudentsView()
+        case .work: WorkGalleryView()
         case .quick: QuickLogView()
         case .assess: MarkClassView()
         case .hours: HoursView()
@@ -112,6 +113,8 @@ struct SheetRouter: View {
         case .importResults(let u): ImportResultsSheet(url: u)
         case .dictate: DictateSheet()
         case .interview(let sid): InterviewSheet(studentID: sid)
+        case .addWork(let sid): AddWorkSheet(studentID: sid)
+        case .editWork(let id): EditWorkSheet(rowID: id)
         }
     }
 }
@@ -151,6 +154,7 @@ extension NavItem {
         case .devotion: return .purple
         case .classScreen: return .cyan
         case .students: return .green
+        case .work: return .yellow
         case .quick: return .orange
         case .assess: return .pink
         case .hours: return .mint

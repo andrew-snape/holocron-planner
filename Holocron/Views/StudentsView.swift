@@ -179,6 +179,7 @@ enum StudentTab: String, CaseIterable, Identifiable {
     case plan = "ILP and NCCD"
     case wellbeing = "Wellbeing"
     case behaviour = "Behaviour"
+    case work = "Work"
     case report = "Report"
     case details = "Details"
     var id: String { rawValue }
@@ -193,6 +194,7 @@ enum StudentTab: String, CaseIterable, Identifiable {
         case .plan: return "doc.text"
         case .wellbeing: return "heart"
         case .behaviour: return "exclamationmark.bubble"
+        case .work: return "photo.on.rectangle"
         case .report: return "doc.richtext"
         case .details: return "info.circle"
         }
@@ -205,6 +207,7 @@ enum StudentTab: String, CaseIterable, Identifiable {
         case .assess, .wellbeing: return .appGreen
         case .plan: return .weekB
         case .behaviour: return .appAmber
+        case .work: return .appGreen
         case .details: return .ink2
         }
     }
@@ -256,6 +259,7 @@ struct StudentDetail: View {
                     case .plan: PlanNotesTab(sid: sid)
                     case .wellbeing: WellbeingTab(sid: sid)
                     case .behaviour: BehaviourTab(sid: sid)
+                    case .work: StudentWorkTab(sid: sid)
                     case .report: ReportTab(sid: sid)
                     case .details: DetailsTab(sid: sid)
                     }

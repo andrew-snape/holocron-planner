@@ -22,13 +22,14 @@ enum ImportScope: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Photos, interview recordings and work photos come with the students.
     var includesPhotos: Bool { self != .planner }
 }
 
 extension TableName {
     /// The tables that hold students and what is recorded about them.
     static let studentRecords: [TableName] = [.students, .assessments, .plannotes, .wellbeing, .behaviour, .strandcomments,
-                                              .lessonnotes, .reportjudge, .reportcomment]
+                                              .lessonnotes, .reportjudge, .reportcomment, .interviews, .work]
 }
 
 /// What an import will do. Files that would be replaced are first copied into a dated
@@ -55,9 +56,19 @@ struct ImportPlan {
     var sharedPlannerLeftOut: [TableName]
     /// Reasons the import cannot go ahead. Nothing is imported while there are any.
     var problems: [String]
+    /// Work photo files, as paths relative to the work folder, and where they come from and go.
+    var workFiles: [String] = []
+    var workSource: URL? = nil
+    var workDestination: URL? = nil
+    /// Interview recording files (names only), and where they come from and go.
+    var recordingFiles: [String] = []
+    var recordingSource: URL? = nil
+    var recordingDestination: URL? = nil
+    /// Photos, work photos and recordings that would overwrite a copy already on this Mac.
+    var mediaReplaced: Int = 0
 
-    var canRun: Bool { problems.isEmpty && (!items.isEmpty || !photos.isEmpty) }
-    var replacesSomething: Bool { items.contains { $0.currentRows != nil } }
+    var canRun: Bool { problems.isEmpty && (!items.isEmpty || !photos.isEmpty || !workFiles.isEmpty || !recordingFiles.isEmpty) }
+    var replacesSomething: Bool { items.contains { $0.currentRows != nil } || mediaReplaced > 0 }
 }
 
 struct ImportSummary {
@@ -65,6 +76,12 @@ struct ImportSummary {
     var photos: Int
     var photosSkipped: Int
     var backup: URL?
+    /// Work photo files copied in, and those that could not be copied.
+    var work: Int = 0
+    var workSkipped: Int = 0
+    /// Interview recordings copied in, and those that could not be copied.
+    var recordings: Int = 0
+    var recordingsSkipped: Int = 0
 }
 
 extension DataFolder {
@@ -121,6 +138,12 @@ extension DataFolder {
         }
 
         var photos: [URL] = []
+        var workFiles: [String] = []
+        var workSource: URL? = nil
+        var workDestination: URL? = nil
+        var recordingFiles: [String] = []
+        var recordingSource: URL? = nil
+        var recordingDestination: URL? = nil
         if scope.includesPhotos {
             let dir = source.appendingPathComponent("photos", isDirectory: true)
             photos = ((try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? [])
@@ -135,14 +158,63 @@ extension DataFolder {
                 for u in mine { try? fm.startDownloadingUbiquitousItem(at: u) }
                 problems.append("\(mine.count) photo\(mine.count == 1 ? " is" : "s are") still downloading from iCloud in your own photos folder. Try again in a moment.")
             }
+            // Work photos sit in year folders, so the whole tree is checked. It is walked once.
+            let sourceWork = source.appendingPathComponent("work", isDirectory: true)
+            let theirWork = WorkFiles.files(under: sourceWork, fm: fm, forImport: true)
+            if DataFolder.isDirectory(sourceWork) {
+                workFiles = theirWork.files
+                workSource = sourceWork
+                workDestination = workURL
+            }
+            let theirStubs = theirWork.iCloudStubs
+            if !theirStubs.isEmpty {
+                for u in theirStubs { try? fm.startDownloadingUbiquitousItem(at: u) }
+                problems.append("\(theirStubs.count) work photo\(theirStubs.count == 1 ? " is" : "s are") still downloading from iCloud in that folder. Try again in a moment.")
+            }
+            let myStubs = WorkFiles.files(under: workURL, fm: fm).iCloudStubs
+            if !myStubs.isEmpty {
+                for u in myStubs { try? fm.startDownloadingUbiquitousItem(at: u) }
+                problems.append("\(myStubs.count) work photo\(myStubs.count == 1 ? " is" : "s are") still downloading from iCloud in your own work folder. Try again in a moment.")
+            }
+            // Interview recordings sit flat in recordings/. Hidden iCloud stubs are waited for, and
+            // the removed folder is skipped because it is not a file.
+            let sourceRecs = source.appendingPathComponent("recordings", isDirectory: true)
+            let theirRecs = (try? fm.contentsOfDirectory(at: sourceRecs, includingPropertiesForKeys: [.isDirectoryKey])) ?? []
+            let theirRecStubs = theirRecs.filter { $0.lastPathComponent.hasPrefix(".") && $0.lastPathComponent.hasSuffix(".icloud") }
+            if !theirRecStubs.isEmpty {
+                for u in theirRecStubs { try? fm.startDownloadingUbiquitousItem(at: u) }
+                problems.append("\(theirRecStubs.count) recording\(theirRecStubs.count == 1 ? " is" : "s are") still downloading from iCloud in that folder. Try again in a moment.")
+            }
+            let myRecs = (try? fm.contentsOfDirectory(at: recordingsURL, includingPropertiesForKeys: [.isDirectoryKey])) ?? []
+            let myRecStubs = myRecs.filter { $0.lastPathComponent.hasPrefix(".") && $0.lastPathComponent.hasSuffix(".icloud") }
+            if !myRecStubs.isEmpty {
+                for u in myRecStubs { try? fm.startDownloadingUbiquitousItem(at: u) }
+                problems.append("\(myRecStubs.count) recording\(myRecStubs.count == 1 ? " is" : "s are") still downloading from iCloud in your own recordings folder. Try again in a moment.")
+            }
+            if DataFolder.isDirectory(sourceRecs) {
+                recordingFiles = theirRecs
+                    .filter { !$0.lastPathComponent.hasPrefix(".") && !DataFolder.isDirectory($0) }
+                    .map { $0.lastPathComponent }
+            }
+            if !recordingFiles.isEmpty {
+                recordingSource = sourceRecs
+                recordingDestination = recordingsURL
+            }
         }
-        if items.isEmpty && photos.isEmpty && problems.isEmpty {
+        if items.isEmpty && photos.isEmpty && workFiles.isEmpty && recordingFiles.isEmpty && problems.isEmpty {
             problems.append(leftOut.isEmpty
                 ? "There is nothing from Holocron in that folder to import."
                 : "Your planner folder is shared, so its files were left out. Tick Also replace the shared planner files to bring them in.")
         }
+        // Media files that would overwrite a copy already here. Each is backed up before it is replaced.
+        let mediaReplaced = photos.filter { fm.fileExists(atPath: photosURL.appendingPathComponent($0.lastPathComponent).path) }.count
+            + workFiles.filter { fm.fileExists(atPath: workURL.appendingPathComponent($0).path) }.count
+            + recordingFiles.filter { fm.fileExists(atPath: recordingsURL.appendingPathComponent($0).path) }.count
         return ImportPlan(source: source, scope: scope, items: items, photos: photos, photosDestination: photosURL,
-                          backup: backup, sharedPlannerLeftOut: leftOut, problems: problems)
+                          backup: backup, sharedPlannerLeftOut: leftOut, problems: problems,
+                          workFiles: workFiles, workSource: workSource, workDestination: workDestination,
+                          recordingFiles: recordingFiles, recordingSource: recordingSource,
+                          recordingDestination: recordingDestination, mediaReplaced: mediaReplaced)
     }
 }
 
@@ -172,6 +244,29 @@ extension ImportPlan {
             if !madeBackup {
                 try fm.createDirectory(at: backup, withIntermediateDirectories: true)
                 madeBackup = true
+            }
+        }
+        // Copies a photo, work photo or recording over the one already there, keeping the old copy
+        // in the Before import folder first. A failed copy leaves no temp file behind.
+        func swapMedia(_ src: URL, _ dst: URL, backupTo b: URL) throws {
+            let folder = dst.deletingLastPathComponent()
+            let temp = folder.appendingPathComponent(".import-" + dst.lastPathComponent)
+            do {
+                try fm.createDirectory(at: folder, withIntermediateDirectories: true)
+                try? fm.removeItem(at: temp)
+                if fm.fileExists(atPath: dst.path) {
+                    try ensureBackup()
+                    try fm.createDirectory(at: b.deletingLastPathComponent(), withIntermediateDirectories: true)
+                    try fm.copyItem(at: dst, to: b)
+                    try fm.copyItem(at: src, to: temp)
+                    _ = try fm.replaceItemAt(dst, withItemAt: temp)
+                } else {
+                    try fm.copyItem(at: src, to: temp)
+                    try fm.moveItem(at: temp, to: dst)
+                }
+            } catch {
+                try? fm.removeItem(at: temp)
+                throw error
             }
         }
         for it in items where fm.fileExists(atPath: it.to.path) {
@@ -213,34 +308,47 @@ extension ImportPlan {
 
         // 3. Photos. A photo that cannot be backed up or copied is skipped, not forced.
         var photoCount = 0, skipped = 0
-        if !photos.isEmpty {
-            try? fm.createDirectory(at: photosDestination, withIntermediateDirectories: true)
-            let photoBackup = backup.appendingPathComponent("photos", isDirectory: true)
-            for src in photos {
-                let dst = photosDestination.appendingPathComponent(src.lastPathComponent)
-                let temp = photosDestination.appendingPathComponent(".import-" + src.lastPathComponent)
+        let photoBackup = backup.appendingPathComponent("photos", isDirectory: true)
+        for src in photos {
+            do {
+                try swapMedia(src, photosDestination.appendingPathComponent(src.lastPathComponent),
+                              backupTo: photoBackup.appendingPathComponent(src.lastPathComponent))
+                photoCount += 1
+            } catch {
+                skipped += 1
+            }
+        }
+        // 4. Work photos, copied the same way as photos. A file that cannot be copied is skipped and counted.
+        var workCount = 0, workSkipped = 0
+        if let wsrc = workSource, let wdst = workDestination {
+            let workBackup = backup.appendingPathComponent("work", isDirectory: true)
+            for rel in workFiles {
                 do {
-                    if fm.fileExists(atPath: dst.path) {
-                        try ensureBackup()
-                        try fm.createDirectory(at: photoBackup, withIntermediateDirectories: true)
-                        try fm.copyItem(at: dst, to: photoBackup.appendingPathComponent(src.lastPathComponent))
-                        try? fm.removeItem(at: temp)
-                        try fm.copyItem(at: src, to: temp)
-                        _ = try fm.replaceItemAt(dst, withItemAt: temp)
-                    } else {
-                        try? fm.removeItem(at: temp)
-                        try fm.copyItem(at: src, to: temp)
-                        try fm.moveItem(at: temp, to: dst)
-                    }
-                    photoCount += 1
+                    try swapMedia(wsrc.appendingPathComponent(rel), wdst.appendingPathComponent(rel),
+                                  backupTo: workBackup.appendingPathComponent(rel))
+                    workCount += 1
                 } catch {
-                    try? fm.removeItem(at: temp)
-                    skipped += 1
+                    workSkipped += 1
+                }
+            }
+        }
+        // 5. Interview recordings, copied the same way as photos. A file that cannot be copied is skipped and counted.
+        var recCount = 0, recSkipped = 0
+        if let rsrc = recordingSource, let rdst = recordingDestination {
+            let recBackup = backup.appendingPathComponent("recordings", isDirectory: true)
+            for name in recordingFiles {
+                do {
+                    try swapMedia(rsrc.appendingPathComponent(name), rdst.appendingPathComponent(name),
+                                  backupTo: recBackup.appendingPathComponent(name))
+                    recCount += 1
+                } catch {
+                    recSkipped += 1
                 }
             }
         }
         return .success(ImportSummary(imported: done.count, photos: photoCount, photosSkipped: skipped,
-                                      backup: madeBackup ? backup : nil))
+                                      backup: madeBackup ? backup : nil, work: workCount, workSkipped: workSkipped,
+                                      recordings: recCount, recordingsSkipped: recSkipped))
     }
 
     /// Puts back the files already swapped in: the old copy from the backup, or no file at all

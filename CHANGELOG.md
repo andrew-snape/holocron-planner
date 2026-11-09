@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Work has photos and scans of students' work. Choose the students for each one, add the date, lesson, unit, task and a caption, and link a result if there is one. A group photo is stored once and shared.
+- A student's Work tab shows their work with filters for subject, term and unit, and a search over task and caption. The Work screen shows the whole class and can be switched off in Settings.
+- Work files are copied in exactly as they are, so the picture is the same as the original. Remove moves a picture to a removed folder rather than deleting it.
+- Captions on work can be used in report drafts.
+- Cmd+1 to Cmd+0 keep their old screens. Work has no number key, so use the sidebar to open it.
+- Import now brings in work photos and interview recordings, and its preview and summary show them.
+
 ## 1.19
 
 - A student's tabs wrap onto a second line, so Report and Details are no longer cut off.

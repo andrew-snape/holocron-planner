@@ -30,9 +30,13 @@ if ! grep -q "^## $VERSION\$" CHANGELOG.md; then
 fi
 
 # Student and planner data must never be published.
-if git ls-files | grep -qiE '\.csv$|(^|/)photos/'; then
-  echo "A CSV file or a photos folder is tracked by git. Remove it before publishing:"
-  git ls-files | grep -iE '\.csv$|(^|/)photos/'
+# Images and audio are checked too, except the app's own icons and the asset catalogues.
+MEDIA='\.(jpe?g|png|heic|tiff?|pdf|m4a|caf|wav|aiff?|mp3)$'
+MEDIA_OK='(\.xcassets/|\.icon/|^docs/icon\.png$)'
+if { git ls-files | grep -qiE '\.csv$|(^|/)(photos|recordings|work)/'; } || \
+   { git ls-files | grep -iE "$MEDIA" | grep -qvE "$MEDIA_OK"; }; then
+  echo "A CSV file, a photos, recordings or work folder, or a media file is tracked by git. Remove it before publishing:"
+  git ls-files | grep -iE '\.csv$|(^|/)(photos|recordings|work)/|'"$MEDIA" | grep -vE "$MEDIA_OK" || true
   exit 1
 fi
 

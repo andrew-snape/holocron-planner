@@ -8,5 +8,8 @@ dist/
 # Never commit planner or student data
 *.csv
 photos/
+# Interview recordings and photos of students' work, never commit
+recordings/
+work/
 # App lock files, never commit
 state/

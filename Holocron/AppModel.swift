@@ -5,9 +5,27 @@ import UniformTypeIdentifiers
 import ImageIO
 
 enum NavItem: String, CaseIterable, Identifiable {
-    case today, week, term, units, devotion, classScreen, students, quick, assess, hours
+    case today, week, term, units, devotion, classScreen, students, work, quick, assess, hours
 
     var id: String { rawValue }
+
+    /// The Cmd+digit key for this screen in the Go menu. Work has none, so the ten original
+    /// screens keep the keys they have always had.
+    var shortcutDigit: Character? {
+        switch self {
+        case .today: return "1"
+        case .week: return "2"
+        case .term: return "3"
+        case .units: return "4"
+        case .devotion: return "5"
+        case .classScreen: return "6"
+        case .students: return "7"
+        case .quick: return "8"
+        case .assess: return "9"
+        case .hours: return "0"
+        case .work: return nil
+        }
+    }
 
     var title: String {
         switch self {
@@ -18,6 +36,7 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .units: return "Units"
         case .devotion: return "Devotion"
         case .students: return "Students"
+        case .work: return "Work"
         case .quick: return "Quick log"
         case .assess: return "Mark class"
         case .hours: return "Hours"
@@ -33,6 +52,7 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .units: return "magnifyingglass"
         case .devotion: return "plus"
         case .students: return "person.2"
+        case .work: return "photo.on.rectangle"
         case .quick: return "square.grid.2x2"
         case .assess: return "checkmark.square"
         case .hours: return "chart.bar"
@@ -72,6 +92,8 @@ enum ActiveSheet: Identifiable {
     case importResults(url: URL)
     case dictate
     case interview(sid: String)
+    case addWork(studentID: String?)
+    case editWork(id: String)
 
     var id: String {
         switch self {
@@ -88,6 +110,8 @@ enum ActiveSheet: Identifiable {
         case .importResults(let u): return "importresults-" + u.path
         case .dictate: return "dictate"
         case .interview(let s): return "interview-" + s
+        case .addWork(let s): return "addwork-" + (s ?? "")
+        case .editWork(let i): return "editwork-" + i
         }
     }
 }

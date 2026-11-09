@@ -338,7 +338,7 @@ struct HelpShortcutsPage: View {
             Group {
                 HelpTitle("Keyboard shortcuts")
                 HelpHeading("Moving around")
-                HelpKeyRow(keys: "Cmd+1 to Cmd+0", action: "Jump between screens, in sidebar order: Today, Week, Term, Units, Devotion, Class screen, Students, Quick log, Mark class, Hours")
+                HelpKeyRow(keys: "Cmd+1 to Cmd+0", action: "Jump between screens, in sidebar order: Today, Week, Term, Units, Devotion, Class screen, Students, Quick log, Mark class, Hours. Work has no number key.")
                 HelpKeyRow(keys: "Cmd+[ and Cmd+]", action: "Go back or forward by a day on Today, a week on Week, a term on Term, or a devotion on Devotion")
                 HelpKeyRow(keys: "Cmd+T", action: "Go to Today")
                 HelpKeyRow(keys: "Cmd+,", action: "Open Settings")
@@ -398,6 +398,7 @@ enum CSVGuide {
         case .classsteps: return "First, Then and Next steps typed on the Class screen"
         case .strandcomments: return "Report comments imported from Essential Assessment"
         case .interviews: return "Interviews with a student: the transcript, any summary and the file name of the recording in the recordings folder"
+        case .work: return "Photos and scans of students' work, with the lesson, task and caption, and the image file in the work folder"
         case .lessonsprivate, .settings: return ""
         }
     }
@@ -453,6 +454,8 @@ enum CSVGuide {
             return "Report comments imported from Essential Assessment. sem is like 2026-S2. strand and substrand name the area, such as Number and General All. success, growth and improve list the concepts, separated by commas. imported is the date of the import."
         case .interviews:
             return "One row per recorded interview. id must be unique. student_id is a student's id from students.csv. date is yyyy-mm-dd and time is HH:mm. minutes is a whole number. audio is the file name in the recordings folder. not_private is yes only when the teacher marked the interview as not private. Interviews are private and stay in the student folder."
+        case .work:
+            return "One row for each student a piece of work is linked to. student_id matches students.csv. file is the image name in work/<year of added>/, and a group photo has one row per student with the same file and batch. date is yyyy-mm-dd, period matches periods.csv, unit_id matches units.csv and assessment_id matches a row in assessments.csv. caption can be used in report drafts. Private to the student folder. Do not edit file, batch or sha by hand."
         case .classsteps:
             return "Steps typed on the Class screen for one lesson. date is yyyy-mm-dd and period matches periods.csv. first, then and next are short pieces of text. A lesson with no steps has no row."
         case .lessonsprivate, .settings:

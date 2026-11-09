@@ -56,6 +56,7 @@ Everything built so far, with the version it arrived in ([CHANGELOG.md](../CHANG
 | Retry on refusal | 1.13.1 | A refused draft is tried again with fewer notes, and says what was left out. |
 | Suggest subject and kind | Unreleased | Under a typed note (Lesson notes form and Quick log), Suggest suggests lesson, behaviour or wellbeing and one of your subjects. It only runs when you press it, can only pick from your own subjects, and changes nothing until you press Use. Needs Apple Intelligence. |
 | Faster first draft | Unreleased | Opening the Report tab, class drafts, a learning intention, Dictate or Import results gets Apple Intelligence ready, so the first result arrives sooner. What it was given is kept in memory for up to three minutes and cleared when you leave the screen. Not a visible control. |
+| Work photos | Unreleased | Photos or scans of students' work, linked to one or more students by hand, with date, lesson, unit, task, caption and an optional linked result. Work tab on a student, and the Work screen for the class. Files are copied in unchanged, and captions can be used in report drafts. Kept in the student folder. |
 | Lookup tools for report drafts | Unreleased, off | The code for letting the model look up notes and results by subject is built but switched off (`CommentDrafter.useLookupTools`) until drafts with and without it are compared side by side. |
 
 ## Admin
@@ -100,7 +101,7 @@ Siri, Spotlight and Shortcuts arrived in 1.10.0 ([Intents/HolocronIntents.swift]
 
 | Keys | Action |
 |---|---|
-| Cmd+1 to Cmd+0 | Today, Week, Term, Units, Devotion, Class screen, Students, Quick log, Mark class, Hours (only screens that are on) |
+| Cmd+1 to Cmd+0 | Today, Week, Term, Units, Devotion, Class screen, Students, Quick log, Mark class, Hours (only screens that are on). Work has no number key. |
 | Cmd+comma | Settings |
 | Cmd+N | New Student |
 | Cmd+L | Log Note |

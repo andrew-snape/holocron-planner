@@ -47,6 +47,20 @@ struct DataFolder {
     /// Where a recording goes when its interview is removed. Nothing is deleted, so it is moved here.
     var removedRecordingsURL: URL { recordingsURL.appendingPathComponent("removed", isDirectory: true) }
 
+    /// Photos and scans of students' work, by year. Private to the student folder, never shared with the planner.
+    var workURL: URL { url.appendingPathComponent("work", isDirectory: true) }
+
+    /// Where a work file goes when its last row is removed. Nothing is deleted, so it is moved here.
+    var removedWorkURL: URL { workURL.appendingPathComponent("removed", isDirectory: true) }
+
+    /// The image file of a work row, in work/<year of added>/<file>, or nil when the row has no safe file name.
+    func workFileURL(for row: Row) -> URL? {
+        let name = row.s("file")
+        guard WorkFiles.isSafeFileName(name) else { return nil }
+        return workURL.appendingPathComponent(WorkFiles.yearFolder(added: row.s("added")), isDirectory: true)
+            .appendingPathComponent(name)
+    }
+
     func exists() -> Bool { studentExists && plannerExists }
 
     func ensureExists() throws {

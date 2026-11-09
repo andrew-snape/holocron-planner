@@ -44,10 +44,14 @@ struct HolocronApp: App {
             }
             AppCommands(model: model)
             CommandMenu("Go") {
-                ForEach(Array(NavItem.allCases.enumerated()), id: \.element) { idx, item in
+                ForEach(NavItem.allCases) { item in
                     if model.isEnabled(item) {
-                        Button(item.title) { model.nav = item }
-                            .keyboardShortcut(KeyEquivalent(Character(String((idx + 1) % 10))), modifiers: .command)
+                        if let digit = item.shortcutDigit {
+                            Button(item.title) { model.nav = item }
+                                .keyboardShortcut(KeyEquivalent(digit), modifiers: .command)
+                        } else {
+                            Button(item.title) { model.nav = item }
+                        }
                     }
                 }
                 Divider()

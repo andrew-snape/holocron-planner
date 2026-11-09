@@ -82,8 +82,18 @@ extension Database {
     /// facts and the lookup tools read from this, so they cannot disagree about what is allowed.
     func reportEligibleNotes(_ sid: String, sem: String, for kind: ReportComment) -> [Row] {
         let r = semesterRange(sem)
-        return logRows(.lessonnotes, student: sid)
+        let notes = logRows(.lessonnotes, student: sid)
             .filter { $0.s("date") >= r.from && $0.s("date") <= r.to && kind.covers($0.s("subject")) }
+        // A caption on a piece of work is a note about the work, so it can be used too. Only the words
+        // are used, never the picture.
+        let captions = logRows(.work, student: sid)
+            .filter { $0.s("date") >= r.from && $0.s("date") <= r.to && kind.covers($0.s("subject")) && !$0.s("caption").trimmed.isEmpty }
+            .map { w -> Row in
+                ["id": w.s("id"), "student_id": sid, "date": w.s("date"), "time": "", "subject": w.s("subject"),
+                 "note": "Work sample: " + w.s("caption").trimmed]
+            }
+        return (notes + captions)
+            .sorted { ($0.s("date") + $0.s("time")) > ($1.s("date") + $1.s("time")) }
             .filter { !CommentDrafter.mentionsPrivate($0.s("note")) }
     }
 

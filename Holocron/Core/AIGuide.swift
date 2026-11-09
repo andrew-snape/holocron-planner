@@ -116,6 +116,8 @@ enum AIGuide {
                 L.append("Devotion is set to private, so `devotion.csv` and `quotes.csv` are kept in this folder.")
             }
             L.append("")
+            L.append("Other items here: `work/` holds the images for `work.csv`. Each image is in a folder for its year, named by its row id with the original extension, for example `work/2026/<id>.jpg`. The `file` column is that name, and the year folder is the year of the `added` column. `work/removed/` holds images taken off with Remove. Never rename, move or re-save these images, because the rows point to them by name. Files shown in Finder as `.name.icloud` are iCloud placeholders for files that are not downloaded yet.")
+            L.append("")
             L.append("Other items here: `photos/` holds one JPEG per student, named with the student's id, for example `photos/<id>.jpg`. Files shown in Finder as `.name.csv.icloud` are iCloud placeholders for files that are not downloaded yet. Holocron creates a file the first time it needs it, so a file listed above may not exist yet. `lessonsprivate.csv` only exists once a subject has been made private.")
             L.append("")
         } else {
@@ -334,6 +336,12 @@ enum AIGuide {
                 "Make a new unique `id`, and add a row with `student_id`, the `date`, the `time` (`HH:mm`), the `subject` (or empty) and the `note`.",
             ], .lessonnotes, "mh2k5a1b2c3d,mh2k4x9a1b3c,2026-10-14,10:40,Maths,Counted in tens without prompting")
 
+            recipe("Add a caption to a piece of work", [
+                "Find the row in `work.csv` by its `id`, and check the `student_id` matches a student in `students.csv`.",
+                "Set `caption` to a short sentence about the work. Keep it factual and free of private details. Captions can be used in report drafts, so do not put anything there that must not be in a report.",
+                "Do not change `file`, `batch` or `sha`. Those link the row to its image.",
+            ], .work, "mh2k5c6d7e8f,mh2k4x9a1b3c,2026-10-14,,,,Persuasive poster,Clear opening and two reasons,mh2k5c6d7e8f.jpg,,mh2k5c6d7e8f,,2026-10-14")
+
             recipe("Log a behaviour note", [
                 "Find the student's `id`, make a new unique `id`, and add a row with the `date` and the `note`. State facts, not judgements.",
             ], .behaviour, "mh2k5b4c5d6e,mh2k4x9a1b3c,2026-10-14,Called out twice during the mat session")
@@ -432,6 +440,7 @@ enum AIGuide {
         case .classsteps: return "The First, Then and Next steps typed on the Class screen for a lesson."
         case .strandcomments: return "Report comments imported from Essential Assessment, by student, semester and strand."
         case .interviews: return "Interviews recorded for a student: the date, minutes, the audio file in `recordings/`, the transcript and an optional summary. Private to the student folder."
+        case .work: return "Photos or scans of students' work, one row for each student. `file` names the image in `work/<year>/`. A file shared by a group has one row per student with the same `file` and `batch`. Private to the student folder."
         case .settings: return "Holocron's own key and value settings, such as which subjects are private. Leave this file alone."
         }
     }

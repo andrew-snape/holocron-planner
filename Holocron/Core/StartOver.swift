@@ -71,6 +71,9 @@ extension DataFolder {
         if scope == .everything, DataFolder.isDirectory(recordingsURL) {
             moves.append(.init(from: recordingsURL, to: archive.appendingPathComponent("recordings", isDirectory: true)))
         }
+        if scope == .everything, DataFolder.isDirectory(workURL) {
+            moves.append(.init(from: workURL, to: archive.appendingPathComponent("work", isDirectory: true)))
+        }
         return StartOverPlan(archive: archive, moves: moves, disconnectsSharedPlanner: shared)
     }
 }

@@ -28,11 +28,17 @@ jobs:
 
       - name: Check that no planner or student data is in the repository
         run: |
-          if git ls-files | grep -Ei '\.csv$|(^|/)photos/'; then
-            echo "::error::CSV files or photos are tracked. Planner and student data must never be committed."
+          MEDIA='\.(jpe?g|png|heic|tiff?|pdf|m4a|caf|wav|aiff?|mp3)$'
+          MEDIA_OK='(\.xcassets/|\.icon/|^docs/icon\.png$)'
+          if git ls-files | grep -Ei '\.csv$|(^|/)(photos|recordings|work)/' ; then
+            echo "::error::CSV files, photos, recordings or work files are tracked. Planner and student data must never be committed."
             exit 1
           fi
-          echo "No CSV files or photos are tracked."
+          if git ls-files | grep -Ei "$MEDIA" | grep -vE "$MEDIA_OK"; then
+            echo "::error::Image or audio files are tracked outside the app's icons. Student media must never be committed."
+            exit 1
+          fi
+          echo "No CSV files, student media or work files are tracked."
 
       - name: Check the changelog has a section for this version
         run: |

@@ -162,6 +162,7 @@ struct ImportSheet: View {
     @State private var working = false
     @State private var includeShared = false
     @State private var plan: ImportPlan? = nil
+    @State private var planRun = 0
     @State private var outcome: AppModel.ImportOutcome? = nil
 
     private var shared: Bool { model.folder.plannerURL != nil }
@@ -176,8 +177,20 @@ struct ImportSheet: View {
         .onAppear { refresh() }
     }
 
+    /// Works out the plan off the main thread, because it walks the source folder. Only the newest
+    /// request is kept, so a quick change of scope or tick box cannot show an old plan.
     private func refresh() {
-        plan = model.importPlan(from: source, scope: scope, includeSharedPlanner: includeShared, into: target)
+        model.prepareImport()
+        planRun += 1
+        let run = planRun
+        let folder = target ?? model.folder
+        let source = source, scope = scope, includeShared = includeShared
+        Task.detached {
+            let p = folder.importPlan(from: source, scope: scope, includeSharedPlanner: includeShared)
+            await MainActor.run {
+                if run == planRun { plan = p }
+            }
+        }
     }
 
     private func run(_ p: ImportPlan) {
@@ -233,6 +246,20 @@ struct ImportSheet: View {
                                 Text(plural(plan.photos.count, "photo")).font(.system(size: 12)).foregroundStyle(Color.ink2)
                             }
                         }
+                        if !plan.workFiles.isEmpty {
+                            HStack {
+                                Text("work").font(.system(size: 12, design: .monospaced))
+                                Spacer()
+                                Text(plural(plan.workFiles.count, "work photo")).font(.system(size: 12)).foregroundStyle(Color.ink2)
+                            }
+                        }
+                        if !plan.recordingFiles.isEmpty {
+                            HStack {
+                                Text("recordings").font(.system(size: 12, design: .monospaced))
+                                Spacer()
+                                Text(plural(plan.recordingFiles.count, "recording")).font(.system(size: 12)).foregroundStyle(Color.ink2)
+                            }
+                        }
                     }
                     .card()
                     if plan.replacesSomething {
@@ -253,7 +280,7 @@ struct ImportSheet: View {
                 if working {
                     ProgressView()
                         .controlSize(.small)
-                        .accessibilityLabel(plan.map { "Importing \(plural($0.items.count, "file")) and \(plural($0.photos.count, "photo"))" } ?? "Importing files")
+                        .accessibilityLabel(plan.map { "Importing \(plural($0.items.count, "file")), \(plural($0.photos.count, "photo")), \(plural($0.workFiles.count, "work photo")) and \(plural($0.recordingFiles.count, "recording"))" } ?? "Importing files")
                 }
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction).disabled(working)
@@ -269,15 +296,33 @@ struct ImportSheet: View {
         return "adds \(plural(it.incomingRows, "row"))"
     }
 
+    /// Lists only the kinds that were brought in, so a photos-only import does not read as zero files.
+    private func broughtIn(_ s: ImportSummary) -> String {
+        var parts: [String] = []
+        if s.imported > 0 { parts.append(plural(s.imported, "file")) }
+        if s.photos > 0 { parts.append(plural(s.photos, "photo")) }
+        if s.work > 0 { parts.append(plural(s.work, "work photo")) }
+        if s.recordings > 0 { parts.append(plural(s.recordings, "recording")) }
+        return parts.isEmpty ? "Nothing was brought in." : "Brought in: " + parts.joined(separator: ", ") + "."
+    }
+
     @ViewBuilder
     private func finished(_ o: AppModel.ImportOutcome) -> some View {
         switch o {
         case .done(let s):
             Text("Imported").font(.system(size: 22, weight: .bold))
-            Text("\(plural(s.imported, "file")) and \(plural(s.photos, "photo")) were brought in.")
+            Text(broughtIn(s))
                 .font(.system(size: 13)).foregroundStyle(Color.ink2)
             if s.photosSkipped > 0 {
                 Text("\(plural(s.photosSkipped, "photo")) could not be copied and were skipped.")
+                    .font(.system(size: 12.5)).foregroundStyle(Color.appAmber)
+            }
+            if s.workSkipped > 0 {
+                Text("\(plural(s.workSkipped, "work photo")) could not be copied and were skipped. Their tiles will show as missing.")
+                    .font(.system(size: 12.5)).foregroundStyle(Color.appAmber)
+            }
+            if s.recordingsSkipped > 0 {
+                Text("\(plural(s.recordingsSkipped, "recording")) could not be copied and were skipped.")
                     .font(.system(size: 12.5)).foregroundStyle(Color.appAmber)
             }
             if let b = s.backup {

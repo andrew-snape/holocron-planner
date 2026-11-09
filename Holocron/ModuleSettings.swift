@@ -17,6 +17,7 @@ extension NavItem {
         case .units: return "Units of inquiry"
         case .devotion: return "Daily devotion and Circle Time scripts"
         case .students: return "Student records, notes and reports"
+        case .work: return "Photos of students' work, with captions for reports"
         case .quick: return "Photo grid for fast notes"
         case .assess: return "Mark the whole class on one task"
         case .hours: return "Face to face, release and DOTTL"

@@ -22,8 +22,10 @@ struct ArchivePlan {
     var waitingOnICloud: [String]
     /// The interview recordings folder, when there is one to copy.
     var recordingsFrom: URL? = nil
+    /// The work photos folder, when there is one to copy.
+    var workFrom: URL? = nil
 
-    var isEmpty: Bool { copies.isEmpty && photosFrom == nil && recordingsFrom == nil }
+    var isEmpty: Bool { copies.isEmpty && photosFrom == nil && recordingsFrom == nil && workFrom == nil }
     var canRun: Bool { waitingOnICloud.isEmpty && !isEmpty }
 }
 
@@ -65,8 +67,16 @@ extension DataFolder {
         }
         let photos = DataFolder.isDirectory(photosURL) ? photosURL : nil
         let recordings = DataFolder.isDirectory(recordingsURL) ? recordingsURL : nil
+        // Work photos sit in year folders, so every iCloud placeholder inside is found, not just the top level.
+        let workStubs = WorkFiles.files(under: workURL, fm: fm).iCloudStubs
+        if !workStubs.isEmpty {
+            for u in workStubs { try? fm.startDownloadingUbiquitousItem(at: u) }
+            waiting.append(workStubs.count == 1 ? "1 work file" : "\(workStubs.count) work files")
+        }
+        let work = DataFolder.isDirectory(workURL) ? workURL : nil
         return ArchivePlan(archive: archive, label: clean, copies: copies, photosFrom: photos,
-                           sharedPlannerLeftOut: leftOut, waitingOnICloud: waiting, recordingsFrom: recordings)
+                           sharedPlannerLeftOut: leftOut, waitingOnICloud: waiting, recordingsFrom: recordings,
+                           workFrom: work)
     }
 }
 
@@ -136,6 +146,14 @@ extension ArchivePlan {
             guard recordingCount == ArchivePlan.fileCount(src, fm) else { return abandon(.checkFailed("recordings")) }
         }
 
+        var workCount = 0
+        if let src = workFrom {
+            let dst = staging.appendingPathComponent("work", isDirectory: true)
+            do { try fm.copyItem(at: src, to: dst) } catch { return abandon(.copyFailed("work")) }
+            workCount = ArchivePlan.fileCount(dst, fm)
+            guard workCount == ArchivePlan.fileCount(src, fm) else { return abandon(.checkFailed("work")) }
+        }
+
         let stamp = StartOverPlan.stamp(now, calendar)
         var lines = [
             "Holocron year end archive",
@@ -150,6 +168,7 @@ extension ArchivePlan {
         lines += counts.map { "  \($0.name): \($0.rows) rows" }
         lines.append("  photos: \(photoCount)")
         if recordingsFrom != nil { lines.append("  recordings: \(recordingCount)") }
+        if workFrom != nil { lines.append("  work: \(workCount) files") }
         if sharedPlannerLeftOut {
             lines += ["", "The shared planner folder was not copied. Its files belong to everyone who uses it."]
         }

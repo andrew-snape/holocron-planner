@@ -67,6 +67,7 @@ For an AI assistant that has to edit a teacher's live files, the operational sou
 | `reportcomment.csv` | `id`, `student_id`, `sem`, `general`, `english`, `maths`, `context` | One row per student and semester. `english` and `maths` are dot points, one per line starting with `- `. `context` is the teacher's notes for drafting. |
 | `strandcomments.csv` | `id`, `student_id`, `sem`, `strand`, `substrand`, `success`, `growth`, `improve`, `imported` | Essential Assessment report comments by strand. One row per student, semester, strand and substrand. `imported` is the import date. |
 | `interviews.csv` | `id`, `student_id`, `date`, `time`, `minutes`, `audio`, `transcript`, `summary`, `not_private` | An interview recorded for a student. `audio` is the file name in `recordings/` in the student folder. `not_private` is `yes` only when the teacher marked it not private, which allows a summary. Private. |
+| `work.csv` | `id`, `student_id`, `date`, `period`, `subject`, `unit_id`, `task`, `caption`, `file`, `assessment_id`, `batch`, `sha`, `added` | Photos or scans of students' work. One row per student. See the Work section. Private. |
 | `classsteps.csv` | `date`, `period`, `first`, `then`, `next` | Class screen steps for one lesson. A lesson with no steps has no row. |
 | `dottl.csv` | `id`, `date`, `type`, `minutes`, `note` | Hours log. `type` is one of `Lists.dottlTypes`. |
 | `todo.csv` | `id`, `text`, `due`, `done`, `created` | To-do items. `due` may be empty. `done` is the date ticked off. `created` is a date. |
@@ -135,6 +136,22 @@ Created next to the student folder in `Holocron archive`. Nothing in them is rea
 - After editing, press Shift+Cmd+R in Holocron. Only files that changed on disk are re-read. A file that cannot be read is flagged and never overwritten.
 - Keep a copy of the folder first, or use Archive this year.
 - Numbers may change dates (`2026-10-14` becomes a date cell) or drop leading zeros on times. Export as CSV and check the date and time columns.
+
+## Work
+
+Photos and scans of students' work, in `work.csv` (student folder, private, never shared).
+
+- One row for each student a piece of work belongs to. A group photo is stored once and every student's row points to the same `file`, with the same `batch` id.
+- `file` is `<row id>.<original extension>`, for example `mh2k4x9a1b3c.jpg`. The image is in `work/<year>/`, where the year is the year of `added`. The file is copied byte for byte. Holocron does not resize, re-encode, rotate or strip the metadata, so the copy has the same SHA256 as the original.
+- `sha` is the SHA256 of the original. A student who already has a row with the same `sha` is not given the file again.
+- `period`, `subject`, `unit_id` and `date` describe the lesson, unit and day. `assessment_id` links one result from `assessments.csv`, used when one student is chosen.
+- `caption` may be used in report drafts. Only the words are used, never the picture. Captions with a private word are left out, as lesson notes are.
+- Allowed types: JPEG, PNG, HEIC, TIFF and PDF. The extension and the first bytes of the file must both match.
+- Remove moves the image to `work/removed/` and removes the row. A file shared with another student is not moved while their row still uses it.
+- Removing a student keeps their work files and leaves their rows, which then show under Unlinked.
+- Start over (everything) moves `work/` into the archive. A year end archive copies it, and Import copies it with the students.
+
+Files in `work/` are ignored by git.
 
 ## Photos
 
