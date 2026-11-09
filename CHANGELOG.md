@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The date box in the Today toolbar sits level with the buttons beside it.
+
 ## 1.18
 
 - Quick log's note for one student has Record interview…, which opens the interview recorder for that student.

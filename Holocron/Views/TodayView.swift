@@ -42,6 +42,7 @@ struct TodayView: View {
                     .labelsHidden()
                     .datePickerStyle(.compact)
                     .fixedSize()
+                    .frame(height: 28)
                     .help("Pick a date")
             }
             ToolbarItemGroup(placement: .primaryAction) {
