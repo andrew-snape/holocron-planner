@@ -173,7 +173,8 @@ struct ClassScreenView: View {
                 .padding(.bottom, 14)
 
             DayStrip()
-                .padding(.bottom, 18)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.bottom, 14)
 
             ScrollView {
                 HStack(alignment: .top, spacing: 28) {
@@ -437,15 +438,14 @@ struct TimerCard: View {
     @Environment(AppModel.self) private var model
     var tone: Tone
 
-    private func mmss(_ s: Int) -> String { "\(s / 60):" + (s % 60 < 10 ? "0" : "") + String(s % 60) }
-
     var body: some View {
         let t = model.classTimer
         let watch = model.stopwatch
-        VStack(spacing: 12) {
-            Text(mmss(t.left))
+        VStack(spacing: 10) {
+            Text(clockText(t.left))
                 .font(.system(size: 72, weight: .bold, design: .rounded))
                 .monospacedDigit()
+                .lineLimit(1)
                 .minimumScaleFactor(0.6)
                 .foregroundStyle(t.total > 0 && t.left == 0 ? Color.appRed : (t.running ? tone.inkColor : Color.primary))
             GeometryReader { geo in
@@ -472,17 +472,16 @@ struct TimerCard: View {
             Divider()
 
             // Counts up, for timing an activity. It keeps running when you leave the screen.
-            VStack(spacing: 8) {
+            HStack(spacing: 8) {
                 Text("Stopwatch").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.ink2)
+                Spacer(minLength: 4)
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     Text(clockText(Int(watch.now(context.date))))
-                        .font(.system(size: 30, weight: .semibold, design: .rounded))
+                        .font(.system(size: 22, weight: .semibold, design: .rounded))
                         .monospacedDigit()
                 }
-                HStack {
-                    Button(watch.running ? "Pause" : "Start") { watch.toggle() }
-                    Button("Reset") { watch.reset() }
-                }
+                Button(watch.running ? "Pause" : "Start") { watch.toggle() }
+                Button("Reset") { watch.reset() }
             }
         }
         .padding(18)

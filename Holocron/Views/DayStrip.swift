@@ -56,7 +56,7 @@ struct DayStrip: View {
                     Image(systemName: open ? "chevron.down" : "chevron.right")
                         .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(Color.ink2)
-                    Text("Today").font(.system(size: 15, weight: .semibold))
+                    Text("Today").font(.hSection)
                     Text(longDate(date)).font(.system(size: 14)).foregroundStyle(Color.ink2)
                     Spacer(minLength: 0)
                 }
@@ -68,9 +68,11 @@ struct DayStrip: View {
 
             if open { timetable(date) }
         }
-        .padding(12)
+        .padding(Space.card)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .card()
+        .background(Color.appBG)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.board, style: .continuous))
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     @ViewBuilder
@@ -87,18 +89,23 @@ struct DayStrip: View {
             if !ov.s("note").isEmpty { note(ov.s("note")) }
         } else {
             let ps = db.periods
-            let n = nowMinutes()
-            ScrollView(.horizontal) {
-                HStack(alignment: .top, spacing: 8) {
-                    // Periods are shown by position, so a repeated period number cannot clash.
-                    ForEach(Array(ps.enumerated()), id: \.offset) { idx, p in
-                        periodTile(p, date: date, now: n, db: db)
-                        if idx + 1 < ps.count, mins(p.end, ps[idx + 1].start) > 0 {
-                            breakTile(from: p.end, to: ps[idx + 1].start)
+            // Re-reads the time every 30 seconds, so the Now tile moves on by itself.
+            TimelineView(.periodic(from: .now, by: 30)) { context in
+                let n = minutesOf(context.date)
+                ScrollView(.horizontal) {
+                    HStack(alignment: .top, spacing: 8) {
+                        // Periods are shown by position, so a repeated period number cannot clash.
+                        ForEach(Array(ps.enumerated()), id: \.offset) { idx, p in
+                            periodTile(p, date: date, now: n, db: db)
+                            if idx + 1 < ps.count, mins(p.end, ps[idx + 1].start) > 0 {
+                                breakTile(from: p.end, to: ps[idx + 1].start)
+                            }
                         }
                     }
+                    .padding(.vertical, 2)
                 }
-                .padding(.vertical, 2)
+                .scrollIndicators(.never)
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -110,31 +117,41 @@ struct DayStrip: View {
     }
 
     private func breakTile(from: String, to: String) -> some View {
-        Text("\(breakLabel(from: from, to: to))\n\(fmtTime(from)) to \(fmtTime(to))")
-            .font(.system(size: 12.5))
-            .foregroundStyle(Color.ink2)
-            .padding(.horizontal, 4)
-            .frame(maxHeight: .infinity)
-            .accessibilityElement(children: .combine)
+        VStack(alignment: .leading, spacing: 2) {
+            Text(breakLabel(from: from, to: to))
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Color.ink2)
+                .lineLimit(2)
+            Text("\(fmtTime(from)) to \(fmtTime(to))")
+                .font(.system(size: 12.5))
+                .foregroundStyle(Color.ink2)
+                .lineLimit(2)
+        }
+        .padding(8)
+        .frame(width: 140, alignment: .leading)
+        .frame(maxHeight: .infinity)
+        .background(Color.fillFaint)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.field, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 
     private func periodTile(_ p: Period, date: String, now: Int, db: Database) -> some View {
         let s = db.plannedSubject(date, p.period)
         let current = (hm(p.start) ?? 0) <= now && now < (hm(p.end) ?? 0)
         let tone = s.isEmpty ? nil : db.tone(forSubject: s)
+        let accent = tone?.barColor ?? Color.appBlue
         return HStack(spacing: 8) {
             Capsule()
                 .fill(tone?.barColor ?? Color.hairline)
-                .frame(width: 4, height: 34)
+                .frame(width: 4)
+                .frame(maxHeight: .infinity)
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(s.isEmpty ? p.name : s)
-                        .font(.system(size: 15, weight: current ? .bold : .semibold))
-                        .lineLimit(2)
-                    // A word as well as the tint, so the current lesson is clear without colour.
-                    if current {
-                        Text("Now").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.ink2)
-                    }
+                Text(s.isEmpty ? p.name : s)
+                    .font(.system(size: 15, weight: current ? .bold : .semibold))
+                    .lineLimit(2)
+                // A word as well as the colour, so the current lesson is clear without colour.
+                if current {
+                    Text("NOW").font(.system(size: 12, weight: .bold)).tracking(1).foregroundStyle(accent)
                 }
                 Text("\(fmtTime(p.start)) to \(fmtTime(p.end))")
                     .font(.system(size: 12.5))
@@ -142,9 +159,18 @@ struct DayStrip: View {
             }
         }
         .padding(8)
-        .frame(width: 170, alignment: .leading)
+        .frame(width: 156, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
         .background(current ? (tone?.tintColor ?? Color.fillFaint) : Color.clear)
+        .overlay(RoundedRectangle(cornerRadius: Radius.field, style: .continuous)
+            .stroke(current ? accent : Color.clear, lineWidth: 2))
         .clipShape(RoundedRectangle(cornerRadius: Radius.field, style: .continuous))
         .accessibilityElement(children: .combine)
+        .accessibilityValue(current ? "Now" : "")
+    }
+
+    private func minutesOf(_ date: Date) -> Int {
+        let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+        return (c.hour ?? 0) * 60 + (c.minute ?? 0)
     }
 }
