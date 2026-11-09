@@ -1,8 +1,12 @@
 # Changelog
 
-## Unreleased
+## 1.23
 
 - The date picker in the Today toolbar uses its normal size and spacing.
+- Classroom is part of the Class screen. Today's timetable sits above the lesson, with the current block highlighted and the breaks named. Hide it with the Today heading when you need the space.
+- The stopwatch is under the timer on the Class screen. It keeps running when you leave the screen and come back.
+- Settings has arrows beside each screen under Modules, so you can choose the order of the sidebar and the Go menu. Use the standard order puts it back.
+- The separate Classroom screen and its Open on screen window are gone. Use the Class screen, or Pop out for the projector. Its sidebar switch in Settings no longer appears.
 
 ## 1.22
 

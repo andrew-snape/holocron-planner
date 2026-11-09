@@ -84,7 +84,6 @@ struct DetailRouter: View {
         case .today: TodayView()
         case .week: WeekView()
         case .classScreen: ClassScreenModule()
-        case .board: ClassroomModule()
         case .term: TermView()
         case .units: UnitsView()
         case .devotion: DevotionView()
@@ -179,7 +178,6 @@ extension NavItem {
         case .units: return .brown
         case .devotion: return .purple
         case .classScreen: return .cyan
-        case .board: return .gray
         case .students: return .green
         case .work: return .yellow
         case .quick: return .orange

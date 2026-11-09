@@ -109,6 +109,7 @@ struct ClassScreenModule: View {
             ClassScreenView(initial: t, embedded: true)
         } else {
             VStack(alignment: .leading, spacing: 14) {
+                DayStrip()
                 EmptyNote(title: "No lessons today", message: "The Class screen shows what the class is learning, the steps to follow, what comes next and a timer. It appears on school days.")
                 Spacer()
             }
@@ -169,6 +170,9 @@ struct ClassScreenView: View {
 
         VStack(alignment: .leading, spacing: 0) {
             topBar(subj: subj, p: p, tone: tone, ps: ps, ix: ix)
+                .padding(.bottom, 14)
+
+            DayStrip()
                 .padding(.bottom, 18)
 
             ScrollView {
@@ -437,6 +441,7 @@ struct TimerCard: View {
 
     var body: some View {
         let t = model.classTimer
+        let watch = model.stopwatch
         VStack(spacing: 12) {
             Text(mmss(t.left))
                 .font(.system(size: 72, weight: .bold, design: .rounded))
@@ -462,6 +467,22 @@ struct TimerCard: View {
                     .keyboardShortcut(.space, modifiers: [])
                 Button("+1 min") { t.addMinute() }
                 Button("Reset") { t.reset() }
+            }
+
+            Divider()
+
+            // Counts up, for timing an activity. It keeps running when you leave the screen.
+            VStack(spacing: 8) {
+                Text("Stopwatch").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.ink2)
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    Text(clockText(Int(watch.now(context.date))))
+                        .font(.system(size: 30, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                }
+                HStack {
+                    Button(watch.running ? "Pause" : "Start") { watch.toggle() }
+                    Button("Reset") { watch.reset() }
+                }
             }
         }
         .padding(18)

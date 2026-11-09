@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 import ImageIO
 
 enum NavItem: String, CaseIterable, Identifiable {
-    case today, week, term, units, devotion, classScreen, board, students, work, quick, assess, hours
+    case today, week, term, units, devotion, classScreen, students, work, quick, assess, hours
 
     var id: String { rawValue }
 
@@ -23,7 +23,7 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .quick: return "8"
         case .assess: return "9"
         case .hours: return "0"
-        case .work, .board: return nil
+        case .work: return nil
         }
     }
 
@@ -32,7 +32,6 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .today: return "Today"
         case .week: return "Week"
         case .classScreen: return "Class screen"
-        case .board: return "Classroom"
         case .term: return "Term"
         case .units: return "Units"
         case .devotion: return "Devotion"
@@ -49,7 +48,6 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .today: return "clock"
         case .week: return "calendar"
         case .classScreen: return "tv"
-        case .board: return "display"
         case .term: return "tablecells"
         case .units: return "magnifyingglass"
         case .devotion: return "plus"
@@ -154,9 +152,9 @@ final class AppModel {
 
     /// The Class screen timer, shared by the sidebar module and the pop-out window.
     let classTimer = ClassTimer()
-    /// The Classroom stopwatch. Kept here, so it keeps running when you leave the board and come back.
+    /// The Class screen stopwatch. Kept here, so it keeps running when you leave the screen and come back.
     let stopwatch = Stopwatch()
-    /// The Class screens and Classroom boards on show, in the window, popped out or in the sidebar.
+    /// The Class screens on show, in the window, popped out or in the sidebar.
     /// Siri leaves names out while any are.
     var classScreens: Set<UUID> = []
     /// The students and subjects last given to Siri, so they are only sent again when they change.

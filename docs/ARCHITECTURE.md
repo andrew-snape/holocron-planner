@@ -12,7 +12,6 @@ Holocron is one SwiftUI app target with no packages. UI code is in `Holocron/Vie
 |---|---|
 | `WindowGroup` with `RootView` | The main window. Minimum 520 by 480, default 1280 by 860. |
 | `WindowGroup("Class screen", for: ClassTarget.self)` | The popped-out Class screen, one window per lesson. |
-| `Window("Classroom")` | The Classroom board for the projector, one window that Open on screen brings forward. Uses larger sizes (`ClassroomBoard(large: true)`). |
 | `Settings` | The Settings window (Cmd+comma). A sidebar with search and eight panes in three groups: General, Timetable, Calendar; Apple Intelligence; Folders, Privacy, Year End, Updates. Minimum 720 by 500, ideal 780 by 600. The chosen pane is kept in the `settingsTab` default. |
 | `Window("Holocron Help")` | The Help window. |
 
@@ -120,7 +119,7 @@ Holocron has no stored "which week is it". It is worked out from `terms.csv` in 
 - Private subjects: `settings.csv` rows `private_subject_<name>,on`. In memory, `lessons` is the shared file's rows for non-private subjects plus the private file's rows for private subjects (`mergeLessons`). `hiddenShared` and `hiddenPrivate` keep each file's other rows so they are written back untouched.
 - Private Devotion: `private_devotion,on` moves `devotion.csv` and `quotes.csv` to the student folder (`DataFolder.privateTables`). Files are copied across when missing and never overwritten.
 - `readPrivacy` reads `settings.csv` first on every load. If the answer changed, all file signatures are cleared so everything is re-read.
-- Siri names: `siri_names,on` (off by default), and never while a Class screen or the Classroom board is open.
+- Siri names: `siri_names,on` (off by default), and never while a Class screen is open.
 
 ## Import and export
 
@@ -187,7 +186,7 @@ Every draft appears in a `DraftBox` with Use, Try again and Discard (the lesson 
 
 - `IntentHost.model` is set once at launch. `IntentHost.require()` throws if the folder is missing. `require(writing:)` also throws if the table could not be read.
 - Questions only read. Actions that change data ask first (`requestConfirmation`) or say what they did. A save is checked on disk (`saveNow`) before Siri says Saved.
-- Student names are spoken or suggested only when `siri_names` is on and no Class screen or Classroom board is open. The roster is only given to Siri then (`refreshSiriVocabulary`).
+- Student names are spoken or suggested only when `siri_names` is on and no Class screen is open. The roster is only given to Siri then (`refreshSiriVocabulary`).
 - Birthdays, Log a Note and Copy Today require an unlocked Mac (`authenticationPolicy`).
 - `AIGuide` (new, unreleased) is described below.
 
@@ -246,8 +245,8 @@ Line counts are approximate. Paths are relative to the repository root.
 | `Holocron/Views/TodayView.swift` | Today list, quote card, to-do panel (plain-words due dates through `TodoParse`), birthdays. |
 | `Holocron/Views/WeekView.swift` | Week grid, slot cells, drag to swap, subject filter. |
 | `Holocron/Views/TermUnitsDevotion.swift` | Term grid and stats, units of inquiry, devotion scripts. |
-| `Holocron/Views/ClassScreen.swift` | Class screen, timer, work modes, First Then Next steps, Now and Next strip. |
-| `Holocron/Views/ClassroomBoard.swift` | Classroom board: clock, today's timetable, Now and Next, the shared timer and the stopwatch (`AppModel.stopwatch`). Registers as a projector screen for Siri. |
+| `Holocron/Views/ClassScreen.swift` | Class screen, shared timer, stopwatch (`AppModel.stopwatch`), work modes, First Then Next steps, Now and Next strip. |
+| `Holocron/Views/DayStrip.swift` | Today's timetable strip above the Class screen lesson, and the `Stopwatch` and `clockText`. |
 | `Holocron/Views/Sheets.swift` | Shared sheet frame, plan, change, move, day type, swap and bump sheets. The lesson editor holds Draft lesson… and Scan text…. |
 | `Holocron/Views/StudentsView.swift` | Student list and detail tabs, Quick log, report tab, pack sheet, new student. Typed note forms have Suggest subject and kind and Scan text…. |
 | `Holocron/Views/MarkClassView.swift` | Mark the whole class on one task, rubric descriptors. |
