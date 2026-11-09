@@ -1051,6 +1051,8 @@ struct QuickLogSheet: View {
     @State private var lost = ""
     @State private var minutes = ""
     @State private var loaded = false
+    /// Set when the teacher chooses Record interview, so the interview opens once this sheet has closed.
+    @State private var recordNext = false
 
     var body: some View {
         let db = model.db
@@ -1094,6 +1096,13 @@ struct QuickLogSheet: View {
                 if s.kind == .lesson && !s.subject.isEmpty { subject = s.subject }
             }
             if ids.count == 1 {
+                HStack {
+                    Button { recordNext = true; dismiss() } label: { Label("Record interview…", systemImage: "mic") }
+                        .help("Record a conversation with this student, then turn it into words and a summary")
+                    Spacer(minLength: 0)
+                }
+            }
+            if ids.count == 1 {
                 let today = db.todaysEntries(ids[0])
                 if !today.isEmpty {
                     Divider()
@@ -1116,6 +1125,9 @@ struct QuickLogSheet: View {
                 subject = guess
                 loaded = true
             }
+        }
+        .onDisappear {
+            if recordNext, let sid = ids.first { model.sheet = .interview(sid: sid) }
         }
     }
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.18
+
+- Quick log's note for one student has Record interview…, which opens the interview recorder for that student.
+
 ## 1.17
 
 - A student's header has Record interview…. Record, stop, and Holocron turns the recording into words on this Mac for you to check. The recording is kept in the student's folder, and the transcript starts with a note that it was recorded and needs checking.
