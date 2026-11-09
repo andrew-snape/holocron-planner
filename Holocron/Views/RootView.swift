@@ -16,6 +16,7 @@ struct RootView: View {
                 Color.cardBG.ignoresSafeArea()
                 VStack(spacing: 0) {
                     if !model.folderOK { FolderBanner() }
+                    if let problem = model.saveProblem { SaveBanner(message: problem) }
                     UpdateBanner()
                     DetailRouter()
                 }
@@ -83,6 +84,7 @@ struct DetailRouter: View {
         case .today: TodayView()
         case .week: WeekView()
         case .classScreen: ClassScreenModule()
+        case .board: ClassroomModule()
         case .term: TermView()
         case .units: UnitsView()
         case .devotion: DevotionView()
@@ -140,6 +142,30 @@ struct FolderBanner: View {
     }
 }
 
+/// Shown while a save has failed and is waiting to be tried again. It stays until a save works.
+struct SaveBanner: View {
+    @Environment(AppModel.self) private var model
+    let message: String
+
+    var body: some View {
+        HStack(spacing: Space.gap) {
+            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Color.appAmber)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Changes are not saved yet").font(.system(size: 13, weight: .semibold))
+                Text(message)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.ink2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer()
+            Button("Try again") { model.flushNow(showToast: true) }
+        }
+        .padding(Space.gap)
+        .background(Color.appAmber.opacity(0.12))
+        .accessibilityElement(children: .combine)
+    }
+}
+
 // MARK: - Sidebar
 
 /// Each module has its own icon colour in the sidebar. Kept here so the model stays free of colours.
@@ -153,6 +179,7 @@ extension NavItem {
         case .units: return .brown
         case .devotion: return .purple
         case .classScreen: return .cyan
+        case .board: return .gray
         case .students: return .green
         case .work: return .yellow
         case .quick: return .orange

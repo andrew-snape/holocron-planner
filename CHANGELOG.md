@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Classroom is a new screen for the projector. It shows a large clock and date, today's timetable from Holocron with the current block highlighted, Now and Next, and a timer and stopwatch.
+- Open on screen opens Classroom in its own window. Use the green button for full screen. Pressing it again brings the same window forward.
+- Classroom fills the screen with larger text, and wraps or scrolls rather than cutting things off in a small window.
+- Classroom shows times the way the rest of Holocron does, such as 9:00 am. Space starts and pauses the timer, and Esc closes the window.
+- Classroom's stopwatch keeps running when you leave the screen and come back.
+- A file that has none of the columns Holocron expects, or is saved as UTF-16, is not read or changed, so it cannot be overwritten by mistake.
+- Now and Next shows the break between lessons, such as Eating and recess, and follows camps, carnivals and other changes to the day.
+- Student names are left out of Siri's answers while the Classroom board is showing, as they are for the Class screen.
+- If a save fails, Holocron keeps your changes and shows a warning with a Try again button. It also tries again on your next change, when you quit, or when you come back to the app. A folder change, reload, import or Start over waits until the changes are saved.
+- If settings.csv cannot be read, Holocron keeps the last private subject and Devotion settings and does not write lessons or Devotion until the file can be read again.
+
 ## 1.21
 
 - The About Holocron window has a description of the app, the frameworks it is built on, a link to the source code on GitHub, and the licence.
