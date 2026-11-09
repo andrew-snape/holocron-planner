@@ -44,7 +44,7 @@ struct HolocronApp: App {
             }
             AppCommands(model: model)
             CommandMenu("Go") {
-                ForEach(NavItem.allCases) { item in
+                ForEach(model.sidebarOrder) { item in
                     if model.isEnabled(item) {
                         if let digit = item.shortcutDigit {
                             Button(item.title) { model.nav = item }
@@ -83,19 +83,6 @@ struct HolocronApp: App {
             }
             HelpCommands(model: model)
         }
-
-        // A single window, so Open on screen brings the board forward rather than opening another.
-        Window("Classroom", id: "classroom") {
-            ClassroomBoard(large: true)
-                .padding(Space.page)
-                .frame(minWidth: 720, maxWidth: .infinity, minHeight: 480, maxHeight: .infinity, alignment: .top)
-                .background(Color.appBG)
-                .environment(model)
-                .environment(\.locale, auLocale)
-                .environment(\.calendar, auCalendar)
-                .preferredColorScheme(.light)
-        }
-        .defaultSize(width: 1280, height: 800)
 
         WindowGroup("Class screen", id: "classscreen", for: ClassTarget.self) { $target in
             if let t = target {

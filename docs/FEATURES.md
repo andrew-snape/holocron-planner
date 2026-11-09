@@ -23,7 +23,7 @@ Everything built so far, with the version it arrived in ([CHANGELOG.md](../CHANG
 | Private subjects | 1.7 | Lessons for a subject are kept in `lessonsprivate.csv` in the student folder when the planner is shared. |
 | Subject rename | 1.8.11 | Follows through timetable, one-offs, lessons, results, notes, reports and the private setting. |
 | Week and Month mini calendar | 1.6.2 | In the sidebar. Week shows one row. Remembered. Even row heights fixed in 1.6.1. |
-| Sidebar order | 1.6.2 | Today, Week, Term, Units, Devotion, Class screen, Classroom, Students, Work, Quick log, Mark class, Hours. |
+| Sidebar order | 1.6.2 | Today, Week, Term, Units, Devotion, Class screen, Students, Work, Quick log, Mark class, Hours. |
 
 ## In class
 
@@ -81,7 +81,7 @@ Everything built so far, with the version it arrived in ([CHANGELOG.md](../CHANG
 
 ## Integrations
 
-Siri, Spotlight and Shortcuts arrived in 1.10.0 ([Intents/HolocronIntents.swift](../Holocron/Intents/HolocronIntents.swift)). Every phrase names the app. Student names are off until switched on in Settings, then Apple Intelligence, and never spoken while a Class screen or the Classroom board is open.
+Siri, Spotlight and Shortcuts arrived in 1.10.0 ([Intents/HolocronIntents.swift](../Holocron/Intents/HolocronIntents.swift)). Every phrase names the app. Student names are off until switched on in Settings, then Apple Intelligence, and never spoken while a Class screen is open.
 
 | Action | What it does | Needs unlocked Mac |
 |---|---|---|

@@ -88,18 +88,33 @@ struct GeneralPane: View {
             }
 
             Section {
-                ForEach(NavItem.allCases.filter { $0.canDisable }) { item in
-                    Toggle(isOn: Binding(get: { model.isEnabled(item) }, set: { model.setEnabled(item, $0) })) {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Label(item.title, systemImage: item.symbol)
-                            Text(item.blurb).font(.callout).foregroundStyle(.secondary)
+                let items = model.sidebarOrder
+                ForEach(Array(items.enumerated()), id: \.element) { idx, item in
+                    HStack(spacing: 8) {
+                        if item.canDisable {
+                            Toggle(isOn: Binding(get: { model.isEnabled(item) }, set: { model.setEnabled(item, $0) })) {
+                                moduleLabel(item)
+                            }
+                        } else {
+                            moduleLabel(item)
                         }
+                        Spacer(minLength: 0)
+                        Button { model.moveSidebar(item, by: -1) } label: { Image(systemName: "chevron.up") }
+                            .disabled(idx == 0)
+                            .help("Move \(item.title) up the sidebar")
+                            .accessibilityLabel("Move \(item.title) up")
+                        Button { model.moveSidebar(item, by: 1) } label: { Image(systemName: "chevron.down") }
+                            .disabled(idx == items.count - 1)
+                            .help("Move \(item.title) down the sidebar")
+                            .accessibilityLabel("Move \(item.title) down")
                     }
+                    .buttonStyle(.borderless)
                 }
+                Button("Use the standard order") { model.resetSidebarOrder() }
             } header: {
                 Text("Modules")
             } footer: {
-                Text("Switched-off modules disappear from the sidebar and the Go menu. Your data is kept, and Today always stays on.")
+                Text("Use the arrows to choose the order of the sidebar. Switched-off modules disappear from the sidebar and the Go menu. Your data is kept, and Today always stays on.")
             }
 
             Section {
@@ -107,6 +122,15 @@ struct GeneralPane: View {
             }
         }
         .settingsForm()
+    }
+}
+
+extension GeneralPane {
+    fileprivate func moduleLabel(_ item: NavItem) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Label(item.title, systemImage: item.symbol)
+            Text(item.blurb).font(.callout).foregroundStyle(.secondary)
+        }
     }
 }
 
