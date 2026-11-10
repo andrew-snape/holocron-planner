@@ -27,9 +27,9 @@ struct StartOverSheet: View {
 
     private var confirm: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Start over").font(.system(size: 22, weight: .bold))
+            Text("Start over").font(.metric)
             Text("Choose what to clear. Holocron then begins again with a typical school day and a list of subjects.")
-                .font(.system(size: 13)).foregroundStyle(Color.ink2)
+                .font(.body1).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
 
             Picker("What to clear", selection: $scope) {
@@ -39,23 +39,23 @@ struct StartOverSheet: View {
             .labelsHidden()
 
             Text(detail(scope))
-                .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                .font(.caption1).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
 
             if shared {
                 Label("Your planner folder is a separate folder that may be shared with colleagues. It will be disconnected, not cleared, so everyone else keeps their planner. You can connect it again in Settings, then Folders.",
                       systemImage: "person.2.fill")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    .font(.caption1).foregroundStyle(Color.ink2)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Your current files will be moved into a dated folder in")
-                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.ink2)
+                    .font(.labelSemibold).foregroundStyle(Color.ink2)
                 Text(model.folder.archiveRoot.path)
-                    .font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+                    .font(.labelMono).textSelection(.enabled)
                 Text("Nothing is deleted. To go back, copy the files from there into your data folder and press Shift+Cmd+R.")
-                    .font(.system(size: 12)).foregroundStyle(Color.ink3)
+                    .font(.label).foregroundStyle(Color.ink3)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .card()
@@ -86,21 +86,21 @@ struct StartOverSheet: View {
     private func result(_ o: AppModel.StartOverOutcome) -> some View {
         switch o {
         case .done(let archive, let disconnected):
-            Text("Holocron has started over").font(.system(size: 22, weight: .bold))
+            Text("Holocron has started over").font(.metric)
             Text("Add your term dates in Settings, then Calendar, and adjust the periods and subjects in Settings, then Timetable.")
-                .font(.system(size: 13)).foregroundStyle(Color.ink2)
+                .font(.body1).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
             if let archive {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Your old files are in").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.ink2)
-                    Text(archive.path).font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+                    Text("Your old files are in").font(.labelSemibold).foregroundStyle(Color.ink2)
+                    Text(archive.path).font(.labelMono).textSelection(.enabled)
                     Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([archive]) }
                 }
                 .card()
             }
             if disconnected {
                 Text("The separate planner folder was disconnected and left as it was.")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    .font(.caption1).foregroundStyle(Color.ink2)
                     .fixedSize(horizontal: false, vertical: true)
             }
             HStack {
@@ -109,9 +109,9 @@ struct StartOverSheet: View {
                     .keyboardShortcut(.defaultAction)
             }
         case .failed(let message):
-            Text("Nothing was changed").font(.system(size: 22, weight: .bold))
+            Text("Nothing was changed").font(.metric)
             Text(message)
-                .font(.system(size: 13)).foregroundStyle(Color.ink2)
+                .font(.body1).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
                 Spacer()

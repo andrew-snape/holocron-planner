@@ -54,10 +54,10 @@ struct DayStrip: View {
             Button { open.toggle() } label: {
                 HStack(spacing: 8) {
                     Image(systemName: open ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.smallBold)
                         .foregroundStyle(Color.ink2)
                     Text("Today").font(.hSection)
-                    Text(longDate(date)).font(.system(size: 14)).foregroundStyle(Color.ink2)
+                    Text(longDate(date)).font(.body2).foregroundStyle(Color.ink2)
                     Spacer(minLength: 0)
                 }
                 .contentShape(Rectangle())
@@ -112,18 +112,18 @@ struct DayStrip: View {
 
     private func note(_ s: String) -> some View {
         Text(s)
-            .font(.system(size: 14))
+            .font(.body2)
             .foregroundStyle(Color.ink2)
     }
 
     private func breakTile(from: String, to: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(breakLabel(from: from, to: to))
-                .font(.system(size: 13, weight: .medium))
+                .font(.body1Medium)
                 .foregroundStyle(Color.ink2)
                 .lineLimit(2)
             Text("\(fmtTime(from)) to \(fmtTime(to))")
-                .font(.system(size: 12.5))
+                .font(.caption1)
                 .foregroundStyle(Color.ink2)
                 .lineLimit(2)
         }
@@ -154,7 +154,7 @@ struct DayStrip: View {
                     Text("NOW").font(.system(size: 12, weight: .bold)).tracking(1).foregroundStyle(accent)
                 }
                 Text("\(fmtTime(p.start)) to \(fmtTime(p.end))")
-                    .font(.system(size: 12.5))
+                    .font(.caption1)
                     .foregroundStyle(Color.ink2)
             }
         }

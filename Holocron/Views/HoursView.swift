@@ -93,7 +93,7 @@ struct HoursView: View {
                                 Spacer()
                                 DeleteButton { db.deleteRow(.dottl, id: r.s("id")) }
                             }
-                            .font(.system(size: 13))
+                            .font(.body1)
                             .padding(.vertical, 7)
                             .padding(.horizontal, 12)
                             Divider()
@@ -113,7 +113,7 @@ struct HoursView: View {
     private func stat(_ n: String, _ label: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(n).font(.system(size: 28, weight: .semibold, design: .rounded))
-            Text(label).font(.system(size: 12)).foregroundStyle(Color.ink2)
+            Text(label).font(.label).foregroundStyle(Color.ink2)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .card()
@@ -164,7 +164,7 @@ private struct DottlChart: View {
                 .foregroundStyle(Color.appBlue)
                 .annotation(position: .trailing, alignment: .leading) {
                     Text(hrs(item.minutes) + " hrs")
-                        .font(.system(size: 12))
+                        .font(.label)
                         .foregroundStyle(Color.ink2)
                 }
                 .accessibilityLabel(item.type)
@@ -177,14 +177,14 @@ private struct DottlChart: View {
                     AxisTick()
                     AxisValueLabel {
                         if let h = value.as(Double.self) {
-                            Text(hrs(h * 60) + " hrs").font(.system(size: 12))
+                            Text(hrs(h * 60) + " hrs").font(.label)
                         }
                     }
                 }
             }
             .chartYAxis {
                 AxisMarks(position: .leading) { _ in
-                    AxisValueLabel().font(.system(size: 12))
+                    AxisValueLabel().font(.label)
                 }
             }
             .frame(height: CGFloat(items.count) * 34 + 24)
@@ -192,7 +192,7 @@ private struct DottlChart: View {
 
             if let top {
                 Text("\(hrs(total)) hrs logged across \(items.count) types. Most time: \(top.type), \(hrs(top.minutes)) hrs.")
-                    .font(.system(size: 12))
+                    .font(.label)
                     .foregroundStyle(Color.ink2)
                     .fixedSize(horizontal: false, vertical: true)
             }

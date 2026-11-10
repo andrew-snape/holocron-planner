@@ -18,7 +18,7 @@ struct WeekView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Type in a slot, press Return to open the plan, drag to swap, right-click for more.")
-                    .font(.system(size: 12)).foregroundStyle(Color.ink2).fixedSize(horizontal: false, vertical: true)
+                    .font(.label).foregroundStyle(Color.ink2).fixedSize(horizontal: false, vertical: true)
                 ScrollView(.horizontal, showsIndicators: true) {
                     WeekGrid(mon: mon, wk: wk, colW: colWidth)
                 }
@@ -79,8 +79,8 @@ struct WeekGrid: View {
                     let d = addDays(mon, i)
                     let isToday = d == todayISO()
                     HStack(spacing: 5) {
-                        Text(Cal.weekdayLong[i]).font(.system(size: 12.5, weight: .semibold))
-                        Text(shortDate(d)).font(.system(size: 12))
+                        Text(Cal.weekdayLong[i]).font(.caption1Semibold)
+                        Text(shortDate(d)).font(.label)
                     }
                     .foregroundStyle(isToday ? Color.onAccent : Color.primary)
                     .padding(.vertical, 3)
@@ -93,7 +93,7 @@ struct WeekGrid: View {
             ForEach(Array(ps.enumerated()), id: \.element.id) { idx, p in
                 GridRow {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(p.name).font(.system(size: 12.5, weight: .semibold))
+                        Text(p.name).font(.caption1Semibold)
                         Text("\(p.start) to \(p.end)").font(.system(size: 11.5, design: .rounded)).foregroundStyle(Color.ink2)
                     }
                     .frame(width: WeekGrid.labelW, alignment: .leading)
@@ -109,7 +109,7 @@ struct WeekGrid: View {
                             .font(.system(size: 10.5, design: .rounded)).foregroundStyle(Color.ink3)
                             .frame(width: WeekGrid.labelW, alignment: .leading)
                         HStack(spacing: 10) {
-                            Text(label).font(.system(size: 11)).foregroundStyle(Color.ink3)
+                            Text(label).font(.small).foregroundStyle(Color.ink3)
                             Rectangle().fill(Color.rule).frame(height: 0.5)
                         }
                         .padding(.horizontal, 8)
@@ -130,6 +130,8 @@ struct SlotCell: View {
     var period: Period
     var colW: CGFloat
     @FocusState private var focused: Bool
+    /// True while a lesson is being dragged over this slot, so the swap target is clear.
+    @State private var targeted = false
 
     var body: some View {
         let db = model.db
@@ -146,7 +148,7 @@ struct SlotCell: View {
             HStack(spacing: 5) {
                 Circle().fill(tone.barColor).frame(width: 8, height: 8)
                 Text(subj.isEmpty ? "Not set" : subj)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.labelSemibold)
                     .foregroundStyle(tone.inkColor)
                     .lineLimit(1)
                 if moved { Circle().fill(Color.appAmber).frame(width: 5, height: 5).help("Changed for this date") }
@@ -163,7 +165,7 @@ struct SlotCell: View {
             .accessibilityAddTraits(.isButton)
 
             if info.isRelease {
-                Text("Release").font(.system(size: 11.5)).foregroundStyle(tone.inkColor.opacity(0.75))
+                Text("Release").font(.footnote).foregroundStyle(tone.inkColor.opacity(0.75))
                 Spacer(minLength: 0)
             } else {
                 TextField("Summary", text: Binding(
@@ -179,7 +181,7 @@ struct SlotCell: View {
                     }
                     .lineLimit(2...6)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 12))
+                    .font(.label)
                     .padding(.vertical, 5)
                     .padding(.horizontal, 7)
                     .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -193,7 +195,7 @@ struct SlotCell: View {
                         Spacer()
                         if let link = firstLink(in: c.summary) {
                             Button { NSWorkspace.shared.open(link) } label: {
-                                Image(systemName: "link").font(.system(size: 11, weight: .semibold))
+                                Image(systemName: "link").font(.smallSemibold)
                                     .frame(minWidth: 28, minHeight: 28)
                                     .contentShape(Rectangle())
                                     .padding(-5)
@@ -207,7 +209,12 @@ struct SlotCell: View {
                             model.sheet = .plan(date: date, per: pn, edit: !c.hasPlan)
                         } label: {
                             HStack(spacing: 4) {
-                                if c.hasPlan { Circle().fill(tone.barColor).frame(width: 6, height: 6) }
+                                // A full plan is a filled dot. A summary on its own is a hollow one.
+                                if c.hasPlan {
+                                    Circle().fill(tone.barColor).frame(width: 6, height: 6)
+                                } else if !c.summary.isEmpty {
+                                    Circle().stroke(tone.barColor, lineWidth: 1.2).frame(width: 6, height: 6)
+                                }
                                 Text("Plan").font(.system(size: 11, weight: c.hasPlan ? .semibold : .medium))
                             }
                             .padding(.vertical, 3)
@@ -229,7 +236,12 @@ struct SlotCell: View {
         .frame(width: colW, alignment: .topLeading)
         .frame(minHeight: 92, maxHeight: .infinity, alignment: .topLeading)
         .background(tintedBlock(tone, release: info.isRelease))
+        .overlay((date == todayISO() ? Color.appBlue.opacity(0.07) : Color.clear).allowsHitTesting(false))
         .clipShape(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous)
+            .stroke(Color.appBlue, lineWidth: targeted ? 3 : 0))
+        .scaleEffect(targeted ? 1.02 : 1)
+        .animation(.easeOut(duration: 0.12), value: targeted)
         .opacity(dim ? 0.4 : 1)
         .contextMenu {
             Button(c.hasPlan ? "Open Plan" : "Plan Lesson…") { model.sheet = .plan(date: date, per: pn, edit: !c.hasPlan) }
@@ -245,6 +257,6 @@ struct SlotCell: View {
             guard let a = items.first, a != ref else { return false }
             model.sheet = .swap(a: a, b: ref)
             return true
-        }
+        } isTargeted: { targeted = $0 }
     }
 }

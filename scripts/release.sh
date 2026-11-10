@@ -3,7 +3,7 @@
 #
 #   scripts/release.sh 1.2
 #
-# Before running it: add a "## 1.2" section to CHANGELOG.md (it becomes the release notes) and commit
+# Before running it: add a "## 1.2" section to Holocron/CHANGELOG.md (it becomes the release notes) and commit
 # your code changes. The script then sets the version, builds, zips the app, writes a checksum,
 # commits, tags, pushes, and creates the GitHub release. Holocron's built-in updater picks it up.
 #
@@ -24,8 +24,8 @@ if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
   exit 1
 fi
 
-if ! grep -q "^## $VERSION\$" CHANGELOG.md; then
-  echo "Add a section headed exactly \"## $VERSION\" to CHANGELOG.md first. It becomes the release notes."
+if ! grep -q "^## $VERSION\$" Holocron/CHANGELOG.md; then
+  echo "Add a section headed exactly \"## $VERSION\" to Holocron/CHANGELOG.md first. It becomes the release notes."
   exit 1
 fi
 
@@ -73,7 +73,7 @@ codesign --verify --deep --strict "$APP"
 ZIP="Holocron-$VERSION-mac.zip"
 ditto -c -k --keepParent --norsrc --noextattr --noqtn "$APP" "dist/$ZIP"
 ( cd dist && shasum -a 256 "$ZIP" > "$ZIP.sha256" )
-awk -v v="## $VERSION" '$0==v{f=1;next} /^## /{f=0} f' CHANGELOG.md > dist/notes.md
+awk -v v="## $VERSION" '$0==v{f=1;next} /^## /{f=0} f' Holocron/CHANGELOG.md > dist/notes.md
 
 FINISHED=1
 

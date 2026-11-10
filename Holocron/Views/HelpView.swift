@@ -122,7 +122,7 @@ struct HelpView: View {
         NavigationSplitView(columnVisibility: $columns) {
             VStack(spacing: 0) {
                 Text("HELP")
-                    .font(.system(size: 11, weight: .bold)).tracking(1.4).foregroundStyle(Color.appBlue)
+                    .font(.smallBold).tracking(1.4).foregroundStyle(Color.appBlue)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 4)
                 // Same pattern as the main sidebar: a List bound to the selection, so the
@@ -189,7 +189,7 @@ struct HelpPara: View {
     init(_ t: String, secondary: Bool = false) { text = t; self.secondary = secondary }
     var body: some View {
         helpText(text)
-            .font(.system(size: 13.5))
+            .font(.bodyLarge)
             .foregroundStyle(secondary ? Color.ink2 : Color.primary.opacity(0.88))
             .lineSpacing(3)
             .fixedSize(horizontal: false, vertical: true)
@@ -205,7 +205,7 @@ struct HelpBullets: View {
                 HStack(alignment: .firstTextBaseline, spacing: 9) {
                     Circle().fill(Color.appBlue).frame(width: 5, height: 5).offset(y: -1.5)
                     helpText(t)
-                        .font(.system(size: 13.5)).foregroundStyle(Color.primary.opacity(0.88))
+                        .font(.bodyLarge).foregroundStyle(Color.primary.opacity(0.88))
                         .lineSpacing(3).fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -226,7 +226,7 @@ struct HelpSteps: View {
                         .frame(width: 22, height: 22)
                         .background(Circle().fill(Color.appBlue))
                     helpText(t)
-                        .font(.system(size: 13.5)).foregroundStyle(Color.primary.opacity(0.88))
+                        .font(.bodyLarge).foregroundStyle(Color.primary.opacity(0.88))
                         .lineSpacing(3).fixedSize(horizontal: false, vertical: true)
                         .padding(.top, 2)
                 }
@@ -248,9 +248,9 @@ struct HelpCallout: View {
                 .padding(.top, 1)
                 .accessibilityLabel(kind == .info ? "Note" : "Caution")
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.system(size: 13.5, weight: .semibold))
+                Text(title).font(.bodyLargeSemibold)
                 helpText(text)
-                    .font(.system(size: 13)).foregroundStyle(Color.primary.opacity(0.85))
+                    .font(.body1).foregroundStyle(Color.primary.opacity(0.85))
                     .lineSpacing(3).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
@@ -270,7 +270,7 @@ struct HelpCode: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(text)
-                .font(.system(size: 12, design: .monospaced))
+                .font(.labelMono)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -307,7 +307,7 @@ struct HelpKeyRow: View {
                 .background(Color.fill)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.tiny, style: .continuous))
                 .frame(width: 170, alignment: .leading)
-            Text(action).font(.system(size: 13.5))
+            Text(action).font(.bodyLarge)
             Spacer(minLength: 0)
         }
     }

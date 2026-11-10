@@ -88,6 +88,14 @@ struct GeneralPane: View {
             }
 
             Section {
+                Toggle("Show groups on the Class screen", isOn: Binding(
+                    get: { db.classGroupsOn },
+                    set: { db.setSetting(Database.classGroupsKey, $0 ? "on" : "off") }))
+            } footer: {
+                Text("Off by default. When on, the Class screen lists each group with students' first names, so they appear on the projector. There is a Hide names button on the card.")
+            }
+
+            Section {
                 // The same headings as the sidebar. The arrows move a screen within its heading.
                 let items = NavGroup.allCases.flatMap { g in model.sidebarOrder.filter { $0.group == g } }
                 ForEach(items, id: \.self) { item in
@@ -123,6 +131,44 @@ struct GeneralPane: View {
             }
         }
         .settingsForm()
+    }
+}
+
+/// Choose a subject's colour from twelve that read well on the Week grid and on paper.
+/// A colour set earlier that is not one of the twelve stays until a new one is chosen.
+struct SubjectColourButton: View {
+    @Binding var hex: String
+    @State private var open = false
+
+    var body: some View {
+        Button { open = true } label: {
+            Circle().fill(Color(hex: hex)).frame(width: 20, height: 20)
+                .overlay(Circle().stroke(Color.hairline, lineWidth: 0.5))
+                .frame(minWidth: 28, minHeight: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("Choose a colour")
+        .accessibilityLabel("Colour")
+        .accessibilityValue(SubjectColours.name(forHex: hex) ?? "Custom")
+        .popover(isPresented: $open, arrowEdge: .bottom) {
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 8), count: 6), spacing: 8) {
+                ForEach(SubjectColours.palette, id: \.hex) { c in
+                    Button { hex = c.hex; open = false } label: {
+                        Circle().fill(Color(hex: c.hex)).frame(width: 26, height: 26)
+                            .overlay {
+                                if c.hex.caseInsensitiveCompare(hex) == .orderedSame {
+                                    Image(systemName: "checkmark").font(.smallBold).foregroundStyle(Color.onAccent)
+                                }
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .help(c.name)
+                    .accessibilityLabel(c.name)
+                }
+            }
+            .padding(14)
+        }
     }
 }
 
@@ -181,9 +227,7 @@ struct TimetablePane: View {
                         }
                         .labelsHidden()
                         .frame(width: 130)
-                        ColorPicker("Colour", selection: ed.colourBinding(i), supportsOpacity: false)
-                            .labelsHidden()
-                            .accessibilityValue(subjectRows[i].s("colour"))
+                        SubjectColourButton(hex: ed.cellBinding(.subjects, i, "colour"))
                         Spacer()
                     }
                 }

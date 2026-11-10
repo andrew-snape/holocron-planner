@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Mark class has a Markbook view. Choose a subject and see the whole class in one grid, students down and tasks across, coloured by result. Click a column heading to sort. Empty cells say Missing, and a list under the grid names who is missing each result. A pre-test and post-test of the same thing, such as Fractions pre-test and Fractions post-test, get a Growth column. Export CSV saves the grid for a spreadsheet.
+- A student's Assessment tab has a Growth chart with a line for each subject. Scores show as a percentage and achievement levels from Emerging 20 up to Extending 100.
+- Report progress, next to Draft for the class on a student's Report tab, lists every student with how many judgements are done, their general comment (None, Draft or Ready, with the word count against 100 to 150), and their English and Maths dot points. Copy for SIMON copies one comment ready to paste.
+- Groups. Make reading groups, maths groups and inquiry teams from Mark class or Quick log, by chance or mixed by latest result. In Quick log, Groups selects a group's students. In Mark class, choose a group to mark just those students. They are kept in groups.csv in your student folder.
+- The Class screen can show your groups. It is off until you switch on Show groups on the Class screen in Settings, because students' first names would be on the projector. The card has a Hide names button.
+
+- If a file in your folder changes while Holocron is open, for example because another teacher saved in the shared planner folder, Holocron now adds their changes to yours instead of overwriting them. It copies the file into Before merge in Holocron archive first, every time.
+- If you and someone else changed the same thing, a sheet shows both versions side by side and asks which to keep. Until you choose, the file keeps their version and your version stays on screen. Your version is also copied into Before merge.
+- If iCloud has made a copy of a file such as lessons 2.csv, Holocron offers to merge it in. The copy is never deleted.
+- Holocron records which file layout your folder uses. Before it ever changes the layout of your files, it copies them into Holocron archive.
+- Today has a Now card at the top. It shows the lesson on now in its subject colour, a line through the lesson, how many minutes are left, what comes next, and a button for the Class screen. Lessons that have finished fade back. The quote moves to the bottom of the side panel, and the to-do list says how many are due today or late.
+- Subject colours are chosen from twelve that read well on the Week grid and on paper. Colours you chose earlier stay until you pick a new one.
+- On Week, today's column has a soft blue tint. A lesson with a full plan has a filled dot, and one with only a summary has a hollow dot. A lesson you drag shows a blue edge over the slot it will swap with.
+- The Class screen has larger small text. The work mode card takes a calm wash of its colour, and the timer turns red and says Time's up when it ends. A tick box under the timer turns the end sound off.
+- Work has its title and Add work button in the window toolbar, like the other screens.
+- Text sizes across the app now come from one set of named sizes, with no change to how anything looks.
+
 ## 1.25
 
 - The sidebar has three headings: Plan (Today, Week, Term, Units, Devotion), Teach (Class screen, Quick log, Mark class) and Class (Students, Work, Hours). Units and Devotion have new icons. In Settings, the arrows under Modules move a screen within its heading.

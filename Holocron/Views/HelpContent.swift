@@ -191,10 +191,10 @@ struct HelpFolderPanel: View {
                     flash($reloaded)
                 }
                 if reloaded {
-                    Text("Reloaded").font(.system(size: 12.5)).foregroundStyle(Color.appGreen)
+                    Text("Reloaded").font(.caption1).foregroundStyle(Color.appGreen)
                 }
                 if !model.folderOK {
-                    Text("Not connected").font(.system(size: 12.5, weight: .medium)).foregroundStyle(Color.appRed)
+                    Text("Not connected").font(.caption1Medium).foregroundStyle(Color.appRed)
                 }
             }
         }
@@ -205,7 +205,7 @@ struct HelpFolderPanel: View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: symbol).foregroundStyle(Color.ink2).frame(width: 18).padding(.top, 1)
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.system(size: 13.5, weight: .semibold))
+                Text(title).font(.bodyLargeSemibold)
                 Text(url.path)
                     .font(.system(size: 11.5, design: .monospaced)).foregroundStyle(Color.ink2)
                     .textSelection(.enabled)
@@ -233,7 +233,7 @@ struct HelpFileTable: View {
                     }
                     .frame(width: 180, alignment: .leading)
                     Text(CSVGuide.summary(t))
-                        .font(.system(size: 13)).foregroundStyle(Color.ink2)
+                        .font(.body1).foregroundStyle(Color.ink2)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
                 }
@@ -297,13 +297,13 @@ struct HelpAIPage: View {
                     }
                     .buttonStyle(.borderedProminent)
                     Text("Made from the files in this version of Holocron.")
-                        .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                        .font(.caption1).foregroundStyle(Color.ink2)
                 }
                 DisclosureGroup("Preview the guide") {
                     HelpCode(text: CSVGuide.text, copyLabel: "Copy guide")
                         .padding(.top, 8)
                 }
-                .font(.system(size: 13.5))
+                .font(.bodyLarge)
             }
             Group {
                 HelpHeading("Example requests")
@@ -402,6 +402,7 @@ enum CSVGuide {
         case .interviews: return "Interviews with a student: the transcript, any summary and the file name of the recording in the recordings folder"
         case .work: return "Photos and scans of students' work, with the lesson, task and caption, and the image file in the work folder"
         case .taskdone: return "Tasks each student has finished, ticked as Done in Mark class"
+        case .groups: return "Named groups of students, such as reading groups"
         case .lessonsprivate, .settings: return ""
         }
     }
@@ -463,6 +464,8 @@ enum CSVGuide {
             return "Steps typed on the Class screen for one lesson. date is yyyy-mm-dd and period matches periods.csv. first, then and next are short pieces of text. A lesson with no steps has no row."
         case .taskdone:
             return "One row for each student who has finished a task. student_id matches students.csv. date is yyyy-mm-dd. subject matches subjects.csv and task is the task name, the same as in assessments.csv. It is ticked as Done in Mark class. It is private to the student folder."
+        case .groups:
+            return "One row per group. name is the group's name, subject is optional and student_ids holds student ids from students.csv joined with semicolons, like s1;s2;s3. Private to the student folder."
         case .lessonsprivate, .settings:
             return ""
         }

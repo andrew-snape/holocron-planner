@@ -52,9 +52,9 @@ struct ImportResultsSheet: View {
             if let outcome {
                 finished(outcome)
             } else if !loadError.isEmpty {
-                Text("Import results").font(.system(size: 22, weight: .bold))
+                Text("Import results").font(.metric)
                 Label(loadError, systemImage: "exclamationmark.triangle")
-                    .font(.system(size: 13)).foregroundStyle(Color.appRed)
+                    .font(.body1).foregroundStyle(Color.appRed)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack { Spacer(); Button("Close") { dismiss() }.keyboardShortcut(.defaultAction) }
             } else if let f = strandFile {
@@ -178,8 +178,8 @@ struct ImportResultsSheet: View {
         let twice = doubled
 
         VStack(alignment: .leading, spacing: 4) {
-            Text("Import results").font(.system(size: 22, weight: .bold))
-            Text(url.lastPathComponent).font(.system(size: 12, design: .monospaced))
+            Text("Import results").font(.metric)
+            Text(url.lastPathComponent).font(.labelMono)
                 .foregroundStyle(Color.ink2).lineLimit(1).truncationMode(.middle)
         }
 
@@ -200,7 +200,7 @@ struct ImportResultsSheet: View {
         if !twice.isEmpty {
             Label("\(twice.joined(separator: ", ")) \(twice.count == 1 ? "is" : "are") picked for more than one person in the file. Choose one, or Leave out the others.",
                   systemImage: "exclamationmark.triangle")
-                .font(.system(size: 12.5)).foregroundStyle(Color.appRed)
+                .font(.caption1).foregroundStyle(Color.appRed)
                 .fixedSize(horizontal: false, vertical: true)
         }
 
@@ -222,7 +222,7 @@ struct ImportResultsSheet: View {
                 Image(systemName: d.map.isComplete ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
                     .foregroundStyle(d.map.isComplete ? Color.appGreen : Color.appAmber)
                     .accessibilityHidden(true)
-                Text(columnsHeadline(d)).font(.system(size: 13, weight: .semibold))
+                Text(columnsHeadline(d)).font(.body1Semibold)
                     .fixedSize(horizontal: false, vertical: true)
             }
             HStack(spacing: 8) {
@@ -238,14 +238,14 @@ struct ImportResultsSheet: View {
             }
             if !suggestError.isEmpty {
                 Label(suggestError, systemImage: "exclamationmark.triangle")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    .font(.caption1).foregroundStyle(Color.ink2)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if showColumns {
                 Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 6) {
                     ForEach(ColumnRole.allCases) { role in
                         GridRow {
-                            Text(role.title).font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                            Text(role.title).font(.caption1).foregroundStyle(Color.ink2)
                                 .gridColumnAlignment(.trailing)
                             Picker("", selection: columnBinding(role)) {
                                 Text("None").tag(-1)
@@ -259,7 +259,7 @@ struct ImportResultsSheet: View {
                         }
                     }
                     GridRow {
-                        Text("Add to comment").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                        Text("Add to comment").font(.caption1).foregroundStyle(Color.ink2)
                         Menu(notesTitle(d)) {
                             ForEach(Array(d.table.header.enumerated()), id: \.offset) { i, h in
                                 Toggle(h.isEmpty ? "Column \(i + 1)" : h, isOn: noteBinding(i))
@@ -315,13 +315,13 @@ struct ImportResultsSheet: View {
 
     private func subjectsCard(_ d: ResultsDraft) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Subjects").font(.system(size: 13, weight: .semibold))
+            Text("Subjects").font(.body1Semibold)
             FlowLayout(spacing: 10) {
                 ForEach(d.subjectValues, id: \.self) { v in
                     HStack(spacing: 6) {
-                        Text(v).font(.system(size: 12.5)).lineLimit(2).help(v)
+                        Text(v).font(.caption1).lineLimit(2).help(v)
                             .frame(minWidth: 90, maxWidth: 160, alignment: .trailing)
-                        Image(systemName: "arrow.right").font(.system(size: 10)).foregroundStyle(Color.ink3)
+                        Image(systemName: "arrow.right").font(.tiny).foregroundStyle(Color.ink3)
                             .accessibilityHidden(true)
                         Picker("", selection: Binding(get: { draft?.subjectFor[v] ?? "" }, set: { s in edit { $0.subjectFor[v] = s } })) {
                             Text("Leave out").tag("")
@@ -343,22 +343,22 @@ struct ImportResultsSheet: View {
         let found = Set(d.assigned.values)
         let missing = roster.filter { !found.contains($0.id) }
         return VStack(alignment: .leading, spacing: 8) {
-            Text("Students").font(.system(size: 13, weight: .semibold))
+            Text("Students").font(.body1Semibold)
             if onRoll.isEmpty {
                 Text("No students matched. Check the student name column, or match people below.")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    .font(.caption1).foregroundStyle(Color.ink2)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("\(plural(onRoll.count, "student")) in the file \(onRoll.count == 1 ? "is" : "are") on your roll. Everyone else is left out.")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    .font(.caption1).foregroundStyle(Color.ink2)
                     .fixedSize(horizontal: false, vertical: true)
                 if !missing.isEmpty && missing.count <= 8 {
                     Text("Not found in the file: " + missing.map(\.fullName).joined(separator: ", "))
-                        .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                        .font(.label).foregroundStyle(Color.ink2)
                         .fixedSize(horizontal: false, vertical: true)
                 } else if !missing.isEmpty {
                     Text("\(plural(missing.count, "student")) on your roll \(missing.count == 1 ? "is" : "are") not in the file.")
-                        .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                        .font(.label).foregroundStyle(Color.ink2)
                 }
             }
             VStack(spacing: 0) {
@@ -375,7 +375,7 @@ struct ImportResultsSheet: View {
                     }
                 } label: {
                     Text("Not on your roll (\(others.count)). Open to match any of them to a student.")
-                        .font(.system(size: 12.5))
+                        .font(.caption1)
                 }
             }
         }
@@ -386,12 +386,12 @@ struct ImportResultsSheet: View {
         let chosen = draft?.assigned[p.id]
         return HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 1) {
-                Text(p.name).font(.system(size: 13)).lineLimit(2).help(p.name)
+                Text(p.name).font(.body1).lineLimit(2).help(p.name)
                 Text(plural(p.count, "result") + (p.ref.isEmpty ? "" : " · ID \(p.ref)"))
-                    .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                    .font(.label).foregroundStyle(Color.ink2)
             }
             .frame(width: 200, alignment: .leading)
-            Image(systemName: "arrow.right").font(.system(size: 10)).foregroundStyle(Color.ink3)
+            Image(systemName: "arrow.right").font(.tiny).foregroundStyle(Color.ink3)
                 .accessibilityHidden(true)
             Picker("", selection: Binding(get: { draft?.assigned[p.id] ?? "" }, set: { v in
                 touched.insert(p.id)
@@ -407,7 +407,7 @@ struct ImportResultsSheet: View {
                 TagLabel(text: "Check", fg: .appAmber, bg: Color.appAmber.opacity(0.14))
                     .help("The name is close but not the same. Check it is the right student.")
             } else if case .remembered(let sid) = p.match, chosen == sid {
-                Text("As last time").font(.system(size: 12)).foregroundStyle(Color.ink2)
+                Text("As last time").font(.label).foregroundStyle(Color.ink2)
             }
             Spacer()
         }
@@ -431,14 +431,14 @@ struct ImportResultsSheet: View {
             head = "For \(plural(students, "student")), this " + parts.joined(separator: ", ") + "."
         }
         return VStack(alignment: .leading, spacing: 3) {
-            Text(head).font(.system(size: 12.5, weight: .semibold))
+            Text(head).font(.caption1Semibold)
                 .fixedSize(horizontal: false, vertical: true)
             if !left.isEmpty {
-                Text("Left out: " + left.joined(separator: ", ") + ".").font(.system(size: 12)).foregroundStyle(Color.ink2)
+                Text("Left out: " + left.joined(separator: ", ") + ".").font(.label).foregroundStyle(Color.ink2)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Text("A copy of your saved results is kept in Holocron archive first. Imported results show in Mark class and each student's Assessment tab.")
-                .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                .font(.label).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -486,14 +486,14 @@ struct ImportResultsSheet: View {
     private func finished(_ o: AppModel.ResultsOutcome) -> some View {
         switch o {
         case .done(let backup):
-            Text("Imported").font(.system(size: 22, weight: .bold))
+            Text("Imported").font(.metric)
             Text([added > 0 ? plural(added, "result") + " added" : "", updated > 0 ? plural(updated, "result") + " updated" : ""]
                     .filter { !$0.isEmpty }.joined(separator: " and ") + ".")
-                .font(.system(size: 13)).foregroundStyle(Color.ink2)
+                .font(.body1).foregroundStyle(Color.ink2)
             if let b = backup {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("assessments.csv from before the import is in").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.ink2)
-                    Text(b.path).font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+                    Text("assessments.csv from before the import is in").font(.labelSemibold).foregroundStyle(Color.ink2)
+                    Text(b.path).font(.labelMono).textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
                     Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([b]) }
                 }
@@ -501,8 +501,8 @@ struct ImportResultsSheet: View {
             }
             HStack { Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction) }
         case .failed(let message):
-            Text("Nothing was changed").font(.system(size: 22, weight: .bold))
-            Text(message).font(.system(size: 13)).foregroundStyle(Color.ink2)
+            Text("Nothing was changed").font(.metric)
+            Text(message).font(.body1).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
             HStack { Spacer(); Button("Close") { dismiss() }.keyboardShortcut(.defaultAction) }
         }

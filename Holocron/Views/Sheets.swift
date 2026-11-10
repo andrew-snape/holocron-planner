@@ -35,7 +35,7 @@ struct SheetFrame<Content: View>: View {
                     Text(title).font(.hSheet)
                         .fixedSize(horizontal: false, vertical: true)
                     if !subtitle.isEmpty {
-                        Text(subtitle).font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                        Text(subtitle).font(.caption1).foregroundStyle(Color.ink2)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -109,7 +109,7 @@ struct ChangeSheet: View {
                 .labelsHidden()
             }
             Text("\u{201C}This date only\u{201D} leaves the standing timetable alone. \u{201C}Every \(wk) week\u{201D} changes the standing timetable from now on.")
-                .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                .font(.caption1).foregroundStyle(Color.ink2)
             HStack {
                 Button("This date only") {
                     db.changeSubjectOnce(date: date, per: per, subject: subject)
@@ -166,7 +166,7 @@ struct MoveSheet: View {
                 .labelsHidden()
             }
             Text("This changes today only. The standing timetable stays as it is.")
-                .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                .font(.caption1).foregroundStyle(Color.ink2)
             HStack {
                 Button("Swap") {
                     if other >= 0 {
@@ -252,18 +252,18 @@ struct SwapSheet: View {
         let s2 = db.plannedSubject(b.date, b.per).isEmpty ? "Not set" : db.plannedSubject(b.date, b.per)
         SheetFrame(title: "Swap two sessions", cancelTitle: "Cancel") {
             VStack(alignment: .leading, spacing: 6) {
-                Text(s1).font(.system(size: 14, weight: .semibold))
+                Text(s1).font(.body2Semibold)
                 Text("\(Cal.weekdayLong[a.day]) \(shortDate(a.date)) · \(db.period(a.per)?.name ?? "") · Week \(a.week)")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
-                Text("swaps with").font(.system(size: 12)).foregroundStyle(Color.ink3).padding(.vertical, 2)
-                Text(s2).font(.system(size: 14, weight: .semibold))
+                    .font(.caption1).foregroundStyle(Color.ink2)
+                Text("swaps with").font(.label).foregroundStyle(Color.ink3).padding(.vertical, 2)
+                Text(s2).font(.body2Semibold)
                 Text("\(Cal.weekdayLong[b.day]) \(shortDate(b.date)) · \(db.period(b.per)?.name ?? "") · Week \(b.week)")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    .font(.caption1).foregroundStyle(Color.ink2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .card()
             Text("A one-off leaves your standing timetable alone and only changes these two dates. Lesson notes move with the session either way.")
-                .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                .font(.caption1).foregroundStyle(Color.ink2)
             HStack {
                 Button("Just these dates") {
                     db.swapDates(a.date, a.per, b.date, b.per)
@@ -298,7 +298,7 @@ struct BumpSheet: View {
                 ForEach(sm, id: \.subject) { x in
                     HStack(spacing: 10) {
                         SubjectChip(name: x.subject)
-                        Text("\(x.moved) moved").font(.system(size: 13))
+                        Text("\(x.moved) moved").font(.body1)
                     }
                 }
                 HStack {
@@ -310,29 +310,29 @@ struct BumpSheet: View {
                     }
                 }
             } else if sm.isEmpty {
-                Text("Nothing to move.").font(.system(size: 13))
+                Text("Nothing to move.").font(.body1)
                 Button("Close") { dismiss() }.keyboardShortcut(.defaultAction)
             } else if sm.contains(where: { $0.lost > 0 }) {
                 Text("\(sm.filter { $0.lost > 0 }.map { $0.subject }.joined(separator: ", ")) would run out of lessons before the end of the year, so the last summary would have nowhere to go.")
-                    .font(.system(size: 13))
+                    .font(.body1)
                 Text("Nothing has changed. Add the next term's dates in Settings, or clear the last lesson first.")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    .font(.caption1).foregroundStyle(Color.ink2)
                 Button("Close") { dismiss() }.keyboardShortcut(.defaultAction)
             } else {
-                if !intro.isEmpty { Text(intro).font(.system(size: 13)) }
+                if !intro.isEmpty { Text(intro).font(.body1) }
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(sm, id: \.subject) { x in
                         HStack(alignment: .top, spacing: 10) {
                             SubjectChip(name: x.subject)
                             Text("\(x.moved) lesson\(x.moved == 1 ? "" : "s") move\(x.moved == 1 ? "s" : ""). The last lands on \(Cal.weekdayShort[dayIdx(x.lastDate)]) \(shortDate(x.lastDate)), \(db.period(x.lastPer)?.name ?? "").")
-                                .font(.system(size: 13))
+                                .font(.body1)
                         }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .card()
                 Text("Lesson notes about students stay on the day they were written.")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    .font(.caption1).foregroundStyle(Color.ink2)
                 HStack {
                     Button("Move lessons") { snapshot = db.applyBump(plans) }.buttonStyle(.borderedProminent)
                     Button("Cancel") { dismiss() }
@@ -392,14 +392,14 @@ struct PlanSheet: View {
         if subj == "TDL", let u = db.unitOn(date) {
             let uTone = db.tone(forHex: PYP.themeHex(u.s("theme")))
             Text(u.s("title") + (u.s("central_idea").isEmpty ? "" : " · " + u.s("central_idea")))
-                .font(.system(size: 13, weight: .semibold))
+                .font(.body1Semibold)
                 .foregroundStyle(uTone.inkColor)
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(uTone.tintColor)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
         }
-        if !c.summary.isEmpty { Text(linkified(c.summary)).font(.system(size: 14)).textSelection(.enabled) }
+        if !c.summary.isEmpty { Text(linkified(c.summary)).font(.body2).textSelection(.enabled) }
         if !c.li.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
                 SectionLabel("Learning intention", color: tone.inkColor)
@@ -417,7 +417,7 @@ struct PlanSheet: View {
                 ForEach(sc, id: \.self) { x in
                     HStack(alignment: .top, spacing: 8) {
                         Image(systemName: "checkmark.circle").foregroundStyle(tone.barColor)
-                        Text(x).font(.system(size: 13.5)).textSelection(.enabled)
+                        Text(x).font(.bodyLarge).textSelection(.enabled)
                     }
                 }
             }
@@ -432,8 +432,8 @@ struct PlanSheet: View {
                             .frame(width: 22, height: 22).background(tone.tintColor).clipShape(Circle())
                             .foregroundStyle(tone.inkColor)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(s.label).font(.system(size: 13, weight: .semibold))
-                            Text(c[s.key]).font(.system(size: 13.5)).textSelection(.enabled)
+                            Text(s.label).font(.body1Semibold)
+                            Text(c[s.key]).font(.bodyLarge).textSelection(.enabled)
                         }
                     }
                 }
@@ -536,10 +536,10 @@ struct PlanSheet: View {
         let db = model.db
         if db.canBump(subj) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Bump lessons").font(.system(size: 13, weight: .semibold))
+                Text("Bump lessons").font(.body1Semibold)
                 if !c.isEmpty {
                     Text("Moves this \(subj) lesson, and every \(subj) lesson after it, forward one lesson.")
-                        .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                        .font(.caption1).foregroundStyle(Color.ink2)
                     Button("Push forward") {
                         if editing && c != db.content(date, per) { db.setContent(date, per, subj, c) }
                         model.sheet = .bump(title: "Push \(subj) forward", sub: longDate(date), intro: "",
@@ -547,7 +547,7 @@ struct PlanSheet: View {
                     }
                 } else {
                     Text("Pulls the next \(subj) lesson, and every one after it, back one lesson into this slot.")
-                        .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                        .font(.caption1).foregroundStyle(Color.ink2)
                     Button("Pull back") {
                         model.sheet = .bump(title: "Pull \(subj) back", sub: longDate(date), intro: "",
                                             plans: [db.planPull(subj, date, per)])
@@ -580,8 +580,8 @@ struct ResourceRow: View {
                 HStack(spacing: 8) {
                     Image(systemName: "link")
                     VStack(alignment: .leading, spacing: 0) {
-                        Text(parsed.label.isEmpty ? parsed.host : parsed.label).font(.system(size: 13, weight: .medium))
-                        if !parsed.label.isEmpty { Text(parsed.host).font(.system(size: 11)).foregroundStyle(Color.ink2) }
+                        Text(parsed.label.isEmpty ? parsed.host : parsed.label).font(.body1Medium)
+                        if !parsed.label.isEmpty { Text(parsed.host).font(.small).foregroundStyle(Color.ink2) }
                     }
                     Spacer()
                 }
@@ -590,7 +590,7 @@ struct ResourceRow: View {
                 .clipShape(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous))
             }
         } else {
-            Text(line).font(.system(size: 13)).textSelection(.enabled)
+            Text(line).font(.body1).textSelection(.enabled)
         }
     }
 }

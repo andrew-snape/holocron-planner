@@ -27,7 +27,7 @@ struct InterviewSheet: View {
                    discardMessage: "This interview has not been saved. The recording will be thrown away.",
                    confirmTitle: "Save", confirmDisabled: !canSave, onConfirm: { save() }) {
             Text("Tell \(name) the recording is happening before you start. The audio and the words stay on this Mac, in this student's folder.")
-                .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                .font(.caption1).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
 
             recordCard
@@ -40,7 +40,7 @@ struct InterviewSheet: View {
             }
             if !saveError.isEmpty {
                 Label(saveError, systemImage: "exclamationmark.triangle")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.appRed)
+                    .font(.caption1).foregroundStyle(Color.appRed)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -67,12 +67,12 @@ struct InterviewSheet: View {
                     .accessibilityLabel("Start recording")
                 case .idle:
                     Label("Recording kept, \(plural(recorder.minutes, "minute"))", systemImage: "checkmark.circle")
-                        .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                        .font(.caption1).foregroundStyle(Color.ink2)
                     Button("Discard recording", role: .destructive) { discard() }
                         .help("Throw the recording away. It is not saved.")
                 case .preparing:
                     ProgressView().controlSize(.small).accessibilityLabel("Getting ready")
-                    Text("Getting ready…").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    Text("Getting ready…").font(.caption1).foregroundStyle(Color.ink2)
                 case .recording:
                     Button { Task { words = await recorder.finish() ?? words } } label: {
                         Label("Stop", systemImage: "stop.circle.fill").font(.system(size: 15, weight: .semibold))
@@ -84,7 +84,7 @@ struct InterviewSheet: View {
                     .help("Stop recording and turn it into words (Cmd+D)")
                     TimelineView(.periodic(from: .now, by: 1)) { _ in
                         Label("Listening \(clock(recorder.startedAt))", systemImage: "waveform")
-                            .font(.system(size: 12.5, weight: .semibold))
+                            .font(.caption1Semibold)
                             .foregroundStyle(Color.appRed)
                             .monospacedDigit()
                     }
@@ -92,10 +92,10 @@ struct InterviewSheet: View {
                 case .transcribing:
                     ProgressView().controlSize(.small).accessibilityLabel("Turning the recording into words")
                     Text("Turning the recording into words on this Mac…")
-                        .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                        .font(.caption1).foregroundStyle(Color.ink2)
                 case .failed(let why):
                     Label(why, systemImage: "exclamationmark.triangle")
-                        .font(.system(size: 12.5)).foregroundStyle(Color.appRed)
+                        .font(.caption1).foregroundStyle(Color.appRed)
                         .fixedSize(horizontal: false, vertical: true)
                     if !recorder.hasRecording {
                         Button("Try again") { Task { await recorder.start(into: model.folder.recordingsURL) } }
@@ -130,15 +130,15 @@ struct InterviewSheet: View {
     private var wordsCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Words from the recording")
-                .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(Color.ink2)
+                .font(.caption1Semibold).foregroundStyle(Color.ink2)
             if recorder.state == .transcribing {
-                Text("Working…").font(.system(size: 14)).foregroundStyle(Color.ink2)
+                Text("Working…").font(.body2).foregroundStyle(Color.ink2)
                     .frame(maxWidth: .infinity, minHeight: 100, alignment: .topLeading)
                     .textBox()
             } else {
                 TextEditor(text: $words)
                     .writingToolsBehavior(.complete)
-                    .font(.system(size: 14))
+                    .font(.body2)
                     .frame(minHeight: 140)
                     .scrollContentBackground(.hidden)
                     .textBox()
@@ -146,7 +146,7 @@ struct InterviewSheet: View {
                     .accessibilityHint("Check them against the recording before you save")
             }
             Text("Holocron adds a note above the words saying they were turned from the recording and need checking. Check them against the recording before you save.")
-                .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                .font(.label).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .card()
@@ -176,17 +176,17 @@ struct InterviewSheet: View {
                     }
                 } else {
                     Text("Apple Intelligence is off or not available on this Mac, so there is no summary. You can write one below.")
-                        .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                        .font(.label).foregroundStyle(Color.ink2)
                 }
                 if !summaryError.isEmpty {
                     Label(summaryError, systemImage: "exclamationmark.triangle")
-                        .font(.system(size: 12.5)).foregroundStyle(Color.appRed)
+                        .font(.caption1).foregroundStyle(Color.appRed)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if !summary.isEmpty || canSummarise {
-                    Text("Summary").font(.system(size: 12.5, weight: .semibold)).foregroundStyle(Color.ink2)
+                    Text("Summary").font(.caption1Semibold).foregroundStyle(Color.ink2)
                     TextEditor(text: $summary)
-                        .font(.system(size: 14))
+                        .font(.body2)
                         .frame(minHeight: 90)
                         .scrollContentBackground(.hidden)
                         .textBox()

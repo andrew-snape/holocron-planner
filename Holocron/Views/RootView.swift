@@ -16,7 +16,8 @@ struct RootView: View {
                 Color.cardBG.ignoresSafeArea()
                 VStack(spacing: 0) {
                     if !model.folderOK { FolderBanner() }
-                    if let problem = model.saveProblem { SaveBanner(message: problem) }
+                    if !model.mergeConflicts.isEmpty { MergeBanner() }
+                    else if let problem = model.saveProblem { SaveBanner(message: problem) }
                     UpdateBanner()
                     DetailRouter()
                 }
@@ -24,11 +25,11 @@ struct RootView: View {
                     HStack(spacing: 10) {
                         Text(t)
                             .accessibilityLabel(t)
-                            .font(.system(size: 12.5, weight: .medium))
+                            .font(.caption1Medium)
                         if model.toastUndo {
                             Button("Undo") { model.undoLastChange() }
                                 .buttonStyle(.plain)
-                                .font(.system(size: 12.5, weight: .semibold))
+                                .font(.caption1Semibold)
                                 .foregroundStyle(Color.appBlue)
                                 .padding(.vertical, 2)
                                 .contentShape(Rectangle())
@@ -60,6 +61,11 @@ struct RootView: View {
         }
         .sheet(item: $m.sheet) { s in
             SheetRouter(sheet: s)
+                .environment(model)
+                .preferredColorScheme(.light)
+        }
+        .sheet(item: $m.whatsNew) { notice in
+            WhatsNewSheet(notice: notice)
                 .environment(model)
                 .preferredColorScheme(.light)
         }
@@ -129,6 +135,8 @@ struct SheetRouter: View {
         case .interview(let sid): InterviewSheet(studentID: sid)
         case .addWork(let sid): AddWorkSheet(studentID: sid)
         case .editWork(let id): EditWorkSheet(rowID: id)
+        case .merge: MergeSheet()
+        case .groups: GroupsSheet()
         }
     }
 }
@@ -140,11 +148,11 @@ struct FolderBanner: View {
         HStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Color.appRed)
             VStack(alignment: .leading, spacing: 2) {
-                Text("No data folder connected").font(.system(size: 13, weight: .semibold))
+                Text("No data folder connected").font(.body1Semibold)
                 Text(model.folderMessage.isEmpty
                      ? "Nothing you type will be saved until a data folder is connected."
                      : model.folderMessage)
-                    .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                    .font(.label).foregroundStyle(Color.ink2)
             }
             Spacer()
             Button("Set up data folder") { model.showSetup = true }
@@ -163,9 +171,9 @@ struct SaveBanner: View {
         HStack(spacing: Space.gap) {
             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Color.appAmber)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Changes are not saved yet").font(.system(size: 13, weight: .semibold))
+                Text("Changes are not saved yet").font(.body1Semibold)
                 Text(message)
-                    .font(.system(size: 12))
+                    .font(.label)
                     .foregroundStyle(Color.ink2)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -208,7 +216,7 @@ struct SidebarView: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 10) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("HOLOCRON").font(.system(size: 11, weight: .bold)).tracking(1.4).foregroundStyle(Color.appBlue)
+                    Text("HOLOCRON").font(.smallBold).tracking(1.4).foregroundStyle(Color.appBlue)
                     Text(model.db.className).font(.system(size: 21, weight: .bold))
                 }
                 WeekBox()
@@ -265,12 +273,12 @@ struct WeekBox: View {
         let t = model.db.termOf(ref)
         VStack(alignment: .leading, spacing: 3) {
             if let t = t, let w = model.db.termWeek(ref) {
-                Text("Term \(t.term), \(t.year)").font(.system(size: 11)).foregroundStyle(Color.ink2)
-                Text("Week \(w)").font(.system(size: 22, weight: .semibold, design: .rounded))
+                Text("Term \(t.term), \(t.year)").font(.small).foregroundStyle(Color.ink2)
+                Text("Week \(w)").font(.metricRounded)
                 if let l = model.db.weekLetter(ref) { WeekBadge(letter: l) }
             } else {
-                Text("Outside term").font(.system(size: 11)).foregroundStyle(Color.ink2)
-                Text(shortDate(ref)).font(.system(size: 22, weight: .semibold, design: .rounded))
+                Text("Outside term").font(.small).foregroundStyle(Color.ink2)
+                Text(shortDate(ref)).font(.metricRounded)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -298,7 +306,7 @@ struct MiniCalendar: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel(showMonth ? "Previous month" : "Previous week")
                 Spacer()
-                Text(title).font(.system(size: 12.5, weight: .semibold))
+                Text(title).font(.caption1Semibold)
                 Spacer()
                 Button { shift(1) } label: { Image(systemName: "chevron.right") }
                     .buttonStyle(.plain)
@@ -414,10 +422,10 @@ struct FolderStatus: View {
             HStack(spacing: 6) {
                 Circle().fill(model.folderOK ? Color.appGreen : Color.appRed).frame(width: 7, height: 7)
                 Text(model.folderOK ? "Saved in \(model.folderLabel)" : "Not connected")
-                    .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                    .font(.label).foregroundStyle(Color.ink2)
             }
             if let p = model.folder.plannerURL {
-                Text("Planner: \(p.lastPathComponent)").font(.system(size: 11.5)).foregroundStyle(Color.ink3).lineLimit(1)
+                Text("Planner: \(p.lastPathComponent)").font(.footnote).foregroundStyle(Color.ink3).lineLimit(1)
             }
             Button("Reload from folder") { model.reloadFromFolder() }
             .frame(maxWidth: .infinity)
@@ -437,12 +445,12 @@ struct SetupSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Set up Holocron").font(.system(size: 22, weight: .bold))
+            Text("Set up Holocron").font(.metric)
             Text("Holocron keeps everything as CSV files in a folder you can back up and edit. The usual place is a Holocron folder in your iCloud Drive.")
-                .font(.system(size: 13)).foregroundStyle(Color.ink2)
+                .font(.body1).foregroundStyle(Color.ink2)
             VStack(alignment: .leading, spacing: 6) {
-                Text("Current folder").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.ink2)
-                Text(model.folder.url.path).font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+                Text("Current folder").font(.labelSemibold).foregroundStyle(Color.ink2)
+                Text(model.folder.url.path).font(.labelMono).textSelection(.enabled)
             }
             .card()
 
@@ -477,10 +485,10 @@ struct SetupSheet: View {
                 Label("Import my existing planner data...", systemImage: "square.and.arrow.down")
             }
             Text("Pick an existing Holocron data folder. You see what it will bring in, and anything it replaces is kept first in Holocron archive.")
-                .font(.system(size: 12)).foregroundStyle(Color.ink3)
+                .font(.label).foregroundStyle(Color.ink3)
 
             if !message.isEmpty {
-                Text(message).font(.system(size: 12.5)).foregroundStyle(Color.appAmber)
+                Text(message).font(.caption1).foregroundStyle(Color.appAmber)
             }
             HStack {
                 Spacer()

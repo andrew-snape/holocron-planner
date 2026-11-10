@@ -112,6 +112,8 @@ enum ActiveSheet: Identifiable {
     case interview(sid: String)
     case addWork(studentID: String?)
     case editWork(id: String)
+    case merge
+    case groups
 
     var id: String {
         switch self {
@@ -131,6 +133,8 @@ enum ActiveSheet: Identifiable {
         case .interview(let s): return "interview-" + s
         case .addWork(let s): return "addwork-" + (s ?? "")
         case .editWork(let i): return "editwork-" + i
+        case .merge: return "merge"
+        case .groups: return "groups"
         }
     }
 }
@@ -150,6 +154,8 @@ final class AppModel {
     var termKey: String = ""
     var termSubject: String = ""
     var sheet: ActiveSheet? = nil
+    /// Shown once after an update (see WhatsNew).
+    var whatsNew: WhatsNew.Notice? = nil
     var lastLessonSubject: String = ""
     /// The kind of entry last saved from Quick log, so the next one starts there. Lasts until the app closes.
     var lastQuickKind: QuickKind = .lesson
@@ -207,6 +213,25 @@ final class AppModel {
     /// Saves run on this queue, one after another, so a slow disk never freezes the window.
     @ObservationIgnored private let writeQueue = DispatchQueue(label: "au.holocron.save", qos: .utility)
     @ObservationIgnored private var inFlight = 0
+
+    /// Each file's rows as Holocron last read or wrote them, in memory only. A save that finds the file
+    /// changed on disk merges with these (see `DataFolder.saveMerging`).
+    @ObservationIgnored private var baseRows: [TableName: [Row]] = [:]
+    /// The signature and rows of each file as the save queue last wrote them. Saves run one after another,
+    /// and the next one must compare with what the last one wrote, even before its result reaches the screen.
+    @ObservationIgnored private let memo = SaveMemo()
+    /// Names of iCloud copies merged in, noted in settings once the merged rows are safely written.
+    @ObservationIgnored private var copyMarks: [TableName: [String: String]] = [:]
+    @ObservationIgnored private var migratedFolder: String? = nil
+    @ObservationIgnored private var warnedNewer = false
+    /// Tables saved while the file had changed, and a conflict is waiting for an answer. Their saves are held.
+    @ObservationIgnored private var mergeHeld: Set<TableName> = []
+    /// Tables whose file could not be read when a save went to merge. Kept in `pending` and tried again.
+    @ObservationIgnored private var mergeBlocked: Set<TableName> = []
+    /// Things both you and the shared folder changed, waiting for you to choose.
+    var mergeConflicts: [MergeItem] = []
+    /// Copies of a file that iCloud made when two Macs saved at once, not yet merged in.
+    var conflictCopies: [ConflictCopy] = []
 
     static let folderKey = "dataFolderPath"
     static let plannerKey = "plannerFolderPath"
@@ -342,8 +367,16 @@ final class AppModel {
     /// were last read or written are skipped, so switching back to the app costs almost nothing.
     func loadAll(force: Bool = true) {
         let previouslyBad = badLoads
+        memo.clear()
         badLoads.removeAll()
-        if force { fileSigs.removeAll() }
+        if force {
+            fileSigs.removeAll()
+            // A full reload reads every file again, so questions about the old rows no longer apply.
+            // Your side of any conflict was kept in Holocron archive, Before merge.
+            mergeConflicts.removeAll()
+            mergeHeld.removeAll()
+            mergeBlocked.removeAll()
+        }
         var messages: [String] = []
         let folderThere = folder.exists()
         let privacyProblem = readPrivacy()
@@ -371,10 +404,12 @@ final class AppModel {
             case .ok(let header, let rows):
                 db.load(t, header: header, rows: t == .lessons ? mergeLessons(shared: rows, messages: &messages) : rows)
                 fileSigs[t] = sig
+                baseRows[t] = rows
             case .missing:
                 let starter = Starter.rows(for: t)
                 db.load(t, header: t.header, rows: t == .lessons ? mergeLessons(shared: starter, messages: &messages) : starter)
                 fileSigs[t] = nil
+                baseRows[t] = starter
                 // Never create a blank file where the folder's rules are unknown or the file is unreadable.
                 if folderThere, !badLoads.contains(t.rawValue) {
                     try? folder.write(t, header: t.header, rows: starter)
@@ -393,6 +428,8 @@ final class AppModel {
         refreshSiriVocabulary()
 
         if folderThere { writeAIGuides() }
+        if folderThere { migrateSchemaIfNeeded() }
+        if folderThere { findConflictCopies() }
 
         // A photo that was missing may have arrived from iCloud since.
         if !force, !noPhoto.isEmpty {
@@ -417,7 +454,7 @@ final class AppModel {
     }
 
     func reloadIfIdle() {
-        guard pending.isEmpty, inFlight == 0 else { return }
+        guard pending.isEmpty, inFlight == 0, mergeConflicts.isEmpty else { return }
         guard folder.exists() else { folderOK = false; return }
         loadAll(force: false)
     }
@@ -475,6 +512,7 @@ final class AppModel {
         hiddenPrivate = mine.filter { !privateSubjects.contains($0.s("subject")) }
         visible += mine.filter { privateSubjects.contains($0.s("subject")) }
         fileSigs[.lessonsprivate] = folder.signature(.lessonsprivate)
+        baseRows[.lessonsprivate] = mine
         return visible
     }
 
@@ -544,9 +582,38 @@ final class AppModel {
             if showToast { self.showToast("No data folder. Nothing was saved.") }
             return
         }
-        var jobs: [(table: TableName, header: [String], rows: [Row])] = []
+        struct Job {
+            var table: TableName
+            var header: [String]
+            var rows: [Row]
+            var base: [Row]?
+            var expected: DataFolder.Signature?
+        }
+        var jobs: [Job] = []
         var skippedUnreadable = false
         for t in list {
+            if mergeHeld.contains(t) {
+                // A question about this table is waiting. Its changes are saved once it is answered.
+                // On quitting, what is on screen is copied into Before merge so nothing typed since is lost.
+                if wait {
+                    for f in (t == .lessons ? [TableName.lessons, .lessonsprivate] : [t]) {
+                        folder.saveMineSnapshot(f, header: db.header(f == .lessonsprivate ? .lessons : f), mine: fileRows(f))
+                    }
+                }
+                pending.insert(t)
+                continue
+            }
+            // A file that could not be read when a save went to merge is looked at again.
+            var stillBlocked = false
+            for f in (t == .lessons ? [TableName.lessons, .lessonsprivate] : [t]) where mergeBlocked.contains(f) {
+                if case .failed = folder.read(f) { stillBlocked = true }
+                else { mergeBlocked.remove(f); badLoads.remove(f.rawValue) }
+            }
+            if stillBlocked {
+                pending.insert(t)
+                skippedUnreadable = true
+                continue
+            }
             if badLoads.contains(t.rawValue) {
                 self.showToast("\(t.rawValue).csv could not be read, so it was not overwritten.")
                 skippedUnreadable = true
@@ -554,63 +621,270 @@ final class AppModel {
             }
             if t == .lessons {
                 // Lessons are saved in two files: the shared one, and the private one for private subjects.
-                let all = db.rows(.lessons)
-                let sharedRows = all.filter { !privateSubjects.contains($0.s("subject")) } + hiddenShared
-                let privateRows = all.filter { privateSubjects.contains($0.s("subject")) } + hiddenPrivate
-                jobs.append((.lessons, db.header(.lessons), sharedRows))
+                jobs.append(Job(table: .lessons, header: db.header(.lessons), rows: fileRows(.lessons),
+                                base: baseRows[.lessons], expected: fileSigs[.lessons]))
+                let privateRows = fileRows(.lessonsprivate)
                 let privateFileThere = FileManager.default.fileExists(atPath: folder.fileURL(.lessonsprivate).path)
                 if !badLoads.contains(TableName.lessonsprivate.rawValue), !privateRows.isEmpty || privateFileThere {
-                    jobs.append((.lessonsprivate, db.header(.lessons), privateRows))
+                    jobs.append(Job(table: .lessonsprivate, header: db.header(.lessons), rows: privateRows,
+                                    base: baseRows[.lessonsprivate], expected: fileSigs[.lessonsprivate]))
                 }
                 continue
             }
-            jobs.append((t, db.header(t), db.rows(t)))
+            jobs.append(Job(table: t, header: db.header(t), rows: db.rows(t), base: baseRows[t], expected: fileSigs[t]))
         }
         guard !jobs.isEmpty else { return }
 
         let target = folder
         let frozen = jobs
-        let work: () -> ([(TableName, DataFolder.Signature?)], [TableName]) = {
-            var sigs: [(TableName, DataFolder.Signature?)] = []
-            var failed: [TableName] = []
-            for j in frozen {
-                do {
-                    try target.write(j.table, header: j.header, rows: j.rows)
-                    sigs.append((j.table, target.signature(j.table)))
-                } catch {
-                    failed.append(j.table)
-                }
+        let memo = self.memo
+        let work: () -> [SaveOutcome] = {
+            frozen.map { j in
+                let last = memo.get(j.table)
+                let o = target.saveMerging(j.table, header: j.header, mine: j.rows,
+                                           base: last?.rows ?? j.base, expected: last == nil ? j.expected : last!.signature)
+                if case .blocked = o.kind {} else if o.kind != .failed { memo.set(j.table, rows: o.rows, signature: o.signature) }
+                return o
             }
-            return (sigs, failed)
         }
+        let mineRows = Dictionary(uniqueKeysWithValues: frozen.map { ($0.table, $0.rows) })
 
         inFlight += 1
+        let quiet = !showToast || skippedUnreadable
         if wait {
             let r = writeQueue.sync(execute: work)
-            saveFinished(sigs: r.0, failed: r.1, quiet: !showToast || skippedUnreadable)
+            saveFinished(r, mine: mineRows, quiet: quiet)
         } else {
-            let quiet = !showToast || skippedUnreadable
             writeQueue.async { [weak self] in
                 let r = work()
-                DispatchQueue.main.async { [weak self] in self?.saveFinished(sigs: r.0, failed: r.1, quiet: quiet) }
+                DispatchQueue.main.async { [weak self] in self?.saveFinished(r, mine: mineRows, quiet: quiet) }
             }
         }
     }
 
-    private func saveFinished(sigs: [(TableName, DataFolder.Signature?)], failed: [TableName], quiet: Bool) {
+    /// The rows of one file, as they are written: lessons are split between the shared and private files.
+    private func fileRows(_ t: TableName) -> [Row] {
+        switch t {
+        case .lessons:
+            return db.rows(.lessons).filter { !privateSubjects.contains($0.s("subject")) } + hiddenShared
+        case .lessonsprivate:
+            return db.rows(.lessons).filter { privateSubjects.contains($0.s("subject")) } + hiddenPrivate
+        default:
+            return db.rows(t)
+        }
+    }
+
+    private func saveFinished(_ outcomes: [SaveOutcome], mine: [TableName: [Row]], quiet: Bool) {
         inFlight -= 1
-        for (t, s) in sigs { fileSigs[t] = s }
-        guard !failed.isEmpty else {
-            if pending.isEmpty { saveProblem = nil }
-            if !quiet { showToast("Saved") }
+        var failed: [TableName] = []
+        var addedFromFolder: [TableName] = []
+        var newConflicts = false
+        for o in outcomes {
+            let pendingName: TableName = o.table == .lessonsprivate ? .lessons : o.table
+            switch o.kind {
+            case .written:
+                fileSigs[o.table] = o.signature
+                baseRows[o.table] = o.rows
+                markCopies(o.table)
+            case .failed:
+                failed.append(o.table)
+            case .blocked(let why):
+                // Nothing was written. The rows stay in memory and the save is tried again.
+                badLoads.insert(o.table.rawValue)
+                mergeBlocked.insert(o.table)
+                pending.insert(pendingName)
+                saveProblem = why + " Your changes are still in Holocron."
+                showToast(why)
+            case .merged where !o.changed && o.conflicts.isEmpty:
+                fileSigs[o.table] = o.signature
+                baseRows[o.table] = o.rows
+                markCopies(o.table)
+            case .merged:
+                fileSigs[o.table] = o.signature
+                baseRows[o.table] = o.rows
+                if o.conflicts.isEmpty { markCopies(o.table) }
+                let frozenMine = mine[o.table] ?? []
+                applyMerged(o, frozenMine: frozenMine)
+                addedFromFolder.append(o.table)
+                if !o.conflicts.isEmpty {
+                    newConflicts = true
+                    mergeHeld.insert(pendingName)
+                    pending.insert(pendingName)
+                    for c in o.conflicts {
+                        mergeConflicts.append(MergeItem(table: o.table, conflict: c))
+                    }
+                }
+            }
+        }
+        if !addedFromFolder.isEmpty, !newConflicts {
+            let planner = addedFromFolder.contains { $0.isPlanner && folder.plannerURL != nil }
+            showToast(planner ? "Added changes from the shared folder." : "Added changes made outside Holocron.")
+        }
+        if newConflicts {
+            showToast("You and the shared folder changed the same thing. Choose which to keep.")
+            if sheet == nil { sheet = .merge }
+        }
+        guard failed.isEmpty else {
+            // Keep the changes waiting. The next change, quitting, or coming back to the app tries again,
+            // and reloads stay off until then, so the unsaved rows are not replaced by the old file.
+            for t in failed { pending.insert(t == .lessonsprivate ? .lessons : t) }
+            let names = failed.map { "\($0.rawValue).csv" }.joined(separator: ", ")
+            saveProblem = "Could not save \(names). Your changes are still in Holocron. Keep the app open and check that your data folder is available."
+            showToast("Could not save \(names)")
             return
         }
-        // Keep the changes waiting. The next change, quitting, or coming back to the app tries again,
-        // and reloads stay off until then, so the unsaved rows are not replaced by the old file.
-        for t in failed { pending.insert(t == .lessonsprivate ? .lessons : t) }
-        let names = failed.map { "\($0.rawValue).csv" }.joined(separator: ", ")
-        saveProblem = "Could not save \(names). Your changes are still in Holocron. Keep the app open and check that your data folder is available."
-        showToast("Could not save \(names)")
+        if pending.isEmpty, mergeBlocked.isEmpty, mergeHeld.isEmpty { saveProblem = nil }
+        if !quiet, addedFromFolder.isEmpty { showToast("Saved") }
+    }
+
+    private func markCopies(_ t: TableName) {
+        guard let marks = copyMarks.removeValue(forKey: t) else { return }
+        for (k, v) in marks { db.setSetting(k, v) }
+    }
+
+    /// Puts what a merge produced on screen. If something was typed while the save ran, that is carried over.
+    private func applyMerged(_ o: SaveOutcome, frozenMine: [Row]) {
+        let key = RowMerge.keyColumns(for: o.table)
+        // My version stays on screen for anything that is a conflict, until it is answered.
+        var target = RowMerge.keepingMine(o.rows, conflicts: o.conflicts, key: key)
+        let current = fileRows(o.table)
+        let typedMeanwhile = current.count != frozenMine.count || zip(current, frozenMine).contains { !RowMerge.same($0, $1) }
+        if typedMeanwhile {
+            target = RowMerge.merge(base: frozenMine, mine: current, theirs: target, key: key).rows
+            pending.insert(o.table == .lessonsprivate ? .lessons : o.table)
+        }
+        switch o.table {
+        case .lessons:
+            hiddenShared = target.filter { privateSubjects.contains($0.s("subject")) }
+            let shown = target.filter { !privateSubjects.contains($0.s("subject")) }
+                + db.rows(.lessons).filter { privateSubjects.contains($0.s("subject")) }
+            db.load(.lessons, header: db.header(.lessons), rows: shown)
+        case .lessonsprivate:
+            hiddenPrivate = target.filter { !privateSubjects.contains($0.s("subject")) }
+            let shown = db.rows(.lessons).filter { !privateSubjects.contains($0.s("subject")) }
+                + target.filter { privateSubjects.contains($0.s("subject")) }
+            db.load(.lessons, header: db.header(.lessons), rows: shown)
+        default:
+            db.load(o.table, header: db.header(o.table), rows: target)
+        }
+    }
+
+    // MARK: Merge questions
+
+    /// Answers one conflict. Keeping theirs puts their row on screen. Keeping mine leaves mine, which is
+    /// saved over theirs once every question about the table is answered.
+    func resolveMerge(_ item: MergeItem, keepMine: Bool) {
+        guard let i = mergeConflicts.firstIndex(where: { $0.id == item.id }) else { return }
+        if !keepMine, let theirs = item.conflict.theirs {
+            let key = RowMerge.keyColumns(for: item.table)
+            func id(_ r: Row) -> String { key.map { r.s($0) }.joined(separator: "\u{1F}") }
+            let want = id(theirs)
+            // Only the columns both sides changed take their value. Other columns stay as merged.
+            let cols = item.conflict.columns
+            func take(_ r: inout Row) { for c in cols { r[c] = theirs.s(c) } }
+            switch item.table {
+            case .lessons, .lessonsprivate:
+                if db.rows(.lessons).contains(where: { id($0) == want }) {
+                    db.update(.lessons, where: { id($0) == want }) { take(&$0) }
+                } else if item.table == .lessons, let h = hiddenShared.firstIndex(where: { id($0) == want }) {
+                    take(&hiddenShared[h])
+                } else if let h = hiddenPrivate.firstIndex(where: { id($0) == want }) {
+                    take(&hiddenPrivate[h])
+                }
+            default:
+                db.update(item.table, where: { id($0) == want }) { take(&$0) }
+            }
+        }
+        mergeConflicts.remove(at: i)
+        releaseMergeHolds()
+    }
+
+    func resolveAllMerges(keepMine: Bool) {
+        for item in mergeConflicts { resolveMerge(item, keepMine: keepMine) }
+    }
+
+    private func releaseMergeHolds() {
+        for t in mergeHeld {
+            let real: TableName = t
+            let open = mergeConflicts.contains { ($0.table == .lessonsprivate ? .lessons : $0.table) == real }
+            if !open { mergeHeld.remove(t) }
+        }
+        if mergeHeld.isEmpty, !pending.isEmpty { schedule([]) }
+        else if mergeHeld.isEmpty { saveProblem = nil }
+    }
+
+    // MARK: Copies made by iCloud
+
+    private func findConflictCopies() {
+        var found: [ConflictCopy] = []
+        for t in TableName.allCases {
+            for u in folder.conflictCopies(of: t) {
+                let size = (try? u.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+                if db.setting("merged_copy_" + u.lastPathComponent) == String(size) { continue }
+                found.append(ConflictCopy(table: t, url: u, size: size))
+            }
+        }
+        conflictCopies = found
+    }
+
+    /// Merges a copy iCloud made into the table, matching rows by key. Nothing is ever deleted: the copy
+    /// stays where it is. Questions about rows that differ are asked as usual.
+    func mergeConflictCopy(_ c: ConflictCopy) {
+        guard canWrite(c.table), mergeHeld.isEmpty else { showToast("That file cannot be changed right now."); return }
+        guard flushOrStop() else { showToast("Your changes could not be saved, so nothing was merged."); return }
+        guard case .ok(_, let copyRows) = folder.readFile(c.url, table: c.table) else {
+            showToast("That copy could not be read, so nothing was merged.")
+            return
+        }
+        let key = RowMerge.keyColumns(for: c.table)
+        let mineRows = fileRows(c.table)
+        let r = RowMerge.merge(base: [], mine: mineRows, theirs: copyRows, key: key)
+        // Copy the file first, as for any merge.
+        guard folder.copyBeforeMerge(c.table) else { showToast("A safety copy could not be made, so nothing was merged."); return }
+        let out = SaveOutcome(table: c.table, kind: .merged, rows: r.rows, conflicts: r.conflicts)
+        applyMerged(out, frozenMine: mineRows)
+        let pendingName: TableName = c.table == .lessonsprivate ? .lessons : c.table
+        pending.insert(pendingName)
+        // Base stays as the file on disk, so the added rows are written on the next save.
+        for cf in r.conflicts { mergeConflicts.append(MergeItem(table: c.table, conflict: cf)) }
+        if !r.conflicts.isEmpty { mergeHeld.insert(pendingName); if sheet == nil { sheet = .merge } }
+        copyMarks[c.table, default: [:]]["merged_copy_" + c.url.lastPathComponent] = String(c.size)
+        conflictCopies.removeAll { $0.id == c.id }
+        schedule([pendingName])
+        showToast("Merged \(c.url.lastPathComponent) in. The copy is still in the folder.")
+    }
+
+    // MARK: Schema version
+
+    /// Stamps the folder with the file layout version. A folder from an older Holocron is copied into
+    /// "Holocron archive" before anything is changed, and a folder from a newer Holocron is left as it is.
+    private func migrateSchemaIfNeeded() {
+        guard badLoads.isEmpty, mergeHeld.isEmpty, migratedFolder != folder.url.path else { return }
+        switch SchemaVersion.check(stored: db.setting(SchemaVersion.key)) {
+        case .upToDate:
+            return
+        case .newerThanApp:
+            if !warnedNewer {
+                warnedNewer = true
+                // Copy everything first, so a file rewritten by this older app can always be got back.
+                if folder.copyAllBeforeOlderApp() {
+                    showToast("These files were saved by a newer Holocron. A copy is in Holocron archive. Update Holocron before changing them.")
+                } else {
+                    showToast("These files were saved by a newer Holocron, and a copy could not be made in Holocron archive. Update Holocron before changing them.")
+                }
+            }
+        case .needsMigration(let from):
+            guard flushOrStop() else { return }
+            migratedFolder = folder.url.path   // once a session, so a step that cannot be saved is never repeated
+            switch folder.migrate(from: from) {
+            case .done(let v, _):
+                let rewrote = SchemaVersion.pending(from: from).contains { !$0.tables.isEmpty }
+                db.setSetting(SchemaVersion.key, String(v))
+                if rewrote { flushNow(wait: true); loadAll() }   // a step changed files, so read them again
+            case .failed(let why):
+                showToast(why)
+            }
+        }
     }
 
     func showToast(_ text: String, offerUndo: Bool = false) {

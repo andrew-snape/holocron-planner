@@ -17,7 +17,7 @@ Replace the toolbar `TabView` in Settings with a layout like macOS System Settin
 1. **The Data tab is too long for one pane.** Split it into Folders, Privacy and Year End. Apple Intelligence also holds Siri, so split that into its own pane.
 2. **The window is too narrow for a sidebar.** Raise the minimum to about 720 × 500 (ideal 780 × 600).
 3. **Saved selection.** The `settingsTab` key must keep working. Old stored values: `data` maps to `folders`. `updates` keeps its raw value so the menu command still works.
-4. **User-facing copy says "Settings, then Data"** in many places (HelpContent, StartOverSheet, YearEnd, Intelligence, Dictation, HolocronShortcuts, README, docs). These must name the new pane. Do not rewrite past release sections in CHANGELOG.md.
+4. **User-facing copy says "Settings, then Data"** in many places (HelpContent, StartOverSheet, YearEnd, Intelligence, Dictation, HolocronShortcuts, README, docs). These must name the new pane. Do not rewrite past release sections in Holocron/CHANGELOG.md.
 5. **The subjects footer says "use Privacy on the Data tab"**. Change to "use Privacy in Settings".
 6. **Sheets and dialogs** (Start over, Archive, Import, make-subject-private dialog) move with the pane that owns their buttons.
 
@@ -75,7 +75,7 @@ NavigationSplitView {
 - No logic changes to folder, import, archive, start over, privacy or rename code. Move views only.
 - House look tokens only. Light mode stays forced. Australian English, plain wording, no emoji.
 - Destructive Start over keeps its sheet confirmation.
-- Add one bullet to `## Unreleased` in CHANGELOG.md: "Settings now looks like System Settings, with a sidebar and search. The Data tab is split into Folders, Privacy and Year End, and Siri has its own page."
+- Add one bullet to `## Unreleased` in Holocron/CHANGELOG.md: "Settings now looks like System Settings, with a sidebar and search. The Data tab is split into Folders, Privacy and Year End, and Siri has its own page."
 - Update docs/ARCHITECTURE.md file map and docs mentioning settings tabs.
 
 ## Verify

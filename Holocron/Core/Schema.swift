@@ -23,6 +23,8 @@ enum TableName: String, CaseIterable {
     /// Mac app only: which students have finished a task, ticked as Done in Mark class. Keyed like assessments
     /// (student, subject, task and date). Kept in the student folder and never shared.
     case taskdone
+    /// Mac app only: named groups of students (reading groups, maths groups, inquiry teams). Private, never shared.
+    case groups
 
     /// Which folder a table lives in. Planner tables can be shared with other staff;
     /// student tables (and personal ones such as the hours log and to-do) stay private.
@@ -66,6 +68,7 @@ enum TableName: String, CaseIterable {
         case .settings:      return ["key", "value"]
         case .work:          return ["id", "student_id", "date", "period", "subject", "unit_id", "task", "caption", "file", "assessment_id", "batch", "sha", "added"]
         case .taskdone:      return ["id", "student_id", "date", "subject", "task"]
+        case .groups:        return ["id", "name", "subject", "student_ids"]
         }
     }
 }

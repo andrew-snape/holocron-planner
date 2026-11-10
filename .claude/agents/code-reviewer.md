@@ -18,7 +18,7 @@ You review code changes in Holocron, a macOS SwiftUI planner that keeps teachers
 3. **Correctness.** Date and A/B cycle logic (`Dates.swift`, `Database+Schedule.swift`), bump and push, term and year handling, off-by-one errors, force unwraps, and main-thread work that can block on large photo folders.
 4. **Swift and SwiftUI quality.** State ownership (`@State`, `@Environment(AppModel.self)`), stale caches (`Database` index invalidation per table), retain cycles in closures and timers, and work done on every redraw.
 5. **Simplicity.** Duplicate code that an existing helper already covers (`StartOverPlan.uniqueFolder`, `stamp`, `chooseFolder`, `CSV`). Prefer matching the surrounding style over new patterns.
-6. **Release hygiene.** The CI build needs a `CHANGELOG.md` section for the project version. The updater must still require a checksum. Flag any change that touches `Updates.swift`, `Updater.swift` or `scripts/release.sh`.
+6. **Release hygiene.** The CI build needs a `Holocron/CHANGELOG.md` section for the project version. The updater must still require a checksum. Flag any change that touches `Updates.swift`, `Updater.swift` or `scripts/release.sh`.
 
 ## How to work
 - Run `git status` and `git diff` (or `git diff main...HEAD` on a branch) to find the change, then read the full files around each hunk, not just the diff.

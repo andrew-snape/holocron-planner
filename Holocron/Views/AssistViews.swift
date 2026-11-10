@@ -121,13 +121,13 @@ struct ScanCheckSheet: View {
                    confirmTitle: "Add to the end", confirmDisabled: text.trimmed.isEmpty,
                    onConfirm: { insert(text); dismiss() }) {
             TextEditor(text: $text)
-                .font(.system(size: 13))
+                .font(.body1)
                 .frame(minHeight: 220)
                 .scrollContentBackground(.hidden)
                 .textBox()
                 .accessibilityLabel("Scanned text")
             Text("Read on this Mac. The picture is not kept.")
-                .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                .font(.label).foregroundStyle(Color.ink2)
         }
     }
 }
@@ -155,25 +155,25 @@ struct NoteSuggestBar: View {
             HStack(spacing: 8) {
                 if working {
                     ProgressView().controlSize(.small).accessibilityLabel("Reading your note")
-                    Text("Reading your note…").font(.system(size: 12)).foregroundStyle(Color.ink2)
-                    Button("Stop") { stop() }.buttonStyle(.link).font(.system(size: 12))
+                    Text("Reading your note…").font(.label).foregroundStyle(Color.ink2)
+                    Button("Stop") { stop() }.buttonStyle(.link).font(.label)
                         .accessibilityLabel("Stop suggesting")
                 } else if let s = suggestion {
                     result(s)
                 } else {
                     Button { start() } label: {
-                        Label("Suggest subject and kind", systemImage: "apple.intelligence").font(.system(size: 12))
+                        Label("Suggest subject and kind", systemImage: "apple.intelligence").font(.label)
                     }
                     .buttonStyle(.link)
                     .disabled(tooShort)
                     .accessibilityHint(tooShort ? "Write a little more first." : "")
                     .help("Apple Intelligence reads your note on this Mac and suggests a subject and kind of note. Nothing changes until you accept.")
                     if tooShort {
-                        Text("Write a little more first.").font(.system(size: 12)).foregroundStyle(Color.ink2)
+                        Text("Write a little more first.").font(.label).foregroundStyle(Color.ink2)
                     }
                     if !error.isEmpty {
                         Label(error, systemImage: "exclamationmark.triangle")
-                            .font(.system(size: 12)).foregroundStyle(Color.appRed)
+                            .font(.label).foregroundStyle(Color.appRed)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -198,17 +198,17 @@ struct NoteSuggestBar: View {
             Image(systemName: "apple.intelligence").foregroundStyle(Color.appBlue)
             if wrongTab {
                 Text("This reads like a \(s.kind == .behaviour ? "behaviour" : "wellbeing") note. Add it on the \(s.kind == .behaviour ? "Behaviour" : "Wellbeing") tab.")
-                    .font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
+                    .font(.label).fixedSize(horizontal: false, vertical: true)
             } else if sameKind && sameSubject {
-                Text("Looks right as it is.").font(.system(size: 12)).foregroundStyle(Color.ink2)
+                Text("Looks right as it is.").font(.label).foregroundStyle(Color.ink2)
             } else {
-                Text(suggestionText(s)).font(.system(size: 12, weight: .medium))
+                Text(suggestionText(s)).font(.labelMedium)
                 Button("Use") { apply(s); suggestion = nil }
                     .controlSize(.small)
                     .buttonStyle(.borderedProminent)
             }
             Button { suggestion = nil } label: {
-                Image(systemName: "xmark").font(.system(size: 10)).frame(minWidth: 22, minHeight: 22).contentShape(Rectangle())
+                Image(systemName: "xmark").font(.tiny).frame(minWidth: 22, minHeight: 22).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .foregroundStyle(Color.ink3)
@@ -283,7 +283,7 @@ struct LessonDraftArea: View {
                     .help(canDraft ? "Apple Intelligence drafts tuning in, explicit teaching, independent work and reflection from the summary. Student names are never used."
                                    : "Write a summary first, then Apple Intelligence can draft the lesson steps from it.")
                 if !canDraft && !open {
-                    Text("Write a summary first.").font(.system(size: 12)).foregroundStyle(Color.ink2)
+                    Text("Write a summary first.").font(.label).foregroundStyle(Color.ink2)
                 }
                 if open { preview }
             }
@@ -294,10 +294,10 @@ struct LessonDraftArea: View {
     private var preview: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                Label("Lesson draft", systemImage: "apple.intelligence").font(.system(size: 12.5, weight: .semibold))
+                Label("Lesson draft", systemImage: "apple.intelligence").font(.caption1Semibold)
                 if working {
                     ProgressView().controlSize(.small).accessibilityLabel("Drafting the lesson")
-                    Button("Stop") { stop() }.buttonStyle(.link).font(.system(size: 12))
+                    Button("Stop") { stop() }.buttonStyle(.link).font(.label)
                         .accessibilityLabel("Stop drafting")
                 }
                 Spacer()
@@ -307,13 +307,13 @@ struct LessonDraftArea: View {
                     let mine = !content[s.key].trimmed.isEmpty
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
-                            Text(s.label).font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.ink2)
+                            Text(s.label).font(.labelSemibold).foregroundStyle(Color.ink2)
                             if mine {
-                                Text(replace ? "replaces yours" : "yours is kept").font(.system(size: 12)).foregroundStyle(Color.ink2)
+                                Text(replace ? "replaces yours" : "yours is kept").font(.label).foregroundStyle(Color.ink2)
                             }
                         }
                         TextEditor(text: Binding(get: { parts[s.key] ?? "" }, set: { parts[s.key] = $0 }))
-                            .font(.system(size: 13))
+                            .font(.body1)
                             .frame(minHeight: 64)
                             .scrollContentBackground(.hidden)
                             .textBox()
@@ -322,12 +322,12 @@ struct LessonDraftArea: View {
                     }
                 }
                 if PlanSeq.all.contains(where: { !content[$0.key].trimmed.isEmpty }) {
-                    Toggle("Replace what I have written", isOn: $replace).toggleStyle(.checkbox).font(.system(size: 12.5))
+                    Toggle("Replace what I have written", isOn: $replace).toggleStyle(.checkbox).font(.caption1)
                 }
             }
             if !error.isEmpty {
                 Label(error, systemImage: "exclamationmark.triangle")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.appRed)
+                    .font(.caption1).foregroundStyle(Color.appRed)
                     .fixedSize(horizontal: false, vertical: true)
             }
             HStack(spacing: 8) {
@@ -341,10 +341,10 @@ struct LessonDraftArea: View {
             if !working && !parts.isEmpty {
                 Text(willFill.isEmpty ? "Every step already has your writing. Tick Replace to use the draft."
                                       : "Will fill: " + willFill.map(\.label).joined(separator: ", ") + ".")
-                    .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                    .font(.label).foregroundStyle(Color.ink2)
             }
             Text("A draft from Apple Intelligence, made on this Mac from the lesson text only. No student names are used. Check it before you use it.")
-                .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                .font(.label).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

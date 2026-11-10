@@ -38,7 +38,7 @@ The timetable runs on an A and B fortnightly cycle that restarts each term. Whol
 - **1.8.8**: A student friendly Class screen, with We are learning to and I can, First, Then and Next steps you type on the screen, and a Now and Next strip.
 - **1.7**: Subjects can be marked private when your planner folder is shared. Devotion scripts and quotes can be kept private in the same way.
 
-The [changelog](CHANGELOG.md) has the full history.
+The [changelog](Holocron/CHANGELOG.md) has the full history.
 
 ## Requirements
 
@@ -46,7 +46,7 @@ macOS 26 or later on a Mac with Apple silicon.
 
 ## Install
 
-1. Download the latest `Holocron-x.y-mac.zip` from the [latest release](../../releases/latest). The [changelog](CHANGELOG.md) lists what changed in each version.
+1. Download the latest `Holocron-x.y-mac.zip` from the [latest release](../../releases/latest). The [changelog](Holocron/CHANGELOG.md) lists what changed in each version.
 2. Unzip it and drag Holocron into your Applications folder.
 3. The first time, macOS will not recognise the developer, because the app is not signed with a paid Apple Developer ID. Right-click Holocron, choose **Open**, then **Open** again. It opens normally after that.
 4. On first launch, Holocron offers to set up its data folder (see below). It starts you off with a typical school day and a list of subjects. Add your term dates under Settings, then Calendar, and adjust the periods and subjects to suit your school.
@@ -109,7 +109,7 @@ Cmd+1 to Cmd+0 jump between screens in this order: Today, Week, Term, Units, Dev
 Replace `X.Y` with the new version number (for example `1.3`).
 
 1. Commit your changes.
-2. Add a `## X.Y` section to `CHANGELOG.md`. Its bullets become the release notes.
+2. Add a `## X.Y` section to `Holocron/CHANGELOG.md`. Its bullets become the release notes.
 3. Commit the changelog, then run `scripts/release.sh X.Y`.
 
 The script needs a clean working tree, so commit everything first.

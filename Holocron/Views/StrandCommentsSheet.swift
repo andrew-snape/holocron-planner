@@ -26,11 +26,11 @@ struct StrandCommentsImport: View {
         let db = model.db
         VStack(alignment: .leading, spacing: 14) {
             if let done {
-                Text("Imported").font(.system(size: 22, weight: .bold))
+                Text("Imported").font(.metric)
                 Text("\(file.label) comments are saved for \(plural(done.added + done.replaced, "student"))"
                      + (done.replaced > 0 ? ", replacing \(done.replaced) from an earlier import." : ".")
                      + " Draft \(file.kind == .english ? "English" : "Mathematics") points on each student's Report tab to use them.")
-                    .font(.system(size: 13)).foregroundStyle(Color.ink2)
+                    .font(.body1).foregroundStyle(Color.ink2)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack { Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction) }
             } else {
@@ -58,19 +58,19 @@ struct StrandCommentsImport: View {
         let doubled = Dictionary(grouping: assigned.values, by: { $0 }).filter { $0.value.count > 1 }.keys
 
         VStack(alignment: .leading, spacing: 4) {
-            Text("Import report comments").font(.system(size: 22, weight: .bold))
-            Text(file.table.name).font(.system(size: 12, design: .monospaced))
+            Text("Import report comments").font(.metric)
+            Text(file.table.name).font(.labelMono)
                 .foregroundStyle(Color.ink2).lineLimit(1).truncationMode(.middle)
         }
         VStack(alignment: .leading, spacing: 8) {
             Label("Essential Assessment report comments: \(file.label)" + (file.className.isEmpty ? "" : ", \(file.className)"),
                   systemImage: "checkmark.circle.fill")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.body1Semibold)
             Text("Areas of Success, Growth and Improvement are kept for each student and used when you draft their \(file.kind == .english ? "English" : "Mathematics") points.")
-                .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                .font(.caption1).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 8) {
-                Text("Semester").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                Text("Semester").font(.caption1).foregroundStyle(Color.ink2)
                 Picker("", selection: $sem) {
                     ForEach(semesters, id: \.self) { Text($0.replacingOccurrences(of: "-", with: " ")).tag($0) }
                 }
@@ -83,13 +83,13 @@ struct StrandCommentsImport: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
                 Text(onRoll.isEmpty ? "No students matched your roll." : "\(plural(onRoll.count, "student")) in the file \(onRoll.count == 1 ? "is" : "are") on your roll.")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.body1Semibold)
                 ForEach(onRoll) { p in row(p, db) }
                 if !others.isEmpty {
                     DisclosureGroup(isExpanded: $showOthers) {
                         ForEach(others) { p in row(p, db) }
                     } label: {
-                        Text("Not matched (\(others.count)). Open to match any of them to a student.").font(.system(size: 12.5))
+                        Text("Not matched (\(others.count)). Open to match any of them to a student.").font(.caption1)
                     }
                 }
             }
@@ -99,13 +99,13 @@ struct StrandCommentsImport: View {
 
         if replacing > 0 {
             Text("\(plural(replacing, "student")) already \(replacing == 1 ? "has" : "have") \(file.label) comments for this semester. They are replaced.")
-                .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                .font(.caption1).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
         }
         if !doubled.isEmpty {
             Label("\(doubled.map { db.studentName($0) }.sorted().joined(separator: ", ")) \(doubled.count == 1 ? "is" : "are") picked for more than one person in the file.",
                   systemImage: "exclamationmark.triangle")
-                .font(.system(size: 12.5)).foregroundStyle(Color.appRed)
+                .font(.caption1).foregroundStyle(Color.appRed)
                 .fixedSize(horizontal: false, vertical: true)
         }
         HStack {
@@ -120,8 +120,8 @@ struct StrandCommentsImport: View {
 
     private func row(_ p: ImportPerson, _ db: Database) -> some View {
         HStack(spacing: 10) {
-            Text(p.name).font(.system(size: 13)).lineLimit(1).frame(width: 200, alignment: .leading)
-            Image(systemName: "arrow.right").font(.system(size: 10)).foregroundStyle(Color.ink3).accessibilityHidden(true)
+            Text(p.name).font(.body1).lineLimit(1).frame(width: 200, alignment: .leading)
+            Image(systemName: "arrow.right").font(.tiny).foregroundStyle(Color.ink3).accessibilityHidden(true)
             Picker("", selection: Binding(get: { assigned[p.id] ?? "" }, set: { assigned[p.id] = $0.isEmpty ? nil : $0 })) {
                 Text("Leave out").tag("")
                 ForEach(db.roster) { Text($0.fullName).tag($0.id) }

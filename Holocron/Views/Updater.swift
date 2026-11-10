@@ -270,12 +270,12 @@ struct UpdateBanner: View {
             HStack(spacing: 12) {
                 Image(systemName: "arrow.down.circle.fill").foregroundStyle(Color.appBlue)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Holocron \(info.version) is available").font(.system(size: 13, weight: .semibold))
+                    Text("Holocron \(info.version) is available").font(.body1Semibold)
                     switch u.state {
-                    case .working(let what): Text(what + "...").font(.system(size: 12)).foregroundStyle(Color.ink2)
-                    case .failed(let msg): Text(msg).font(.system(size: 12)).foregroundStyle(Color.appRed)
+                    case .working(let what): Text(what + "...").font(.label).foregroundStyle(Color.ink2)
+                    case .failed(let msg): Text(msg).font(.label).foregroundStyle(Color.appRed)
                     default: Text("You have \(Updater.currentVersion). Your data is not touched by an update.")
-                        .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                        .font(.label).foregroundStyle(Color.ink2)
                     }
                 }
                 Spacer()
@@ -337,10 +337,10 @@ struct UpdatesSettings: View {
     @ViewBuilder
     private func statusText(_ u: Updater) -> some View {
         switch u.state {
-        case .upToDate: Text("You are up to date.").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
-        case .available: Text("A new version is ready.").font(.system(size: 12.5)).foregroundStyle(Color.appBlue)
-        case .working(let w): Text(w + "...").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
-        case .failed(let m): Text(m).font(.system(size: 12.5)).foregroundStyle(Color.appRed)
+        case .upToDate: Text("You are up to date.").font(.caption1).foregroundStyle(Color.ink2)
+        case .available: Text("A new version is ready.").font(.caption1).foregroundStyle(Color.appBlue)
+        case .working(let w): Text(w + "...").font(.caption1).foregroundStyle(Color.ink2)
+        case .failed(let m): Text(m).font(.caption1).foregroundStyle(Color.appRed)
         default: EmptyView()
         }
     }

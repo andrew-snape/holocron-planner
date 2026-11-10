@@ -25,7 +25,7 @@ Line numbers are from commit `b4596c0` (8 Nov 2026) and will drift. Search for t
 - **The working environment has no Swift compiler** (Linux container). The only build check is CI (`.github/workflows/build.yml`, job "Build Holocron", about 2 minutes). Push, wait for the check, fix and push again. Never claim a phase looks right: say it builds, and list what the teacher should check by eye.
 - **Do not touch `Holocron/Core`** or any file reading, writing or archiving code. None of the phases need it. If you find yourself in `Core`, stop and run the `code-reviewer` agent.
 - **Run the `ui-design-check` agent** after each phase (required by CLAUDE.md for any change in `Holocron/Views`). Fix real findings. Treat its "nice to have" items as optional.
-- **Add one `## Unreleased` bullet to `CHANGELOG.md`** per visible phase, in the teacher's voice: short sentences, full stops, no jargon. Example: "Screen titles and buttons now sit in the window toolbar, in the new macOS style."
+- **Add one `## Unreleased` bullet to `Holocron/CHANGELOG.md`** per visible phase, in the teacher's voice: short sentences, full stops, no jargon. Example: "Screen titles and buttons now sit in the window toolbar, in the new macOS style."
 - **Australian English**, no em dashes, no emoji, in code comments, UI text and docs.
 - **Keep light mode forced.** Do not remove `NSApplication.shared.appearance = .aqua` or `.preferredColorScheme(.light)`.
 - **Leave `PrintWeek.swift` alone.** It renders for paper, not the screen.
