@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.32.1
+
+- Fixed: the Markbook could show a blank screen. Its grid is rebuilt, and clicking a column heading still sorts it.
+- The Markbook column headings stay at the top when the class list scrolls. VoiceOver reads each student's row in one sentence and says which column is sorted and in which direction.
+
 ## 1.26.2
 
 - The Markbook column headings stay at the top when the class list scrolls. VoiceOver reads each student's row in one sentence and says which column is sorted and in which direction.
