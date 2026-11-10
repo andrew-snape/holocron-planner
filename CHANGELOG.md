@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.24.2
 
 - Note boxes check spelling as you type, with the Mac's own spell checker. Words that look wrong get a red underline. Nothing is changed for you, and nothing leaves this Mac.
 
