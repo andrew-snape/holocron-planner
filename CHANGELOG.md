@@ -1,8 +1,8 @@
 # Changelog
 
-## 1.24
+## 1.24.1
 
-- Note boxes check spelling as you type, using the spell checker on this Mac. Nothing is sent anywhere.
+- Fixed: note boxes, such as Quick log and the lesson sheet, could not be clicked into in 1.24. The spell check added in 1.24 has been taken out for now.
 
 ## 1.23.1
 
