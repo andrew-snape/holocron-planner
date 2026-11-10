@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.24.1
+
+- Fixed: note boxes, such as Quick log and the lesson sheet, could not be clicked into in 1.24. The spell check added in 1.24 has been taken out for now.
+
 ## 1.23.1
 
 - Mark class has a Done tick for each student. Use it to show who has finished a task, such as a TDL project, without giving it a mark. Ticks save with the rest of the class.
