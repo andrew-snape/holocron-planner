@@ -33,7 +33,7 @@ These come from `CLAUDE.md` and do not bend.
 - New tables need a line in `AIGuide.describe`, and changed columns need the recipes in `AIGuide.swift` checked.
 - Older files without a new column still load (`row.s("col")` returns "").
 - Light mode stays forced. Theme tokens only, no raw colours.
-- Each feature gets a `CHANGELOG.md` bullet in the same change.
+- Each feature gets a `Holocron/CHANGELOG.md` bullet in the same change.
 
 ## Part 1. Simpler to use
 

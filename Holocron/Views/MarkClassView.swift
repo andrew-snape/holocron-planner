@@ -9,8 +9,37 @@ private enum MarkField: Hashable {
     case comment(String)
 }
 
+/// Mark class has two views: marking one task, and the whole class's results in one grid.
 struct MarkClassView: View {
     @Environment(AppModel.self) private var model
+    @State private var book = false
+
+    var body: some View {
+        Group {
+            if book { MarkbookView() } else { MarkClassForm() }
+        }
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Picker("", selection: $book) {
+                    Text("Mark a task").tag(false)
+                    Text("Markbook").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 220)
+                .accessibilityLabel("Mark class view")
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button { model.sheet = .groups } label: { Label("Groups…", systemImage: "person.3") }
+                    .help("Make or change groups of students")
+            }
+        }
+    }
+}
+
+private struct MarkClassForm: View {
+    @Environment(AppModel.self) private var model
+    @State private var groupID = ""
     @FocusState private var focus: MarkField?
     @State private var subject = ""
     @State private var task = ""
@@ -24,7 +53,7 @@ struct MarkClassView: View {
 
     var body: some View {
         let db = model.db
-        let roster = db.roster
+        let roster = shownRoster(db)
         let subjects = db.subjects.filter { $0.kind == "teach" }.map { $0.subject }
         let rubs = rubricNames(db)
         let rubOn = !rubric.isEmpty && rubs.contains(rubric)
@@ -74,6 +103,17 @@ struct MarkClassView: View {
                             }
                         }
                         DateField(iso: $date)
+                        if !db.studentGroups.isEmpty {
+                            VStack(alignment: .leading, spacing: 4) {
+                                FieldLabel(text: "Group")
+                                Picker("", selection: $groupID) {
+                                    Text("Whole class").tag("")
+                                    ForEach(db.studentGroups) { Text($0.name).tag($0.id) }
+                                }
+                                .labelsHidden()
+                                .frame(width: 170)
+                            }
+                        }
                         if !rubOn {
                             VStack(alignment: .leading, spacing: 4) {
                                 FieldLabel(text: "Result")
@@ -108,7 +148,7 @@ struct MarkClassView: View {
                             HStack(spacing: 12) {
                                 HStack(spacing: 10) {
                                     Avatar(student: s, size: 30)
-                                    Text(s.fullName).font(.system(size: 13.5))
+                                    Text(s.fullName).font(.bodyLarge)
                                 }
                                 .frame(width: 210, alignment: .leading)
                                 Toggle("Done", isOn: bindDone(s.id))
@@ -150,8 +190,8 @@ struct MarkClassView: View {
                         Button("Save the whole class") { save() }
                             .buttonStyle(.borderedProminent)
                             .keyboardShortcut("s", modifiers: .command)
-                        Text("Return moves to the next student. Blank rows are skipped. Clearing a row that was saved before removes it. Ticks for Done are saved too.")
-                            .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                        Text("Return moves to the next student. Blank rows are skipped. With a group chosen, only its students are saved. Clearing a row that was saved before removes it. Ticks for Done are saved too.")
+                            .font(.caption1).foregroundStyle(Color.ink2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -175,6 +215,12 @@ struct MarkClassView: View {
     // MARK: Bindings and data
 
     /// The student below this one on the roll, or nil at the end.
+    /// The students on show: the whole roll, or one group's students.
+    private func shownRoster(_ db: Database) -> [Student] {
+        guard !groupID.isEmpty, let g = db.studentGroups.first(where: { $0.id == groupID }) else { return db.roster }
+        return db.members(of: g)
+    }
+
     private func nextID(after id: String, in roster: [Student]) -> String? {
         guard let i = roster.firstIndex(where: { $0.id == id }), i + 1 < roster.count else { return nil }
         return roster[i + 1].id
@@ -266,7 +312,9 @@ struct MarkClassView: View {
         let already = Set(db.rows(.assessments).filter {
             $0.s("subject") == sub && $0.s("task") == tk && $0.s("date") == date
         }.map { $0.s("student_id") })
-        for s in db.roster {
+        // Only the students on show are changed, so a group never clears the rest of the class.
+        let shown = shownRoster(db)
+        for s in shown {
             let res = (results[s.id] ?? "").trimmingCharacters(in: .whitespaces)
             let com = (comments[s.id] ?? "").trimmingCharacters(in: .whitespaces)
             let isMine: (Row) -> Bool = {
@@ -291,7 +339,7 @@ struct MarkClassView: View {
             $0.s("subject") == sub && $0.s("task") == tk && $0.s("date") == date
         }.map { $0.s("student_id") })
         var ticksChanged = 0
-        for s in db.roster {
+        for s in shown {
             let isMine: (Row) -> Bool = {
                 $0.s("student_id") == s.id && $0.s("subject") == sub && $0.s("task") == tk && $0.s("date") == date
             }
@@ -343,9 +391,9 @@ struct RubricDescriptors: View {
             HStack(alignment: .top, spacing: 10) {
                 ForEach(Lists.rubricLevels, id: \.self) { l in
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(l).font(.system(size: 12.5, weight: .semibold))
+                        Text(l).font(.caption1Semibold)
                         Text(rows.first(where: { $0.s("level") == l })?.s("descriptor") ?? "")
-                            .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                            .font(.label).foregroundStyle(Color.ink2)
                     }
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)

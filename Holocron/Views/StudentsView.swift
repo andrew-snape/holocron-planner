@@ -87,7 +87,7 @@ struct StudentsView: View {
                         }
                         if roster.isEmpty {
                             Text("No match for \u{201C}\(query)\u{201D}")
-                                .font(.system(size: 13)).foregroundStyle(Color.ink2)
+                                .font(.body1).foregroundStyle(Color.ink2)
                                 .padding(.top, 20)
                         }
                     }
@@ -164,7 +164,7 @@ struct StudentListRow: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(student.fullName).font(.system(size: 13.5, weight: .medium)).lineLimit(1)
                 if !student.roles.isEmpty {
-                    Text(student.roles).font(.system(size: 11)).foregroundStyle(Color.ink2).lineLimit(1)
+                    Text(student.roles).font(.small).foregroundStyle(Color.ink2).lineLimit(1)
                 }
             }
             Spacer(minLength: 0)
@@ -249,7 +249,7 @@ struct StudentDetail: View {
                                         .symbolVariant(on ? .fill : .none)
                                         .foregroundStyle(on ? t.colour : Color.ink2)
                                 }
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.body1Medium)
                                 .foregroundStyle(Color.primary)
                                 .padding(.vertical, 5)
                                 .padding(.horizontal, 12)
@@ -306,8 +306,8 @@ struct StudentDetail: View {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(flags, id: \.0) { f in
                     HStack(alignment: .top, spacing: 8) {
-                        Text(f.0).font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.ink2).frame(width: 90, alignment: .leading)
-                        Text(f.1).font(.system(size: 13)).textSelection(.enabled)
+                        Text(f.0).font(.labelSemibold).foregroundStyle(Color.ink2).frame(width: 90, alignment: .leading)
+                        Text(f.1).font(.body1).textSelection(.enabled)
                     }
                 }
             }
@@ -327,11 +327,11 @@ struct StudentDetail: View {
                 }
                 if !s.roles.isEmpty { TagLabel(text: s.roles) }
                 if !s.birthdate.isEmpty {
-                    Text("Born \(dLong(s.birthdate))").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    Text("Born \(dLong(s.birthdate))").font(.caption1).foregroundStyle(Color.ink2)
                 }
             }
             if !s.parents.isEmpty {
-                Text("Parents: \(s.parents)").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                Text("Parents: \(s.parents)").font(.caption1).foregroundStyle(Color.ink2)
             }
         }
     }
@@ -379,13 +379,13 @@ struct EntryCard: View {
             RoundedRectangle(cornerRadius: 2).fill(tint).frame(width: 4)
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
-                    Text(title).font(.system(size: 13, weight: .semibold))
+                    Text(title).font(.body1Semibold)
                     if !badge.isEmpty { TagLabel(text: badge, fg: tint, bg: tint.opacity(0.14)) }
                     Spacer(minLength: 0)
-                    Text(dLong(date)).font(.system(size: 11.5)).foregroundStyle(Color.ink2)
+                    Text(dLong(date)).font(.footnote).foregroundStyle(Color.ink2)
                 }
-                if !text.isEmpty { Text(text).font(.system(size: 13)).textSelection(.enabled) }
-                if !sub.isEmpty { Text(sub).font(.system(size: 11.5)).foregroundStyle(Color.ink2) }
+                if !text.isEmpty { Text(text).font(.body1).textSelection(.enabled) }
+                if !sub.isEmpty { Text(sub).font(.footnote).foregroundStyle(Color.ink2) }
             }
             if let del = onDelete {
                 Button {
@@ -437,7 +437,7 @@ struct AddBox<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.system(size: 13, weight: .semibold))
+            Text(title).font(.body1Semibold)
             content
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -504,14 +504,14 @@ private struct SummaryOverview: View {
             }
             if !results.isEmpty {
                 Divider()
-                Text("Latest result in each subject").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.ink2)
+                Text("Latest result in each subject").font(.labelSemibold).foregroundStyle(Color.ink2)
                 ForEach(results, id: \Row.["subject"]) { r in
                     HStack(spacing: 10) {
                         SubjectChip(name: r.s("subject"))
-                        Text(r.s("task")).font(.system(size: 13)).lineLimit(1)
+                        Text(r.s("task")).font(.body1).lineLimit(1)
                         Spacer(minLength: 0)
                         if !r.s("result").isEmpty { TagLabel(text: r.s("result")) }
-                        Text(shortDate(r.s("date"))).font(.system(size: 12)).foregroundStyle(Color.ink2)
+                        Text(shortDate(r.s("date"))).font(.label).foregroundStyle(Color.ink2)
                     }
                 }
             }
@@ -523,7 +523,7 @@ private struct SummaryOverview: View {
     private func stat(_ value: String, _ label: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value).font(.system(size: 22, weight: .bold, design: .rounded))
-            Text(label).font(.system(size: 12)).foregroundStyle(Color.ink2)
+            Text(label).font(.label).foregroundStyle(Color.ink2)
         }
         .accessibilityElement(children: .combine)
     }
@@ -593,6 +593,7 @@ struct AssessTab: View {
     var sid: String
 
     var body: some View {
+        GrowthChart(sid: sid)
         AssessForm(sid: sid)
         LogEntries(table: .assessments, sid: sid, emptyTitle: "No assessments",
                    emptyMessage: "Add a task and a result above.") { x in
@@ -873,7 +874,7 @@ struct ReportTab: View {
         let current = sem.isEmpty ? db.reportSem() : sem
         let sems = semOptions(current)
         HStack {
-            Text("Semester").font(.system(size: 13, weight: .semibold))
+            Text("Semester").font(.body1Semibold)
             Picker("", selection: Binding(get: { current }, set: { sem = $0 })) {
                 ForEach(sems, id: \.self) { Text($0).tag($0) }
             }
@@ -903,7 +904,7 @@ struct ReportTab: View {
                     .frame(width: 170)
                     if db.judgement(sid, sem: current, subject: subj).achievement == "Modified" && db.student(sid)?.hasILP != true {
                         Label("Modified is for students with an ILP. Tick Has an ILP in Details, or choose another level.", systemImage: "exclamationmark.triangle")
-                            .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                            .font(.label).foregroundStyle(Color.ink2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -929,14 +930,14 @@ struct ReportTab: View {
             HStack {
                 FieldLabel(text: "General comment")
                 Spacer()
-                Text("\(wordCount(general)) words").font(.system(size: 11.5))
+                Text("\(wordCount(general)) words").font(.footnote)
                     .foregroundStyle(wordCount(general) > 150 ? Color.appRed : Color.ink2)
                     .help("The general comment should be 100 to 150 words")
             }
             TextEditor(text: Binding(get: { db.generalComment(sid, sem: current) },
                                      set: { db.setGeneralComment(sid, sem: current, text: $0) }))
                 .writingToolsBehavior(.complete)
-                .font(.system(size: 13))
+                .font(.body1)
                 .frame(minHeight: 160)
                 .scrollContentBackground(.hidden)
                 .textBox()
@@ -1092,13 +1093,13 @@ struct PackSheet: View {
                 Spacer()
             }
             Text("\(dLong(range.from)) to \(dLong(range.to))")
-                .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                .font(.caption1).foregroundStyle(Color.ink2)
             if let s = db.student(studentID) {
                 let data = db.packData(studentID, from: range.from, to: range.to)
                 let text = db.packText(s, from: range.from, to: range.to, data: data, leaveOutMedical: leaveOutMedical)
                 ScrollView {
                     Text(text)
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(.labelMono)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
@@ -1163,6 +1164,10 @@ struct QuickLogView: View {
                 if !db.roster.isEmpty {
                     Button { model.sheet = .dictate } label: { Label("Dictate…", systemImage: "mic") }
                         .help("Say your notes for several students at once")
+                    GroupMenu { g in
+                        selecting = true
+                        chosen = Set(g.studentIDs)
+                    }
                     Toggle(isOn: $selecting) { Label("Select several", systemImage: "checklist") }
                         .toggleStyle(.button)
                         .help("Choose several students, then log one note for all of them")
@@ -1201,7 +1206,7 @@ struct QuickLogView: View {
                             .offset(x: 4, y: -4)
                     }
                 }
-                Text(s.first).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                Text(s.first).font(.body1Medium).lineLimit(1)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
@@ -1281,13 +1286,13 @@ struct QuickLogSheet: View {
                 let today = db.todaysEntries(ids[0])
                 if !today.isEmpty {
                     Divider()
-                    Text("Logged today").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.ink2)
+                    Text("Logged today").font(.labelSemibold).foregroundStyle(Color.ink2)
                     ForEach(Array(today.enumerated()), id: \.offset) { _, e in
                         HStack(alignment: .top, spacing: 8) {
-                            Text(e.time.isEmpty ? "" : fmtTime(e.time)).font(.system(size: 11.5)).foregroundStyle(Color.ink2).frame(width: 60, alignment: .leading)
+                            Text(e.time.isEmpty ? "" : fmtTime(e.time)).font(.footnote).foregroundStyle(Color.ink2).frame(width: 60, alignment: .leading)
                             VStack(alignment: .leading, spacing: 1) {
-                                Text(e.kind).font(.system(size: 12, weight: .semibold))
-                                Text(e.note).font(.system(size: 12.5))
+                                Text(e.kind).font(.labelSemibold)
+                                Text(e.note).font(.caption1)
                             }
                         }
                     }

@@ -43,13 +43,13 @@ struct DictateSheet: View {
                 }
                 if !sortError.isEmpty {
                     Label(sortError, systemImage: "exclamationmark.triangle")
-                        .font(.system(size: 12.5)).foregroundStyle(Color.appRed)
+                        .font(.caption1).foregroundStyle(Color.appRed)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Text(canSort
                      ? "Say who each note is about, for example “Ava and Sam, great reasoning in maths.” Holocron sorts it into notes for you to check. Everything stays on this Mac."
                      : "Your words become one note, and you choose the students next. Everything stays on this Mac.")
-                    .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                    .font(.label).foregroundStyle(Color.ink2)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 reviewList
@@ -92,21 +92,21 @@ struct DictateSheet: View {
                 .disabled(dictation.state == .stopping || sorting != nil)
                 .help("Start or stop dictating (Cmd+D)")
                 switch dictation.state {
-                case .preparing: Text("Getting ready…").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
-                case .stopping: Text("Finishing…").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
-                case .listening: Label("Listening", systemImage: "waveform").font(.system(size: 12.5)).foregroundStyle(Color.appRed)
+                case .preparing: Text("Getting ready…").font(.caption1).foregroundStyle(Color.ink2)
+                case .stopping: Text("Finishing…").font(.caption1).foregroundStyle(Color.ink2)
+                case .listening: Label("Listening", systemImage: "waveform").font(.caption1).foregroundStyle(Color.appRed)
                 default: EmptyView()
                 }
                 Spacer()
             }
             if case .failed(let why) = dictation.state {
                 Label(why, systemImage: "exclamationmark.triangle")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.appRed)
+                    .font(.caption1).foregroundStyle(Color.appRed)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if dictation.isBusy {
                 Text(dictation.text.isEmpty ? "Start speaking…" : dictation.text)
-                    .font(.system(size: 14))
+                    .font(.body2)
                     .foregroundStyle(dictation.text.isEmpty ? Color.ink2 : Color.primary)
                     .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
                     .textBox()
@@ -115,7 +115,7 @@ struct DictateSheet: View {
             } else {
                 TextEditor(text: $transcript)
                     .writingToolsBehavior(.complete)
-                    .font(.system(size: 14))
+                    .font(.body2)
                     .frame(minHeight: 120)
                     .scrollContentBackground(.hidden)
                     .textBox()
@@ -157,7 +157,7 @@ struct DictateSheet: View {
     private var reviewList: some View {
         let ready = notes.allSatisfy { !$0.students.isEmpty && !$0.note.trimmed.isEmpty }
         Text("Check each note, then save. Notes are saved for today.")
-            .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+            .font(.caption1).foregroundStyle(Color.ink2)
         VStack(spacing: 10) {
             ForEach($notes) { $n in NoteRow(note: $n) { notes.removeAll { $0.id == n.id } } }
         }
@@ -172,7 +172,7 @@ struct DictateSheet: View {
         }
         if !ready {
             Text("Every note needs at least one student and some words.")
-                .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                .font(.label).foregroundStyle(Color.ink2)
         }
     }
 
@@ -255,7 +255,7 @@ private struct NoteRow: View {
                 } icon: {
                     Image(systemName: "questionmark.circle").foregroundStyle(Color.appAmber)
                 }
-                .font(.system(size: 12))
+                .font(.label)
                 .fixedSize(horizontal: false, vertical: true)
             }
             TextField("What happened", text: $note.note, axis: .vertical)

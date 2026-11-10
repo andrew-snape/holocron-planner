@@ -19,10 +19,10 @@ Holocron is a native macOS SwiftUI classroom planner for a primary school teache
 - **Australian English** in all UI copy, comments and docs: organise, colour, licence, programme only where the app already uses it. Dates read 13 Oct 2026 or Tuesday 13 October. Week starts Monday.
 - **Light mode is forced on purpose** (`NSApplication.shared.appearance = .aqua` and `.preferredColorScheme(.light)` in [HolocronApp.swift](Holocron/HolocronApp.swift)). Do not add dark mode support or semantic colours without being asked.
 - **House look** lives in [Holocron/Views/Theme.swift](Holocron/Views/Theme.swift): `Color.appBG`, `cardBG`, `ink2`, `hairline`, `appBlue`, `appGreen`, `appAmber`, `appRed`, `fieldBG`, `fieldStroke`, `rule`, `fill` (`fillFaint`, `fillStrong`), `onAccent`, `veil`, `Radius.*`, `Space.*`, `Font.hPage`/`hSheet`/`hSection`, `.card()`, `PageHeader`, `EmptyNote`, `NoteBox`. Use these tokens, not raw colours or corner numbers. The Liquid Glass plan is in [Claude outputs/holocron-liquid-glass-plan.md](Claude%20outputs/holocron-liquid-glass-plan.md), and the step-by-step handoff for phases 2 to 6 is in [Claude outputs/holocron-liquid-glass-handoff.md](Claude%20outputs/holocron-liquid-glass-handoff.md). Sheets use `SheetFrame` ([Views/Sheets.swift](Holocron/Views/Sheets.swift)). Settings forms use `settingsForm()`.
-- **Plain wording**, as in [CHANGELOG.md](CHANGELOG.md): short sentences, full stops, verbs on buttons ("Make archive", "Import"), no jargon, no emoji. Destructive actions use `role: .destructive` and a confirmation.
+- **Plain wording**, as in [Holocron/CHANGELOG.md](Holocron/CHANGELOG.md): short sentences, full stops, verbs on buttons ("Make archive", "Import"), no jargon, no emoji. Destructive actions use `role: .destructive` and a confirmation.
 - State: `AppModel` (`@Observable`) owns navigation and the folder; `Database` owns rows. Screens read through `db.rows(.table)` or `db.index(.table)` so they redraw per table. Every change ends with `db.touch(.table)`.
 - Older files may lack newer columns. Read with `row.s("col")`, which returns "".
-- When you add or change a feature, add a bullet to `## Unreleased` in `CHANGELOG.md` in the same user-facing voice.
+- When you add or change a feature, add a bullet to `## Unreleased` in `Holocron/CHANGELOG.md` in the same user-facing voice.
 
 ## Data safety (hard rules)
 
@@ -63,10 +63,10 @@ The guide is also an operating manual for an AI assistant that edits the live CS
 
 ## Releasing
 
-- Add a `## X.Y` section to `CHANGELOG.md` (rename `## Unreleased`). Its bullets become the release notes.
+- Add a `## X.Y` section to `Holocron/CHANGELOG.md` (rename `## Unreleased`). Its bullets become the release notes.
 - Commit everything, then run `scripts/release.sh X.Y` on a clean tree. It sets `MARKETING_VERSION` and the build number, builds outside iCloud, checks the signature, zips with `ditto`, writes `Holocron-X.Y-mac.zip.sha256`, tags, pushes and creates the release with `gh`.
 - A release **must** carry the `.sha256` file. The updater ignores a release without one. Updates only come from `andrew-snape/holocron-planner` over HTTPS. Do not add a repository setting or loosen `ReleasePick.isTrustedDownload`.
-- CI warns when `CHANGELOG.md` has no section for the project version.
+- CI warns when `Holocron/CHANGELOG.md` has no section for the project version.
 
 ## Project agents
 
@@ -84,5 +84,5 @@ The guide is also an operating manual for an AI assistant that edits the live CS
 | Everything built, with version | [docs/FEATURES.md](docs/FEATURES.md) |
 | Past bugs, causes, fixes, known limits | [docs/PROBLEMS.md](docs/PROBLEMS.md) |
 | Suggested next work | [docs/ROADMAP.md](docs/ROADMAP.md) |
-| Release history | [CHANGELOG.md](CHANGELOG.md) |
+| Release history | [Holocron/CHANGELOG.md](Holocron/CHANGELOG.md) |
 | Apple HIG notes and plan | [Claude outputs/holocron-hig-plan.md](Claude%20outputs/holocron-hig-plan.md) |

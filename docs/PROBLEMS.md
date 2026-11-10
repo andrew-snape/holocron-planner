@@ -1,6 +1,6 @@
 # Problems and fixes
 
-Bugs and risks found so far, taken from `git log` and the commits. Each entry has the symptom, the cause, the fix and where to look. Versions are from [CHANGELOG.md](../CHANGELOG.md). Commit ids are short hashes.
+Bugs and risks found so far, taken from `git log` and the commits. Each entry has the symptom, the cause, the fix and where to look. Versions are from [Holocron/CHANGELOG.md](../Holocron/CHANGELOG.md). Commit ids are short hashes.
 
 ## Release builds failed inside iCloud-synced folders
 
@@ -76,7 +76,7 @@ A review of Archive this year and Import from folder (1.9.0) found these. All fi
 
 ## 1.13.1 "AI guardrails"
 
-- **What the release is:** `v1.13.1` is the first tag that contains `b8d2260`. Between `d9359c9` (1.13.0) and `734ea75` (1.13.1) the only code change is `b8d2260`. The two commits after it (`63500c5`, a rebuild numbered 1.13.0, and the changelog commits) touch only `project.pbxproj` and `CHANGELOG.md`.
+- **What the release is:** `v1.13.1` is the first tag that contains `b8d2260`. Between `d9359c9` (1.13.0) and `734ea75` (1.13.1) the only code change is `b8d2260`. The two commits after it (`63500c5`, a rebuild numbered 1.13.0, and the changelog commits) touch only `project.pbxproj` and `Holocron/CHANGELOG.md`.
 - **Original changelog text:** "Fixing AI Guardrails". It has been rewritten to describe the retry on refusal.
 - **Still true:** Refusals can still happen. If all notes are left out, the draft is written from the report judgements, results and unit only.
 
@@ -88,7 +88,7 @@ A review of Archive this year and Import from folder (1.9.0) found these. All fi
 
 ## Known limitations
 
-- **No test target.** Behaviour is checked by building and by hand. Core logic that needs only Foundation can be compiled with `swiftc` against temporary folders (see [ROADMAP.md](ROADMAP.md)).
+- **No Xcode test target.** `scripts/test-core.sh` compiles the Foundation-only Core files with `Tests/Core/main.swift` and runs them against temporary folders (CSV, row merge, saving with a merge, schema version). Everything else is checked by building and by hand.
 - **Ad hoc signing, not notarised.** Gatekeeper does not recognise the developer, so a first launch needs right-click, Open. Updates remove the quarantine flag after install. Updates are checked by SHA-256 from the same GitHub release, so the checksum protects against a damaged download, not a compromised release.
 - **Sandbox off** (`ENABLE_APP_SANDBOX = NO`) so the app can reach an iCloud Drive folder. The app can read whatever the user can.
 - **Light mode only**, by choice. Dark mode is not supported.
@@ -97,9 +97,9 @@ A review of Archive this year and Import from folder (1.9.0) found these. All fi
 - **Draft lesson masks words that are also student names.** Every name on the roll becomes "a student" by whole word, so with a student called Mark or Grace the verb "mark" or the word "grace" in a summary is masked, and the draft can read oddly. It is the safe direction, as lessons may be shared. Fixing it needs a way to tell a name from a word.
 - **Scan text has no Continuity Camera.** A photo from an iPhone cannot be taken straight into a field, because macOS cannot say which of several fields on a screen should get the image. Choose a file instead.
 - **Lookup tools for report drafts are untested.** They are off (`useLookupTools = false`) and have never been run against the model. See [ROADMAP.md](ROADMAP.md).
-- **No file locking.** Two copies of the app, or the app and another editor, can overwrite each other. The app re-reads changed files when it becomes active, but a long hand edit while the app is open can be overwritten by the app's next save.
+- **Merge by row narrows the clash, it is not a lock.** Before every save Holocron compares the file with what it last saw. If the file changed (another Mac, a hand edit, an AI assistant), it copies the file into `Holocron archive/Before merge`, reads it again and merges row by row ([Core/RowMerge.swift](../Holocron/Core/RowMerge.swift), [Core/MergedSave.swift](../Holocron/Core/MergedSave.swift)), checking the file again just before it writes. Two Macs that save in the same instant can still clash, because iCloud is not a lock, and that window is very small. Two Macs with the same row key and the same column changed are asked about. Conflicts are saved to the file as theirs until answered, with my side kept in `Before merge` as `(mine)`. The folder is not watched while the app is open, so a partner's changes appear at the next save or when the app becomes active. If iCloud has made a copy such as `lessons 2.csv`, Holocron offers to merge it in and never deletes it. Every merge is copied first, dated to the minute, so no earlier version is lost. Known gaps: a lesson that is pushed, pulled or renamed changes its key, so it shows as removed and added and a colleague's simultaneous edit of it gives a duplicate rather than a question. Columns in their file that this version does not know are kept only in the Before merge copy. The first launch of a folder makes a Before migration copy of settings.csv even though nothing changes.
 - **Undo is short and cautious.** Deletes, swaps and lesson moves can be undone ([Core/UndoLog.swift](../Holocron/Core/UndoLog.swift)), but only until something else changes the same file, because putting the old rows back would remove the newer change. Typing a lesson summary after a swap ends the swap's undo. The history is in memory and is gone when the app quits. Removing work photos and interviews cannot be undone, because their files move. The safety net is the archive folders and the teacher's own backup.
-- **No schema version.** Older files that lack a newer column still load because missing columns read as empty, but there is no migration step.
+- **Schema version is a stamp so far.** `settings.csv` holds `schema_version` (1). Older files that lack a newer column still load because missing columns read as empty. `SchemaVersion.steps` is empty of real changes, so no file is rewritten yet. A folder from a newer Holocron is read as it is and not stamped.
 - **Hand-edited CSVs are trusted.** Ids that are duplicated or missing are not checked. A lesson with a subject that is not in `subjects.csv` is shown with a grey default colour.
 - **Network.** The only request the app makes is the update check, but macOS may download its English speech model from Apple the first time you dictate.
 - **Semester 2 starts in July**, fixed in code (`Database.semesterTwoStartMonth`).

@@ -12,6 +12,12 @@ final class ClassTimer {
     var total = 0
     var running = false
     var work = ""
+    /// Plays a sound when the time is up. On by default, and switched off from the timer card.
+    var sound: Bool = UserDefaults.standard.object(forKey: "timerSound") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(sound, forKey: "timerSound") }
+    }
+    /// True when the countdown has run out, until it is reset or started again.
+    var finished: Bool { total > 0 && left == 0 }
     @ObservationIgnored private var ticker: Timer?
 
     func start(minutes: Int) {
@@ -54,7 +60,7 @@ final class ClassTimer {
         left = max(0, left - 1)
         if left == 0 {
             pause()
-            NSSound(named: NSSound.Name("Glass"))?.play()
+            if sound { NSSound(named: NSSound.Name("Glass"))?.play() }
         }
     }
 }
@@ -217,7 +223,7 @@ struct ClassScreenView: View {
                                 Label("Add First, Then, Next", systemImage: "list.number")
                             }
                             .buttonStyle(.plain)
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.boardBodyMedium)
                             .foregroundStyle(Color.ink3)
                             .frame(minWidth: 28, minHeight: 28)
                             .contentShape(Rectangle())
@@ -228,6 +234,7 @@ struct ClassScreenView: View {
                     VStack(spacing: 16) {
                         TimerCard(tone: tone)
                         WorkCard()
+                        ClassGroupsCard(subject: subj)
                     }
                     .frame(width: 320)
                 }
@@ -330,7 +337,7 @@ struct ClassScreenView: View {
     }
 
     private func heading(_ s: String, _ tone: Tone) -> some View {
-        Text(s).font(.system(size: 22, weight: .semibold, design: .rounded)).foregroundStyle(tone.inkColor)
+        Text(s).font(.metricRounded).foregroundStyle(tone.inkColor)
     }
 
     // MARK: First, Then, Next
@@ -358,7 +365,7 @@ struct ClassScreenView: View {
                 pill(tag: "Now", title: subj.isEmpty ? p.name : subj, sub: "until " + fmtTime(p.end),
                      tint: tone.tintColor, ink: tone.inkColor)
                 if let n = nextBlock(after: p) {
-                    Image(systemName: "arrow.right").font(.system(size: 22, weight: .bold)).foregroundStyle(Color.ink3)
+                    Image(systemName: "arrow.right").font(.metric).foregroundStyle(Color.ink3)
                     pill(tag: "Next", title: n.title, sub: "at " + fmtTime(n.time),
                          tint: n.tone?.tintColor ?? Color.appBG, ink: n.tone?.inkColor ?? Color.primary)
                 }
@@ -369,7 +376,7 @@ struct ClassScreenView: View {
 
     private func pill(tag: String, title: String, sub: String, tint: Color, ink: Color) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(tag.uppercased()).font(.system(size: 13, weight: .bold)).tracking(1).foregroundStyle(ink.opacity(0.8))
+            Text(tag.uppercased()).font(.boardLabel).tracking(1).foregroundStyle(ink.opacity(0.8))
             Text(title).font(.system(size: 26, weight: .bold)).foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.6)
             Text(sub).font(.system(size: 18, weight: .medium)).foregroundStyle(Color.ink2).lineLimit(1)
         }
@@ -406,11 +413,11 @@ struct ClassScreenView: View {
                     if date != todayISO() { Text(longDate(date)) }
                     remaining(p)
                 }
-                .font(.system(size: 14)).foregroundStyle(Color.ink2)
+                .font(.boardBody).foregroundStyle(Color.ink2)
             }
             Spacer(minLength: 8)
             TimelineView(.periodic(from: Date(), by: 10)) { _ in
-                Text(fmtTime(nowHHMM())).font(.system(size: 22, weight: .semibold, design: .rounded)).foregroundStyle(Color.ink2)
+                Text(fmtTime(nowHHMM())).font(.metricRounded).foregroundStyle(Color.ink2)
             }
         }
     }
@@ -442,6 +449,9 @@ struct TimerCard: View {
         let t = model.classTimer
         let watch = model.stopwatch
         VStack(spacing: 10) {
+            if t.finished {
+                Text("Time's up").font(.metricRounded).foregroundStyle(Color.appRed)
+            }
             Text(clockText(t.left))
                 .font(.system(size: 72, weight: .bold, design: .rounded))
                 .monospacedDigit()
@@ -468,16 +478,18 @@ struct TimerCard: View {
                 Button("+1 min") { t.addMinute() }
                 Button("Reset") { t.reset() }
             }
+            Toggle("Sound when time is up", isOn: Binding(get: { t.sound }, set: { t.sound = $0 }))
+                .toggleStyle(.checkbox).font(.boardLabel)
 
             Divider()
 
             // Counts up, for timing an activity. It keeps running when you leave the screen.
             HStack(spacing: 8) {
-                Text("Stopwatch").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.ink2)
+                Text("Stopwatch").font(.boardLabel).foregroundStyle(Color.ink2)
                 Spacer(minLength: 4)
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     Text(clockText(Int(watch.now(context.date))))
-                        .font(.system(size: 22, weight: .semibold, design: .rounded))
+                        .font(.metricRounded)
                         .monospacedDigit()
                 }
                 Button(watch.running ? "Pause" : "Start") { watch.toggle() }
@@ -486,8 +498,11 @@ struct TimerCard: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity)
-        .background(Color.appBG)
+        .background(t.finished ? Color.appRed.opacity(0.14) : Color.appBG)
         .clipShape(RoundedRectangle(cornerRadius: Radius.board, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.board, style: .continuous)
+            .stroke(Color.appRed, lineWidth: t.finished ? 3 : 0))
+        .animation(.easeInOut(duration: 0.3), value: t.finished)
     }
 }
 
@@ -514,7 +529,7 @@ struct WorkCard: View {
                     Button { t.work = on ? "" : w.id } label: {
                         VStack(spacing: 6) {
                             Image(systemName: w.symbol).font(.system(size: 24))
-                            Text(w.label).font(.system(size: 12, weight: .semibold)).lineLimit(1)
+                            Text(w.label).font(.boardLabel).lineLimit(1)
                         }
                         .foregroundStyle(on ? Color.onAccent : Color(hex: w.hex))
                         .padding(.vertical, 12)
@@ -529,8 +544,10 @@ struct WorkCard: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity)
-        .background(Color.appBG)
+        // A calm wash of the chosen mode's colour, so the room can see the mode from across it.
+        .background(current.map { Color(hex: $0.hex).opacity(0.14) } ?? Color.appBG)
         .clipShape(RoundedRectangle(cornerRadius: Radius.board, style: .continuous))
+        .animation(.easeInOut(duration: 0.3), value: t.work)
     }
 }
 
@@ -554,10 +571,10 @@ struct StepCard: View {
                         .foregroundStyle(active ? Color.onAccent : tone.inkColor)
                         .frame(width: 28, height: 28)
                         .background(Circle().fill(active ? tone.barColor : Color.cardBG))
-                    Text(label).font(.system(size: 22, weight: .bold)).foregroundStyle(tone.inkColor)
+                    Text(label).font(.metric).foregroundStyle(tone.inkColor)
                     Spacer(minLength: 0)
                     if active {
-                        Text("NOW").font(.system(size: 12, weight: .bold)).tracking(1).foregroundStyle(tone.barColor)
+                        Text("NOW").font(.boardLabel).tracking(1).foregroundStyle(tone.barColor)
                     }
                 }
                 .contentShape(Rectangle())

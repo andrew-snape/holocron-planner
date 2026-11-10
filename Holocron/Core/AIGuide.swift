@@ -356,6 +356,12 @@ enum AIGuide {
                 "Make a new unique `id`. `result` is a score or one of the achievement words (\(Lists.achievement.map { "`\($0)`" }.joined(separator: ", "))).",
             ], .assessments, "mh2k5d0e1f2g,mh2k4x9a1b3c,2026-10-14,Maths,Addition test,\(Lists.achievement[1]),Secure with regrouping")
 
+            recipe("Make a group of students", [
+                "Find each student's `id` in `students.csv`.",
+                "Make a new unique `id`. Add a row with the group `name`, an optional `subject` from `subjects.csv`, and `student_ids` as the students' ids joined with semicolons (no spaces).",
+                "A student who is deleted in Holocron is taken out of every group. If you remove a student by hand, remove the id from `student_ids` too.",
+            ], .groups, "mh2k5g9h0i1j,Reading group 1,Literacy,mh2k4x9a1b3c;mh2k4x9a1b3d")
+
             recipe("Add a to-do", [
                 "Make a new unique `id`. Add a row with the `text`, an optional `due` date, an empty `done`, and today's date in `created`.",
                 "To mark one done, put the date it was finished in `done`.",
@@ -442,7 +448,8 @@ enum AIGuide {
         case .strandcomments: return "Report comments imported from Essential Assessment, by student, semester and strand."
         case .interviews: return "Interviews recorded for a student: the date, minutes, the audio file in `recordings/`, the transcript and an optional summary. Private to the student folder."
         case .work: return "Photos or scans of students' work, one row for each student. `file` names the image in `work/<year>/`. A file shared by a group has one row per student with the same `file` and `batch`. Private to the student folder."
-        case .settings: return "Holocron's own key and value settings, such as which subjects are private. Leave this file alone."
+        case .groups: return "Named groups of students, such as reading groups, maths groups or inquiry teams. `student_ids` holds student ids from `students.csv` joined with semicolons (`s1;s2;s3`). `subject` is optional. Private to the student folder."
+        case .settings: return "Holocron's own key and value settings, such as which subjects are private, and `schema_version`, the file layout version. Leave this file alone."
         }
     }
 }

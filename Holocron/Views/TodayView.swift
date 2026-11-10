@@ -9,12 +9,6 @@ struct TodayView: View {
         let date = model.cursor
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                if let q = model.quote() {
-                    HStack {
-                        Spacer(minLength: 0)
-                        QuoteCard(row: q).frame(maxWidth: 340)
-                    }
-                }
                 ViewThatFits(in: .horizontal) {
                     HStack(alignment: .top, spacing: 18) {
                         dayBody(date).frame(maxWidth: .infinity)
@@ -90,9 +84,12 @@ struct TodayView: View {
         } else {
             TimelineView(.periodic(from: .now, by: 30)) { _ in
                 let ps = db.periods
+                let isToday = date == todayISO()
+                let nm: Int? = isToday ? nowMinutes() : nil
                 VStack(spacing: 8) {
+                    if let nm { NowCard(date: date, minutes: nm) }
                     ForEach(Array(ps.enumerated()), id: \.element.id) { idx, p in
-                        BlockRow(date: date, period: p)
+                        BlockRow(date: date, period: p, minutesNow: nm)
                         if idx + 1 < ps.count, mins(p.end, ps[idx + 1].start) > 0 {
                             BreakRow(from: p.end, to: ps[idx + 1].start)
                         }
@@ -110,7 +107,7 @@ struct BreakRow: View {
         let label = breakLabel(from: from, to: to)
         HStack(spacing: 14) {
             Text("\(from) to \(to)").font(.system(size: 12.5, design: .rounded)).frame(width: 106, alignment: .leading)
-            Text(label).font(.system(size: 12.5))
+            Text(label).font(.caption1)
             Spacer()
         }
         .foregroundStyle(Color.ink3)
@@ -126,6 +123,12 @@ struct BlockRow: View {
     var period: Period
     /// Minutes since midnight when the date is today, otherwise nil.
     var minutesNow: Int?
+
+    /// True when the date is today and the period has finished, so it fades back and the eye lands on now.
+    private var isPast: Bool {
+        guard let n = minutesNow, let b = hm(period.end) else { return false }
+        return n >= b
+    }
 
     var body: some View {
         let db = model.db
@@ -148,7 +151,7 @@ struct BlockRow: View {
             Rectangle().fill(tone.barColor).frame(width: 4)
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(period.start) to \(period.end)").font(.system(size: 13, weight: .medium, design: .rounded))
-                Text(period.name).font(.system(size: 11)).foregroundStyle(Color.ink2)
+                Text(period.name).font(.small).foregroundStyle(Color.ink2)
             }
             .frame(width: 112, alignment: .leading)
             .padding(.leading, 12)
@@ -163,15 +166,15 @@ struct BlockRow: View {
                     if moved { Circle().fill(Color.appAmber).frame(width: 6, height: 6).help("Moved for today") }
                 }
                 Text("\(info.isRelease ? "Release" : "Face to face") · \(period.minutes) min" + (moved ? " · changed for today" : ""))
-                    .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                    .font(.label).foregroundStyle(Color.ink2)
                 if !c.summary.isEmpty {
-                    Text(linkified(c.summary)).font(.system(size: 13.5)).textSelection(.enabled).padding(.top, 2)
+                    Text(linkified(c.summary)).font(.bodyLarge).textSelection(.enabled).padding(.top, 2)
                 }
                 if !c.li.isEmpty {
-                    Text("\(Text("LI ").fontWeight(.bold))\(c.li)").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    Text("\(Text("LI ").fontWeight(.bold))\(c.li)").font(.caption1).foregroundStyle(Color.ink2)
                 }
                 if let u = unit {
-                    Text("\(Text("Unit ").fontWeight(.bold))\(u.s("title"))").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    Text("\(Text("Unit ").fontWeight(.bold))\(u.s("title"))").font(.caption1).foregroundStyle(Color.ink2)
                 }
             }
             .padding(.vertical, 11)
@@ -196,6 +199,8 @@ struct BlockRow: View {
             RoundedRectangle(cornerRadius: Radius.panel, style: .continuous)
                 .stroke(Color.appBlue, lineWidth: isNow ? 2 : 0)
         )
+        .opacity(isPast ? 0.7 : 1)
+        .accessibilityHint(isPast ? "Finished" : "")
         .contextMenu {
             Button(c.hasPlan ? "Open Plan" : (lesExists ? "Edit Plan…" : "Add Plan…")) {
                 model.sheet = .plan(date: date, per: pn, edit: !c.hasPlan)
@@ -215,7 +220,7 @@ struct QuoteCard: View {
     var row: Row
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("\u{201C}\(row.s("quote"))\u{201D}").font(.system(size: 12.5)).italic()
+            Text("\u{201C}\(row.s("quote"))\u{201D}").font(.caption1).italic()
             let who = row.s("artist") + (row.s("band").isEmpty || row.s("band") == row.s("artist") ? "" : ", " + row.s("band"))
             Text(who).font(.system(size: 11, weight: .medium)).foregroundStyle(Color.ink2)
         }
@@ -241,10 +246,10 @@ struct SidePanel: View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(hrs(dm.teach)) hrs").font(.system(size: 28, weight: .semibold, design: .rounded))
-                Text("Face to face today").font(.system(size: 12)).foregroundStyle(Color.ink2)
+                Text("Face to face today").font(.label).foregroundStyle(Color.ink2)
                 Divider().padding(.vertical, 4)
                 HStack {
-                    Text("Release").font(.system(size: 13))
+                    Text("Release").font(.body1)
                     Spacer()
                     Text("\(hrs(dm.release)) hrs").font(.system(size: 13, design: .rounded))
                 }
@@ -254,32 +259,92 @@ struct SidePanel: View {
             TodoPanel()
 
             if !bd.isEmpty {
-                Text("Birthdays").font(.system(size: 13, weight: .semibold)).padding(.top, 4)
+                Text("Birthdays").font(.body1Semibold).padding(.top, 4)
                 ForEach(bd) { b in
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(b.name).font(.system(size: 13.5, weight: .semibold))
+                        Text(b.name).font(.bodyLargeSemibold)
                         Text(b.days == 0 ? "Today" : (b.days == 1 ? "Tomorrow" : "\(shortDate(b.date)), in \(b.days) days"))
-                            .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                            .font(.label).foregroundStyle(Color.ink2)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .card(padding: 10)
                 }
             }
 
-            Text("Recent notes").font(.system(size: 13, weight: .semibold)).padding(.top, 4)
+            Text("Recent notes").font(.body1Semibold).padding(.top, 4)
             if recent.isEmpty {
-                Text("Notes you add against students show here.").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                Text("Notes you add against students show here.").font(.caption1).foregroundStyle(Color.ink2)
             } else {
                 ForEach(recent) { a in
                     VStack(alignment: .leading, spacing: 2) {
                         Divider()
-                        Text(db.studentName(a.who)).font(.system(size: 12.5, weight: .semibold))
-                        Text("\(a.kind) · \(shortDate(a.date))").font(.system(size: 11.5)).foregroundStyle(Color.ink2)
+                        Text(db.studentName(a.who)).font(.caption1Semibold)
+                        Text("\(a.kind) · \(shortDate(a.date))").font(.footnote).foregroundStyle(Color.ink2)
                         Text(String(a.text.prefix(70)) + (a.text.count > 70 ? "…" : ""))
-                            .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                            .font(.caption1).foregroundStyle(Color.ink2)
                     }
                 }
             }
+
+            // The quote sits at the bottom, out of the way of the day.
+            if let q = model.quote() {
+                QuoteCard(row: q).padding(.top, 6)
+            }
+        }
+    }
+}
+
+/// The lesson on now in its subject colour, a thin line through the period, what comes next, and one button
+/// to the Class screen. Shown on today's date only.
+struct NowCard: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.openWindow) private var openWindow
+    var date: String
+    var minutes: Int
+
+    var body: some View {
+        let db = model.db
+        let lessons = db.periods.filter { p in
+            let s = db.plannedSubject(date, p.period)
+            return !s.isEmpty && db.subjectInfo(s).kind != "dottl"
+        }
+        let now = lessons.first { (hm($0.start) ?? 0) <= minutes && minutes < (hm($0.end) ?? 0) }
+        let next = lessons.first { (hm($0.start) ?? 0) > minutes }
+        if now != nil || next != nil {
+            let shown = now ?? next!
+            let subj = db.plannedSubject(date, shown.period)
+            let tone = db.tone(forSubject: subj)
+            let a = hm(shown.start) ?? 0, b = hm(shown.end) ?? 1
+            let progress = now == nil ? 0 : min(1, max(0, Double(minutes - a) / Double(max(1, b - a))))
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text(now != nil ? "NOW" : "NEXT").font(.smallBold).foregroundStyle(tone.inkColor)
+                    Text(subj).font(.hSection).foregroundStyle(tone.inkColor)
+                    Text("\(shown.start) to \(shown.end)").font(.label).foregroundStyle(tone.inkColor.opacity(0.8))
+                    Spacer()
+                    Button { openWindow(id: "classscreen", value: ClassTarget(date: date, per: shown.period)) } label: {
+                        Label("Class screen", systemImage: "tv")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .help("Show this lesson on the Class screen")
+                }
+                if now != nil {
+                    ProgressView(value: progress)
+                        .tint(tone.barColor)
+                        .accessibilityLabel("Time through the lesson")
+                        .accessibilityValue("\(Int(progress * 100)) percent")
+                    Text("\(b - minutes) minutes left").font(.caption1).foregroundStyle(tone.inkColor)
+                }
+                if now != nil, let n = next {
+                    Text("Then \(db.plannedSubject(date, n.period)) at \(n.start)").font(.caption1).foregroundStyle(tone.inkColor).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(Space.card)
+            .background(tone.tintColor)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Radius.large, style: .continuous).stroke(tone.barColor.opacity(0.6), lineWidth: 1))
+            .accessibilityElement(children: .contain)
         }
     }
 }
@@ -314,8 +379,10 @@ struct TodoPanel: View {
         let dueText = dueNow(p)
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("To-do").font(.system(size: 13, weight: .semibold))
-                if !open.isEmpty { Text("\(open.count)").font(.system(size: 12)).foregroundStyle(Color.ink2) }
+                Text("To-do").font(.body1Semibold)
+                if !open.isEmpty { Text("\(open.count)").font(.label).foregroundStyle(Color.ink2) }
+                let dueNow = open.filter { !$0.s("due").isEmpty && $0.s("due") <= todayISO() }.count
+                if dueNow > 0 { Text("\(dueNow) due today or overdue").font(.smallSemibold).foregroundStyle(Color.appRed) }
             }
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(open, id: \Row.["id"]) { x in row(x, done: false) }
@@ -332,7 +399,7 @@ struct TodoPanel: View {
                         manual = true
                         hasDue = on
                         if on, let d = Self.date(p.due ?? todayISO()) { due = d }
-                    })).toggleStyle(.checkbox).font(.system(size: 12))
+                    })).toggleStyle(.checkbox).font(.label)
                     if !dueText.isEmpty {
                         DatePicker("", selection: Binding(get: { Self.date(dueText) ?? due }, set: { d in
                             manual = true
@@ -344,7 +411,7 @@ struct TodoPanel: View {
                 }
                 if canAdd && !manual, let d = p.due {
                     Text((p.text != text.trimmed ? "Will add \u{201C}\(p.text)\u{201D}. " : "") + "Due \(longDate(d)). Change the date or untick Due to keep your words as typed.")
-                        .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                        .font(.label).foregroundStyle(Color.ink2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -388,7 +455,7 @@ struct TodoPanel: View {
             .accessibilityLabel(done ? "Mark not done" : "Mark done")
             .help(done ? "Reopen this to-do" : "Complete this to-do")
             Text(x.s("text"))
-                .font(.system(size: 13.5))
+                .font(.bodyLarge)
                 .strikethrough(done)
                 .foregroundStyle(done ? Color.ink3 : Color.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -396,7 +463,7 @@ struct TodoPanel: View {
             Button {
                 model.db.deleteRow(.todo, id: id)
             } label: {
-                Image(systemName: "xmark").font(.system(size: 10))
+                Image(systemName: "xmark").font(.tiny)
                     .frame(minWidth: 28, minHeight: 28)
                     .contentShape(Rectangle())
                     .padding(-5)
@@ -418,13 +485,13 @@ struct TodoPanel: View {
     private func dueLabel(_ due: String) -> some View {
         let t = todayISO()
         if due < t {
-            Text(shortDate(due)).font(.system(size: 11, weight: .semibold)).foregroundStyle(Color.appRed)
+            Text(shortDate(due)).font(.smallSemibold).foregroundStyle(Color.appRed)
         } else if due == t {
-            Text("Today").font(.system(size: 11, weight: .semibold)).foregroundStyle(Color.appAmber)
+            Text("Today").font(.smallSemibold).foregroundStyle(Color.appAmber)
         } else if due == addDays(t, 1) {
-            Text("Tomorrow").font(.system(size: 11)).foregroundStyle(Color.ink2)
+            Text("Tomorrow").font(.small).foregroundStyle(Color.ink2)
         } else {
-            Text("\(Cal.weekdayShort[dayIdx(due)]) \(shortDate(due))").font(.system(size: 11)).foregroundStyle(Color.ink2)
+            Text("\(Cal.weekdayShort[dayIdx(due)]) \(shortDate(due))").font(.small).foregroundStyle(Color.ink2)
         }
     }
 }

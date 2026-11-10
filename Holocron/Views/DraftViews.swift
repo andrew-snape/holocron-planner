@@ -22,35 +22,35 @@ struct DraftBox<Extra: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                Label("Draft", systemImage: "apple.intelligence").font(.system(size: 12.5, weight: .semibold))
+                Label("Draft", systemImage: "apple.intelligence").font(.caption1Semibold)
                 if working { ProgressView().controlSize(.small).accessibilityLabel("Writing a draft") }
                 Spacer()
-                if !text.isEmpty { Text("\(wordCount(text)) words").font(.system(size: 11.5)).foregroundStyle(Color.ink2) }
+                if !text.isEmpty { Text("\(wordCount(text)) words").font(.footnote).foregroundStyle(Color.ink2) }
             }
             TextEditor(text: $text)
                 .writingToolsBehavior(.complete)
-                .font(.system(size: 13))
+                .font(.body1)
                 .frame(minHeight: 120)
                 .scrollContentBackground(.hidden)
                 .textBox()
                 .disabled(working)
                 .accessibilityLabel("Draft")
             if !hint.isEmpty {
-                Text(hint).font(.system(size: 12)).foregroundStyle(Color.ink2)
+                Text(hint).font(.label).foregroundStyle(Color.ink2)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if !notes.isEmpty && !working {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Check before you use it").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.ink2)
+                    Text("Check before you use it").font(.labelSemibold).foregroundStyle(Color.ink2)
                     ForEach(notes, id: \.self) { n in
-                        Label(n, systemImage: "pencil.circle").font(.system(size: 12)).foregroundStyle(Color.ink2)
+                        Label(n, systemImage: "pencil.circle").font(.label).foregroundStyle(Color.ink2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
             if !error.isEmpty {
                 Label(error, systemImage: "exclamationmark.triangle")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.appRed)
+                    .font(.caption1).foregroundStyle(Color.appRed)
                     .fixedSize(horizontal: false, vertical: true)
             }
             HStack(spacing: 8) {
@@ -61,7 +61,7 @@ struct DraftBox<Extra: View>: View {
                 Button("Discard", role: .destructive) { discard() }.foregroundStyle(Color.appRed)
             }
             Text("A draft from Apple Intelligence, made on this Mac. Check every sentence before you use it.")
-                .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                .font(.label).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(12)
@@ -89,6 +89,7 @@ struct CommentDraftArea: View {
     @State private var run = UUID()
     @State private var askReplace = false
     @State private var showClass = false
+    @State private var showBoard = false
     @State private var warming: Task<Void, Never>? = nil
 
     var body: some View {
@@ -101,7 +102,7 @@ struct CommentDraftArea: View {
                         .disabled(working)
                         .help("Apple Intelligence drafts a comment in your voice from this semester's notes, results and judgements")
                     HStack(spacing: 6) {
-                        Text("Pronoun").font(.system(size: 12)).foregroundStyle(Color.ink2)
+                        Text("Pronoun").font(.label).foregroundStyle(Color.ink2)
                         Picker("", selection: Binding(get: { db.pronoun(sid) ?? .they }, set: { db.setPronoun(sid, $0) })) {
                             ForEach(Pronoun.allCases) { Text($0.title).tag($0) }
                         }
@@ -109,6 +110,8 @@ struct CommentDraftArea: View {
                         .accessibilityLabel("Pronoun for this student")
                     }
                     Button("Draft for the class…") { showClass = true }.fixedSize()
+                    Button("Report progress…") { showBoard = true }.fixedSize()
+                        .help("See every student's judgements, comments and dot points on one screen")
                 }
                 if open {
                     DraftBox(text: $text, working: working, error: error, hint: notice,
@@ -128,6 +131,9 @@ struct CommentDraftArea: View {
             .onDisappear { discard(); warming?.cancel(); WarmSessions.discard(prefix: CommentDrafter.warmPrefix) }
             .sheet(isPresented: $showClass) {
                 ClassDraftsSheet(sem: sem).environment(model).preferredColorScheme(.light)
+            }
+            .sheet(isPresented: $showBoard) {
+                ReportBoardSheet(sem: sem).environment(model).preferredColorScheme(.light)
             }
         }
     }
@@ -226,7 +232,7 @@ struct DotPointCommentBox: View {
             TextEditor(text: Binding(get: { db.reportText(sid, sem: sem, kind.rawValue) },
                                      set: { db.setReportText(sid, sem: sem, kind.rawValue, $0) }))
                 .writingToolsBehavior(.complete)
-                .font(.system(size: 13))
+                .font(.body1)
                 .frame(minHeight: 110)
                 .scrollContentBackground(.hidden)
                 .textBox()
@@ -237,10 +243,10 @@ struct DotPointCommentBox: View {
                         ForEach(imported, id: \.self) { c in
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(c.s("substrand").isEmpty ? c.s("strand") : "\(c.s("strand")) (\(c.s("substrand")))")
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .font(.labelSemibold)
                                 ForEach([("Success", "success"), ("Growth", "growth"), ("Improvement", "improve")], id: \.1) { label, key in
                                     if !c.s(key).isEmpty {
-                                        Text("\(label): ").font(.system(size: 12, weight: .medium)) + Text(c.s(key)).font(.system(size: 12))
+                                        Text("\(label): ").font(.labelMedium) + Text(c.s(key)).font(.label)
                                     }
                                 }
                             }
@@ -252,7 +258,7 @@ struct DotPointCommentBox: View {
                     .padding(.top, 4)
                 } label: {
                     Text("From Essential Assessment: " + imported.map { $0.s("strand") }.joined(separator: ", "))
-                        .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                        .font(.label).foregroundStyle(Color.ink2)
                 }
             }
             if Intelligence.can(.drafts, db) {
@@ -346,14 +352,14 @@ struct ClassDraftsSheet: View {
         SheetFrame(title: "Draft comments for the class", subtitle: "Semester " + sem, width: 600,
                    dirty: !waiting.isEmpty || task != nil, discardMessage: "Drafts you have not used, and any still being written, will be lost.") {
             Text("Apple Intelligence drafts a comment for each student without one, in your voice, from this semester's notes, results and judgements. Check each one, edit it, then use it or skip it.")
-                .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                .font(.caption1).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
                 if task != nil {
                     Button("Stop") { stop() }
                     ProgressView().controlSize(.small).accessibilityLabel("Writing drafts")
                     if let c = current {
-                        Text("Writing for \(db.student(c)?.first ?? "")…").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                        Text("Writing for \(db.student(c)?.first ?? "")…").font(.caption1).foregroundStyle(Color.ink2)
                     }
                 } else {
                     Button(drafts.isEmpty ? "Draft \(plural(left.count, "comment"))" : "Draft the rest (\(left.count))") { run(left.map(\.id)) }
@@ -386,12 +392,12 @@ struct ClassDraftsSheet: View {
     private func row(_ s: Student) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(s.fullName).font(.system(size: 13, weight: .semibold))
+                Text(s.fullName).font(.body1Semibold)
                 Spacer()
                 if used.contains(s.id) {
-                    Label("Used", systemImage: "checkmark.circle.fill").font(.system(size: 12)).foregroundStyle(Color.ink2)
+                    Label("Used", systemImage: "checkmark.circle.fill").font(.label).foregroundStyle(Color.ink2)
                 } else if skipped.contains(s.id) {
-                    Text("Skipped").font(.system(size: 12)).foregroundStyle(Color.ink2)
+                    Text("Skipped").font(.label).foregroundStyle(Color.ink2)
                     Button("Undo") { skipped.remove(s.id) }.controlSize(.small)
                 } else if drafts[s.id] != nil && current != s.id {
                     Button("Use") { use(s.id) }.buttonStyle(.borderedProminent).controlSize(.small)
@@ -402,19 +408,19 @@ struct ClassDraftsSheet: View {
             }
             if let why = failed[s.id] {
                 Label(why, systemImage: "exclamationmark.triangle")
-                    .font(.system(size: 12)).foregroundStyle(Color.appRed)
+                    .font(.label).foregroundStyle(Color.appRed)
                     .fixedSize(horizontal: false, vertical: true)
             } else if drafts[s.id] != nil, !used.contains(s.id), !skipped.contains(s.id) {
                 TextEditor(text: Binding(get: { drafts[s.id] ?? "" }, set: { drafts[s.id] = $0 }))
                     .writingToolsBehavior(.complete)
-                    .font(.system(size: 13))
+                    .font(.body1)
                     .frame(minHeight: 110)
                     .scrollContentBackground(.hidden)
                     .textBox()
                     .disabled(current == s.id)
                     .accessibilityLabel("Draft for \(s.fullName)")
             } else if current != s.id && !used.contains(s.id) && !skipped.contains(s.id) {
-                Text("Not drafted yet").font(.system(size: 12)).foregroundStyle(Color.ink2)
+                Text("Not drafted yet").font(.label).foregroundStyle(Color.ink2)
             }
         }
         .card()

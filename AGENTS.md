@@ -20,7 +20,7 @@ Holocron in five lines:
 |---|---|
 | Change app code (Swift) | Read sections 5, 7, 8 and 11 here, then [CLAUDE.md](CLAUDE.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Do not run anything against the teacher's real data folder. |
 | Edit a teacher's CSV data (add a lesson, mark a day off, log a note) | **Stop. Do not use this file for that.** Read `README-for-AI.md` in the teacher's data folder instead (details below). Ask the teacher to quit Holocron first. |
-| Answer a question about what Holocron can do | [docs/FEATURES.md](docs/FEATURES.md), then [README.md](README.md) and [CHANGELOG.md](CHANGELOG.md). |
+| Answer a question about what Holocron can do | [docs/FEATURES.md](docs/FEATURES.md), then [README.md](README.md) and [Holocron/CHANGELOG.md](Holocron/CHANGELOG.md). |
 | Understand a table, column or format | Section 6 here, then [docs/DATA.md](docs/DATA.md) and `TableName.header` in [Holocron/Core/Schema.swift](Holocron/Core/Schema.swift). |
 | Fix a bug that looks familiar | [docs/PROBLEMS.md](docs/PROBLEMS.md) lists past bugs with cause and fix. |
 | Pick what to build next | [docs/ROADMAP.md](docs/ROADMAP.md). It lists suggestions, not promises. Ask the teacher. |
@@ -135,7 +135,7 @@ PYP is the International Baccalaureate Primary Years Programme. The school uses 
 AGENTS.md                  this file
 CLAUDE.md                  Claude Code rules: build, conventions, data safety, guardrails, release
 README.md                  teacher-facing overview, install, privacy, maintainer notes
-CHANGELOG.md               release history in plain language; "## Unreleased" is the draft notes
+Holocron/CHANGELOG.md               release history in plain language; "## Unreleased" is the draft notes
 LICENSE                    MIT
 Holocron.xcodeproj/        Xcode project, folder-synced groups, ad hoc signing, no packages
 Holocron/
@@ -292,7 +292,7 @@ Each recipe names real functions and files. When one step says "compile error", 
 4. **AI guide.** The file list and columns update by themselves. Then check the hand-written parts of [AIGuide.swift](Holocron/Core/AIGuide.swift): `describe(_:)` (one-line description), `valueRules` (allowed values and required cells), `recipes` (sample rows are built with `header.count`, but check the text and the `tail`/comma counts), and `doNot`. If the column takes fixed values, add them to `Lists` or `PYP` and reference them from the guide, not as copied strings.
 5. Check the older Help text: `CSVGuide.detail` and `CSVGuide.summary` in [Views/HelpContent.swift](Holocron/Views/HelpContent.swift).
 6. If the column holds student information, check the AI exclusions in `CommentDraft.swift` (`reportFacts`, `privateWords`) and that nothing shared or printed includes it.
-7. Update [docs/DATA.md](docs/DATA.md) (tables, formats, fixed lists) and add a user-facing bullet to `## Unreleased` in [CHANGELOG.md](CHANGELOG.md).
+7. Update [docs/DATA.md](docs/DATA.md) (tables, formats, fixed lists) and add a user-facing bullet to `## Unreleased` in [Holocron/CHANGELOG.md](Holocron/CHANGELOG.md).
 
 ### Add a new table
 
@@ -303,7 +303,7 @@ Each recipe names real functions and files. When one step says "compile error", 
 5. Verified automatic behaviour through `TableName.allCases`: `Database.init` (storage and change stamp), `AppModel.loadAll` (read, create blank, `badLoads`), `flushNow` (via `touch`), `ImportPlan` (`.planner` filters on `isPlanner`, `.everything` takes all), `YearEnd.archivePlan`, `StartOverPlan` and the README-for-AI file list.
 6. **Not automatic:** Start over with the planner-only scope clears only `t.isPlanner || t == .lessonsprivate || t == .classsteps` (`StartOver.swift`). A new student-side table that belongs to the planner reset must be added there. Also check `AppModel.usePlannerFolder`, which copies only planner tables.
 7. Add a recipe to `AIGuide.recipes` only if an assistant is likely to edit the table, with `valueRules` entries to match.
-8. Update [docs/DATA.md](docs/DATA.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (file map and counts), `CHANGELOG.md`.
+8. Update [docs/DATA.md](docs/DATA.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (file map and counts), `Holocron/CHANGELOG.md`.
 
 ### Add a screen (module)
 
@@ -312,7 +312,7 @@ Each recipe names real functions and files. When one step says "compile error", 
 3. Route it in `DetailRouter` in [Views/RootView.swift](Holocron/Views/RootView.swift) (exhaustive switch). The sidebar uses `visibleNav`.
 4. **Go menu shortcut:** `HolocronApp.swift` gives item `idx` the key `(idx + 1) % 10`, so ten screens use Cmd+1 to Cmd+0. An eleventh would reuse Cmd+1. Decide a different shortcut before adding one, and keep the order text in Help and README in step.
 5. Update Help: the shortcuts row in `HelpContent.swift` (hand-written list), the "Using Holocron" page, and the shortcuts section in `README.md`.
-6. Add `docs/FEATURES.md`, `docs/ARCHITECTURE.md` (file map) and `CHANGELOG.md` entries. Run `ui-design-check`.
+6. Add `docs/FEATURES.md`, `docs/ARCHITECTURE.md` (file map) and `Holocron/CHANGELOG.md` entries. Run `ui-design-check`.
 
 ### Add a Settings option
 
@@ -329,7 +329,7 @@ Each recipe names real functions and files. When one step says "compile error", 
 2. Put the answer logic in `Database` (see [SiriAnswers.swift](Holocron/Core/SiriAnswers.swift)) so it can be reasoned about without UI.
 3. Honour privacy: names only through `IntentHost.mayUseNames`. Student-related actions set `authenticationPolicy = .requiresAuthentication`. Actions that change data ask with `requestConfirmation`, call `saveNow(_:)`, and say "Saved" only after it returns true.
 4. **App Shortcuts limit:** `HolocronShortcuts.appShortcuts` holds 10 `AppShortcut`s, which is the system maximum. It is full. A new intent is still available in the Shortcuts app without a phrase (as `DescribeHolocronIntent` is). To give it a phrase, replace or merge an existing one, and keep every phrase containing `\(.applicationName)`.
-5. Update `HolocronShortcuts.examples` if you replace a phrase, the Integrations table in `docs/FEATURES.md`, the Help text and `CHANGELOG.md`.
+5. Update `HolocronShortcuts.examples` if you replace a phrase, the Integrations table in `docs/FEATURES.md`, the Help text and `Holocron/CHANGELOG.md`.
 
 ### Add or change an Apple Intelligence feature
 
@@ -340,7 +340,7 @@ Each recipe names real functions and files. When one step says "compile error", 
    Prefer guided output (`@Generable`, or a `DynamicGenerationSchema` with `anyOf` for a fixed set of answers, as `NoteTagger` does). Use `GenerationOptions(samplingMode: .greedy)` for classification.
    If the feature drafts from student text and opens on a screen, warm it: build the session in a `prewarm` (call `Intelligence.prewarm(session, prefix:)`), store it with `WarmSessions.put(key, session:, instructions:, fingerprint:)`, and in the request use `WarmSessions.take(key, instructions:, fingerprint:)?.session ?? LanguageModelSession(...)`. Put whatever the session was built from in the instructions or fingerprint so a stale one is never used. Call `WarmSessions.discard` in `onDisappear`. Warm only when `Intelligence.can` is true.
    Check any FoundationModels API in the SDK, not from memory: read `FoundationModels.swiftinterface` under `/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/FoundationModels.framework/Versions/A/Modules/FoundationModels.swiftmodule/` (the `arm64e-apple-macos` file). CI uses a different SDK from a development Mac, so avoid anything newer than the macOS 26 SDK.
-5. Update `docs/ARCHITECTURE.md`, `docs/FEATURES.md`, the guardrail list in `CLAUDE.md` and this file if rules change, and `CHANGELOG.md`. Run `code-reviewer`.
+5. Update `docs/ARCHITECTURE.md`, `docs/FEATURES.md`, the guardrail list in `CLAUDE.md` and this file if rules change, and `Holocron/CHANGELOG.md`. Run `code-reviewer`.
 
 ### Change the UI
 
@@ -356,7 +356,7 @@ Anything that reads, writes, moves, imports or archives CSVs, photos or the upda
 
 ### Always
 
-- Add a bullet to `## Unreleased` in `CHANGELOG.md`, in the same plain voice (section 11).
+- Add a bullet to `## Unreleased` in `Holocron/CHANGELOG.md`, in the same plain voice (section 11).
 - Keep [docs/](docs/) accurate where you changed behaviour. Docs describe code. Do not copy a doc claim into code or into this file without checking.
 
 ## 9. Build, run and verify
@@ -371,7 +371,7 @@ Anything that reads, writes, moves, imports or archives CSVs, photos or the upda
 - **Do not launch a build against the teacher's real folder.** If you must run the app, point it at a temporary folder first (Settings, Folders).
 - **CI** ([.github/workflows/build.yml](.github/workflows/build.yml)) runs on `macos-26` for every push to `main`, every pull request and on demand:
   1. Fails if any `.csv` file or `photos/` path is tracked.
-  2. Warns (does not fail) if `CHANGELOG.md` has no `## <MARKETING_VERSION>` line.
+  2. Warns (does not fail) if `Holocron/CHANGELOG.md` has no `## <MARKETING_VERSION>` line.
   3. Builds the Release app with `SYMROOT` in the runner temp folder.
   4. Checks the app exists, prints version and architectures, runs `codesign --verify --deep --strict`, zips with `ditto`, and keeps the zip for 7 days.
 - CI uses a different SDK from a development Mac (macOS 26 SDK on CI). Code that compiles locally against a newer SDK can fail there. See section 12.
@@ -410,7 +410,7 @@ CI warns when the project version has no changelog section. Do not change `Updat
 - Row access is `row.s("col")`. Tables are read through `db.rows(.t)` and `db.index(.t)`, and each change ends with `touch`.
 - Keep values as text and parse where used. Dates are `yyyy-MM-dd` strings, compared directly. Use `Cal` in `Dates.swift` for calendar maths and `uid()` for ids.
 
-**User-facing copy** (see [CHANGELOG.md](CHANGELOG.md))
+**User-facing copy** (see [Holocron/CHANGELOG.md](Holocron/CHANGELOG.md))
 
 - Short sentences with full stops. Verbs on buttons: "Make archive", "Import", "Draft comment", "Copy for SIMON". No jargon, no emoji, no exclamation marks except where the app already has one ("Get ready to learn!").
 - Say what changed for the teacher, not how. Examples from the changelog:
@@ -458,7 +458,7 @@ Full list with causes and fixes: [docs/PROBLEMS.md](docs/PROBLEMS.md).
 | [docs/FEATURES.md](docs/FEATURES.md) | Everything built, grouped by area, with the version it arrived and keyboard shortcuts. |
 | [docs/PROBLEMS.md](docs/PROBLEMS.md) | Past bugs with symptom, cause, fix and commit, plus known limitations. |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Suggested next work, first tests to write, HIG status. |
-| [CHANGELOG.md](CHANGELOG.md) | Release history. `## Unreleased` is the draft notes. |
+| [Holocron/CHANGELOG.md](Holocron/CHANGELOG.md) | Release history. `## Unreleased` is the draft notes. |
 | [.claude/agents/code-reviewer.md](.claude/agents/code-reviewer.md) | Review agent for data safety, privacy, correctness and release hygiene. |
 | [.claude/agents/ui-design-check.md](.claude/agents/ui-design-check.md) | Review agent for design consistency, readability and accessibility. |
 | [.github/workflows/build.yml](.github/workflows/build.yml) | CI definition. |

@@ -181,7 +181,7 @@ struct TermStatBar: View {
                 legend(Color.fillStrong, "\(build.empty) not planned")
                 Spacer()
                 if let g = build.nextGap {
-                    Text("Next gap: \(Cal.weekdayShort[dayIdx(g)]) \(shortDate(g))").font(.system(size: 12)).foregroundStyle(Color.ink2)
+                    Text("Next gap: \(Cal.weekdayShort[dayIdx(g)]) \(shortDate(g))").font(.label).foregroundStyle(Color.ink2)
                 }
             }
         }
@@ -191,7 +191,7 @@ struct TermStatBar: View {
     private func legend(_ c: Color, _ text: String) -> some View {
         HStack(spacing: 5) {
             Circle().fill(c).frame(width: 8, height: 8)
-            Text(text).font(.system(size: 12)).foregroundStyle(Color.ink2)
+            Text(text).font(.label).foregroundStyle(Color.ink2)
         }
     }
 }
@@ -210,7 +210,7 @@ struct TermGrid: View {
             GridRow {
                 Color.clear.frame(width: TermGrid.labelW, height: 1)
                 ForEach(0..<5, id: \.self) { i in
-                    Text(Cal.weekdayLong[i]).font(.system(size: 12.5, weight: .semibold))
+                    Text(Cal.weekdayLong[i]).font(.caption1Semibold)
                         .frame(width: colW, alignment: .leading).padding(.horizontal, 4)
                 }
             }
@@ -218,16 +218,16 @@ struct TermGrid: View {
                 GridRow {
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
-                            Text("Week \(w.number == 0 ? "" : String(w.number))").font(.system(size: 12.5, weight: .semibold))
+                            Text("Week \(w.number == 0 ? "" : String(w.number))").font(.caption1Semibold)
                             if !w.letter.isEmpty {
-                                Text(w.letter).font(.system(size: 11, weight: .bold))
+                                Text(w.letter).font(.smallBold)
                                     .foregroundStyle(w.letter == "B" ? Color.weekB : Color.appBlue)
                                     .frame(width: 20, height: 18)
                                     .background(w.letter == "B" ? Color.weekBBG : Color.appBlue.opacity(0.12))
                                     .clipShape(Capsule())
                             }
                         }
-                        Text(shortDate(w.monday)).font(.system(size: 11.5)).foregroundStyle(Color.ink2)
+                        Text(shortDate(w.monday)).font(.footnote).foregroundStyle(Color.ink2)
                         if w.monday == thisMonday {
                             Text("This week").font(.system(size: 10.5, weight: .semibold)).foregroundStyle(Color.appBlue)
                         }
@@ -261,7 +261,7 @@ struct TermGrid: View {
             case .out:
                 Color.clear.frame(height: 18)
             case .note(let n):
-                Text(n).font(.system(size: 11.5)).foregroundStyle(Color.ink2)
+                Text(n).font(.footnote).foregroundStyle(Color.ink2)
                     .padding(6).frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.fillFaint)
                     .clipShape(RoundedRectangle(cornerRadius: Radius.block, style: .continuous))
@@ -286,7 +286,7 @@ struct TermGrid: View {
                     if l.status == .plan { TagLabel(text: "Plan", fg: tone.inkColor, bg: Color.veil.opacity(0.7)) }
                     Spacer(minLength: 0)
                 }
-                Text(l.text).font(.system(size: 11.5)).lineLimit(3)
+                Text(l.text).font(.footnote).lineLimit(3)
                     .foregroundStyle(l.status == .empty ? Color.ink3 : Color.primary)
                     .multilineTextAlignment(.leading)
             }
@@ -345,7 +345,7 @@ struct UnitsView: View {
                     }
                 }
                 Text("Focus ATLs and attributes are highlighted. Numbers count lessons tagged inside the unit's dates, in any subject.")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                    .font(.caption1).foregroundStyle(Color.ink2)
             }
             .padding(24)
         }
@@ -390,7 +390,7 @@ struct UnitCard: View {
             }
             Text(unit.s("title").isEmpty ? "Untitled unit" : unit.s("title")).font(.system(size: 19, weight: .bold))
             Text(unitDatesText(db, unit) + (stats.tdl > 0 ? " · TDL \(stats.planned) of \(stats.tdl) lessons planned" : ""))
-                .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                .font(.caption1).foregroundStyle(Color.ink2)
             if !unit.s("central_idea").isEmpty {
                 Text(unit.s("central_idea")).font(.system(size: 14, weight: .medium))
             }
@@ -399,7 +399,7 @@ struct UnitCard: View {
                 ForEach(lines, id: \.self) { l in
                     HStack(alignment: .top, spacing: 6) {
                         Text("\u{2022}")
-                        Text(l).font(.system(size: 13))
+                        Text(l).font(.body1)
                     }
                 }
             }
@@ -413,7 +413,7 @@ struct UnitCard: View {
             countChips(stats.lp, focus: listOf(unit.s("profile")), tone: tone)
             if !unit.s("reflection").isEmpty {
                 sectionTitle("Reflection")
-                Text(unit.s("reflection")).font(.system(size: 13))
+                Text(unit.s("reflection")).font(.body1)
             }
         }
         .padding(16)
@@ -432,7 +432,7 @@ struct UnitCard: View {
     private func countChips(_ counts: [String: Int], focus: [String], tone: Tone) -> some View {
         let keys = Array(Set(focus + Array(counts.keys))).sorted()
         if keys.isEmpty {
-            Text("None yet").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+            Text("None yet").font(.caption1).foregroundStyle(Color.ink2)
         } else {
             FlowLayout(spacing: 6) {
                 ForEach(keys, id: \.self) { k in
@@ -441,7 +441,7 @@ struct UnitCard: View {
                         Text(k)
                         if let n = counts[k], n > 0 { Text("\(n)").fontWeight(.bold) }
                     }
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.labelMedium)
                     .padding(.vertical, 3).padding(.horizontal, 9)
                     .background(Color.veil.opacity(isFocus ? 0.9 : 0.5))
                     .overlay(Capsule().stroke(isFocus ? tone.barColor : Color.clear, lineWidth: 1.5))
@@ -504,7 +504,7 @@ struct UnitSheet: View {
             }
             NoteBox(label: "Notes", text: b("notes"), lines: 2)
             NoteBox(label: "Reflection", hint: "at the end of the unit", text: b("reflection"), lines: 3)
-            if !error.isEmpty { Text(error).font(.system(size: 12.5)).foregroundStyle(Color.appRed) }
+            if !error.isEmpty { Text(error).font(.caption1).foregroundStyle(Color.appRed) }
             HStack {
                 Spacer()
                 if !isNew {
@@ -647,7 +647,7 @@ struct DevotionCard: View {
                          d.s("profile").isEmpty ? "" : "Learner Profile: " + d.s("profile"),
                          d.s("primer_name").isEmpty ? "" : "Berry Street: " + d.s("primer_name")].filter { !$0.isEmpty }
             ChipRow(items: chips, tinted: true)
-            if !d.s("focus").isEmpty { Text(d.s("focus")).font(.system(size: 14)).foregroundStyle(Color.ink2) }
+            if !d.s("focus").isEmpty { Text(d.s("focus")).font(.body2).foregroundStyle(Color.ink2) }
             section(1, "Greeting and check-in") { paras(d.s("greeting")) }
             section(2, "Values and expectations") { paras(d.s("values")) }
             section(3, "The devotion") {
@@ -656,14 +656,14 @@ struct DevotionCard: View {
                         .padding(12).frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.appBlue.opacity(0.08))
                         .clipShape(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous))
-                    Text(d.s("scripture")).font(.system(size: 12.5, weight: .semibold)).foregroundStyle(Color.ink2)
-                    Text("The message").font(.system(size: 13.5, weight: .semibold))
+                    Text(d.s("scripture")).font(.caption1Semibold).foregroundStyle(Color.ink2)
+                    Text("The message").font(.bodyLargeSemibold)
                     paras(d.s("message"))
-                    Text("Reflection questions").font(.system(size: 13.5, weight: .semibold)).padding(.top, 4)
+                    Text("Reflection questions").font(.bodyLargeSemibold).padding(.top, 4)
                     ForEach(linesOf(d.s("questions")), id: \.self) { q in
-                        HStack(alignment: .top, spacing: 6) { Text("\u{2022}"); Text(q).textSelection(.enabled) }.font(.system(size: 14))
+                        HStack(alignment: .top, spacing: 6) { Text("\u{2022}"); Text(q).textSelection(.enabled) }.font(.body2)
                     }
-                    Text("Prayer").font(.system(size: 13.5, weight: .semibold)).padding(.top, 4)
+                    Text("Prayer").font(.bodyLargeSemibold).padding(.top, 4)
                     paras(d.s("prayer"))
                 }
             }
@@ -671,7 +671,7 @@ struct DevotionCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     paras(d.s("primer"))
                     if !d.s("primer_note").isEmpty {
-                        Text(d.s("primer_note")).font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                        Text(d.s("primer_note")).font(.caption1).foregroundStyle(Color.ink2)
                     }
                 }
             }
@@ -679,7 +679,7 @@ struct DevotionCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     paras(d.s("went_well"))
                     if !d.s("transition").isEmpty {
-                        Text("Transition: " + d.s("transition")).font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                        Text("Transition: " + d.s("transition")).font(.caption1).foregroundStyle(Color.ink2)
                     }
                 }
             }
@@ -701,7 +701,7 @@ struct DevotionCard: View {
     private func paras(_ text: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(Array(linesOf(text).enumerated()), id: \.offset) { _, p in
-                Text(p).font(.system(size: 14)).textSelection(.enabled)
+                Text(p).font(.body2).textSelection(.enabled)
             }
         }
     }

@@ -102,7 +102,7 @@ A was chosen, so B (phase 7) is not planned. Tokens keep it a small job if it is
 
 ## Phases
 
-Each phase: its own branch from `main`, build on Xcode 26 and 27, run `ui-design-check`, take before and after screenshots of every screen it touches, add a `## Unreleased` bullet to `CHANGELOG.md`. None of this touches file reading or writing, so `code-reviewer` is only needed if a phase strays into `Core`.
+Each phase: its own branch from `main`, build on Xcode 26 and 27, run `ui-design-check`, take before and after screenshots of every screen it touches, add a `## Unreleased` bullet to `Holocron/CHANGELOG.md`. None of this touches file reading or writing, so `code-reviewer` is only needed if a phase strays into `Core`.
 
 ### Phase 1. Tokens, no visible change (S to M)
 

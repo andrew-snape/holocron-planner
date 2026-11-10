@@ -1,6 +1,6 @@
 # Features
 
-Everything built so far, with the version it arrived in ([CHANGELOG.md](../CHANGELOG.md)). "Start" means it was there before the first changelog entry (1.1). "Unreleased" is not in a release yet. For how each part works see [ARCHITECTURE.md](ARCHITECTURE.md).
+Everything built so far, with the version it arrived in ([Holocron/CHANGELOG.md](../Holocron/CHANGELOG.md)). "Start" means it was there before the first changelog entry (1.1). "Unreleased" is not in a release yet. For how each part works see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Planning
 
@@ -83,6 +83,18 @@ Everything built so far, with the version it arrived in ([CHANGELOG.md](../CHANG
 | Australian locale | 1.9.1 | Monday-first calendar, weekday initials M, Tu, W, Th, F, Sa, Su. |
 | App icon | 1.3 | macOS 26 style. |
 | AI guide in the data folders | Unreleased | `README-for-AI.md` in each folder, and Help, then Copy Guide for AI Assistants. |
+| Merge by row | Unreleased (1.26) | Before saving, a changed file is read again and merged row by row, with a copy in `Holocron archive/Before merge`. A clash opens a sheet to keep mine or theirs. iCloud copies such as `lessons 2.csv` can be merged in. |
+| Schema version | Unreleased (1.26) | `schema_version` in `settings.csv`. Older folders are copied into `Holocron archive` before any migration. |
+| Core tests | Unreleased (1.26) | `scripts/test-core.sh` runs `Tests/Core` against temporary folders. |
+| Class markbook | Unreleased (1.31) | Mark class, Markbook: a sortable `Table` of students by tasks for one subject, coloured through `Tone`, Missing cells, pre and post growth columns, CSV export. |
+| Growth chart | Unreleased (1.31) | Swift Charts line for each subject on a student's Assessment tab. |
+| Report progress | Unreleased (1.31) | Per student: judgements done, general comment word count against 100 to 150, dot point status, Copy for SIMON. |
+| Groups | Unreleased (1.31) | `groups.csv` in the student folder. Group maker (random or mixed by result), Quick log and Mark class selection, Class screen card behind a Settings switch (off by default). |
+| Today Now card | Unreleased (1.32) | Current lesson, progress line, minutes left, next lesson and a Class screen button. Past blocks fade. Side panel ends with the quote. |
+| Subject colour palette | Unreleased (1.32) | Twelve tested colours in `SubjectColours`, picked from a popover in Settings. |
+| Week grid polish | Unreleased (1.32) | Today tint, filled or hollow plan dot, drag target highlight. |
+| Class screen sizing | Unreleased (1.32) | `Font.boardLabel` and `boardBody` (nothing under 14), work mode wash, timer end state, optional end sound. |
+| Type scale | Unreleased (1.32) | `Font.body1`, `caption1`, `label`, `footnote`, `small`, `metric` and others in `Theme.swift`, replacing about 400 fixed sizes. |
 
 ## Integrations
 

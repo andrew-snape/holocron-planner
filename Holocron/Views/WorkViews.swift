@@ -56,7 +56,7 @@ struct WorkThumbImage: View {
                 Image(nsImage: image).resizable().scaledToFit()
             } else if finished {
                 Label("No preview", systemImage: "photo")
-                    .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                    .font(.label).foregroundStyle(Color.ink2)
             } else {
                 ProgressView().controlSize(.small)
             }
@@ -190,30 +190,30 @@ struct WorkTile: View {
                     WorkThumbImage(url: url)
                 } else {
                     Label(url == nil ? "No file" : "File not found", systemImage: "photo")
-                        .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                        .font(.label).foregroundStyle(Color.ink2)
                 }
             }
             .frame(height: 150)
             .clipShape(RoundedRectangle(cornerRadius: Radius.field, style: .continuous))
             .accessibilityLabel("Photo of \(title)")
 
-            Text(title).font(.system(size: 13, weight: .semibold)).lineLimit(2)
+            Text(title).font(.body1Semibold).lineLimit(2)
             HStack(spacing: 6) {
                 if !row.s("subject").isEmpty { TagLabel(text: row.s("subject")) }
-                Text(shortDate(row.s("date"))).font(.system(size: 12)).foregroundStyle(Color.ink2)
+                Text(shortDate(row.s("date"))).font(.label).foregroundStyle(Color.ink2)
             }
             if showStudent {
-                Text(student).font(.system(size: 12)).foregroundStyle(Color.ink2).lineLimit(1)
+                Text(student).font(.label).foregroundStyle(Color.ink2).lineLimit(1)
             }
             if !row.s("caption").isEmpty && !row.s("task").isEmpty {
-                Text(row.s("caption")).font(.system(size: 12)).foregroundStyle(Color.ink2).lineLimit(2)
+                Text(row.s("caption")).font(.label).foregroundStyle(Color.ink2).lineLimit(2)
             }
 
             Menu {
                 actions(url: url, exists: exists)
             } label: {
                 Label("Actions", systemImage: "ellipsis.circle")
-                    .font(.system(size: 12.5))
+                    .font(.caption1)
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
@@ -310,12 +310,6 @@ struct WorkGalleryView: View {
 
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                PageHeader("Work", subtitle: "\(linked.count) \(linked.count == 1 ? "piece" : "pieces")") {
-                    Button { model.sheet = .addWork(studentID: nil) } label: {
-                        Label("Add work…", systemImage: "plus")
-                    }
-                    .buttonStyle(.bordered)
-                }
                 WorkFilterBar(filter: $filter, showStudent: true)
 
                 if all.isEmpty {
@@ -330,15 +324,15 @@ struct WorkGalleryView: View {
                 if !unlinked.isEmpty {
                     SectionTitle("Unlinked")
                     Text("These pieces belong to students who are no longer on the roll. Their files are kept, but they are not shown as pictures here.")
-                        .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                        .font(.caption1).foregroundStyle(Color.ink2)
                         .fixedSize(horizontal: false, vertical: true)
                     VStack(spacing: 6) {
                         ForEach(unlinked, id: \Row.["id"]) { r in
                             HStack(spacing: 8) {
-                                Text(shortDate(r.s("date"))).font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                                Text(shortDate(r.s("date"))).font(.caption1).foregroundStyle(Color.ink2)
                                 if !r.s("subject").isEmpty { TagLabel(text: r.s("subject")) }
                                 Text(r.s("task").isEmpty ? (r.s("caption").isEmpty ? "Work" : r.s("caption")) : r.s("task"))
-                                    .font(.system(size: 13)).lineLimit(1)
+                                    .font(.body1).lineLimit(1)
                                 Spacer(minLength: 0)
                             }
                             .card(padding: 10)
@@ -348,6 +342,14 @@ struct WorkGalleryView: View {
             }
             .padding(24)
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .navigationTitle("Work")
+        .navigationSubtitle("\(linked.count) \(linked.count == 1 ? "piece" : "pieces")")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { model.sheet = .addWork(studentID: nil) } label: { Label("Add work…", systemImage: "plus") }
+                    .help("Add photos or scans of students' work")
+            }
         }
     }
 }
@@ -474,7 +476,7 @@ struct AddWorkSheet: View {
                     Label("Choose files…", systemImage: "folder")
                 }
                 .buttonStyle(.bordered)
-                Text("JPEG, PNG, HEIC, TIFF or PDF").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+                Text("JPEG, PNG, HEIC, TIFF or PDF").font(.caption1).foregroundStyle(Color.ink2)
                 Spacer(minLength: 0)
             }
 
@@ -488,7 +490,7 @@ struct AddWorkSheet: View {
 
             if !summary.isEmpty {
                 Label(summary, systemImage: "checkmark.circle")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.body1Semibold)
                     .foregroundStyle(Color.ink2)
             }
         }
@@ -502,8 +504,8 @@ struct AddWorkSheet: View {
     private var dropZone: some View {
         VStack(spacing: 6) {
             Image(systemName: "square.and.arrow.down").font(.system(size: 22)).foregroundStyle(Color.ink2)
-            Text("Drop photos or PDFs here").font(.system(size: 14, weight: .semibold))
-            Text("or choose files above").font(.system(size: 12.5)).foregroundStyle(Color.ink2)
+            Text("Drop photos or PDFs here").font(.body2Semibold)
+            Text("or choose files above").font(.caption1).foregroundStyle(Color.ink2)
         }
         .frame(maxWidth: .infinity)
         .padding(28)
@@ -526,7 +528,7 @@ struct AddWorkSheet: View {
             HStack(spacing: 8) {
                 Image(systemName: v.problem.isEmpty ? "photo" : "exclamationmark.triangle")
                     .foregroundStyle(v.problem.isEmpty ? Color.ink2 : Color.appRed)
-                Text(v.name).font(.system(size: 13, weight: .semibold)).lineLimit(1)
+                Text(v.name).font(.body1Semibold).lineLimit(1)
                 Spacer(minLength: 0)
                 Button {
                     drafts.removeAll { $0.id == v.id }
@@ -539,7 +541,7 @@ struct AddWorkSheet: View {
             }
 
             if !v.problem.isEmpty {
-                Text(v.problem).font(.system(size: 12.5)).foregroundStyle(Color.appRed)
+                Text(v.problem).font(.caption1).foregroundStyle(Color.appRed)
             } else {
                 VStack(alignment: .leading, spacing: 6) {
                     FieldLabel(text: "Students", hint: "Choose one, or several for a group photo")
@@ -552,10 +554,10 @@ struct AddWorkSheet: View {
                                 d.students.wrappedValue = cur
                             } label: {
                                 HStack(spacing: 4) {
-                                    if on { Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)) }
+                                    if on { Image(systemName: "checkmark").font(.smallBold) }
                                     Text(s.fullName)
                                 }
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.labelMedium)
                                     .padding(.vertical, 4)
                                     .padding(.horizontal, 10)
                                     .background(on ? Color.appBlue : Color.fill)
@@ -569,7 +571,7 @@ struct AddWorkSheet: View {
                     if !already.isEmpty {
                         Label("\(already.map { db.studentName($0) }.joined(separator: ", ")) already has this photo. It will not be added again for them.",
                               systemImage: "exclamationmark.triangle")
-                            .font(.system(size: 12.5)).foregroundStyle(Color.appAmber)
+                            .font(.caption1).foregroundStyle(Color.appAmber)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -582,7 +584,7 @@ struct AddWorkSheet: View {
 
             if let r = results[v.id] {
                 Label(r.message, systemImage: r.succeeded ? "checkmark.circle" : "exclamationmark.triangle")
-                    .font(.system(size: 12.5))
+                    .font(.caption1)
                     .foregroundStyle(r.succeeded ? Color.appGreen : Color.appRed)
                     .fixedSize(horizontal: false, vertical: true)
             }

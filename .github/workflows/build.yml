@@ -44,7 +44,7 @@ jobs:
         run: |
           VERSION=$(grep -m1 -E 'MARKETING_VERSION = ' Holocron.xcodeproj/project.pbxproj | sed -E 's/.*= ([0-9.]+);/\1/')
           echo "Version in the project: $VERSION"
-          grep -qx "## $VERSION" CHANGELOG.md || { echo "::warning::CHANGELOG.md has no '## $VERSION' section yet."; }
+          grep -qx "## $VERSION" Holocron/CHANGELOG.md || { echo "::warning::Holocron/CHANGELOG.md has no '## $VERSION' section yet."; }
 
       - name: Show the Xcode version
         run: xcodebuild -version

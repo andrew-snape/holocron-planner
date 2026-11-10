@@ -86,6 +86,39 @@ extension Font {
     static let hSheet = Font.system(size: 18, weight: .bold)
     /// Heading above a group on a screen.
     static let hSection = Font.system(size: 15, weight: .semibold)
+
+    // The type scale. Each is one size and weight used across the app. Use these, not .system(size:).
+    /// Body text and field text.
+    static let body1 = Font.system(size: 13)
+    static let body1Medium = Font.system(size: 13, weight: .medium)
+    static let body1Semibold = Font.system(size: 13, weight: .semibold)
+    /// Slightly larger body text, such as names in lists.
+    static let body2 = Font.system(size: 14)
+    static let body2Semibold = Font.system(size: 14, weight: .semibold)
+    static let bodyLarge = Font.system(size: 13.5)
+    static let bodyLargeSemibold = Font.system(size: 13.5, weight: .semibold)
+    /// Explanations under a control or a heading.
+    static let caption1 = Font.system(size: 12.5)
+    static let caption1Medium = Font.system(size: 12.5, weight: .medium)
+    static let caption1Semibold = Font.system(size: 12.5, weight: .semibold)
+    /// Field labels and dense rows.
+    static let label = Font.system(size: 12)
+    static let labelMedium = Font.system(size: 12, weight: .medium)
+    static let labelSemibold = Font.system(size: 12, weight: .semibold)
+    static let labelMono = Font.system(size: 12, design: .monospaced)
+    /// Footnotes, badges and counts.
+    static let footnote = Font.system(size: 11.5)
+    static let small = Font.system(size: 11)
+    static let smallSemibold = Font.system(size: 11, weight: .semibold)
+    static let smallBold = Font.system(size: 11, weight: .bold)
+    static let tiny = Font.system(size: 10)
+    /// Class screen type, read from the back of the room. Small text on that screen is 14 or more.
+    static let boardLabel = Font.system(size: 14, weight: .semibold)
+    static let boardBody = Font.system(size: 16)
+    static let boardBodyMedium = Font.system(size: 16, weight: .medium)
+    /// Big numbers on summary cards.
+    static let metric = Font.system(size: 22, weight: .bold)
+    static let metricRounded = Font.system(size: 22, weight: .semibold, design: .rounded)
 }
 
 // MARK: - Card style

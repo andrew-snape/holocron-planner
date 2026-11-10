@@ -29,7 +29,7 @@ struct JumpSheet: View {
             Divider()
             if list.isEmpty {
                 Text(query.trimmed.isEmpty ? "Nothing to jump to." : "Nothing matches \u{201C}\(query)\u{201D}.")
-                    .font(.system(size: 13)).foregroundStyle(Color.ink2)
+                    .font(.body1).foregroundStyle(Color.ink2)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollViewReader { proxy in
@@ -52,7 +52,7 @@ struct JumpSheet: View {
             }
             Divider()
             Text("Return to go, Esc to close.")
-                .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                .font(.label).foregroundStyle(Color.ink2)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 14).padding(.vertical, 8)
         }
@@ -67,8 +67,8 @@ struct JumpSheet: View {
         HStack(spacing: 10) {
             Image(systemName: r.symbol).frame(width: 22).foregroundStyle(Color.appBlue)
             VStack(alignment: .leading, spacing: 1) {
-                Text(r.title).font(.system(size: 13, weight: .medium)).lineLimit(1)
-                Text(r.detail).font(.system(size: 12)).foregroundStyle(Color.ink2).lineLimit(1)
+                Text(r.title).font(.body1Medium).lineLimit(1)
+                Text(r.detail).font(.label).foregroundStyle(Color.ink2).lineLimit(1)
             }
             Spacer(minLength: 0)
         }

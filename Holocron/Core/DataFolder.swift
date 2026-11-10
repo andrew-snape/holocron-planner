@@ -81,6 +81,11 @@ struct DataFolder {
             #endif
             return .missing
         }
+        return readFile(f, table: t)
+    }
+
+    /// Reads a CSV file as the table `t`, with the same checks as `read`. Also used for copies that iCloud made.
+    func readFile(_ f: URL, table t: TableName) -> ReadResult {
         do {
             let data = try Data(contentsOf: f)
             // UTF-16 exports are not plain text here, and would be rewritten as garbage, so they are left alone.

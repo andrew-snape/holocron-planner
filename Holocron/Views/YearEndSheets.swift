@@ -41,18 +41,18 @@ struct ArchiveYearSheet: View {
 
     private var form: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Archive this year").font(.system(size: 22, weight: .bold))
+            Text("Archive this year").font(.metric)
             Text("Makes a complete copy of your Holocron data. It only copies, so nothing is changed or cleared and you carry on as you are.")
-                .font(.system(size: 13)).foregroundStyle(Color.ink2)
+                .font(.body1).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack {
-                Text("Year").font(.system(size: 13, weight: .semibold))
+                Text("Year").font(.body1Semibold)
                 TextField("Year", text: $label)
                     .textFieldStyle(.roundedBorder).frame(width: 140)
                     .onSubmit { refresh() }
                 Text("Saved as \(ArchivePlan.cleanLabel(label)) year end")
-                    .font(.system(size: 12)).foregroundStyle(Color.ink3)
+                    .font(.label).foregroundStyle(Color.ink3)
             }
 
             if shared {
@@ -60,28 +60,28 @@ struct ArchiveYearSheet: View {
                     .toggleStyle(.checkbox)
                     .onChange(of: includeShared) { refresh() }
                 Text("It is shared with colleagues, so it is left out unless you tick this. Your private lessons and Devotion files are always included.")
-                    .font(.system(size: 12)).foregroundStyle(Color.ink3)
+                    .font(.label).foregroundStyle(Color.ink3)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             if let plan {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("This will copy \(plural(plan.copies.count, "file")) and the student photos into")
-                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.ink2)
+                        .font(.labelSemibold).foregroundStyle(Color.ink2)
                     Text(plan.archive.deletingLastPathComponent().path)
-                        .font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+                        .font(.labelMono).textSelection(.enabled)
                 }
                 .card()
                 if !plan.waitingOnICloud.isEmpty {
                     Label("Still downloading from iCloud: \(plan.waitingOnICloud.joined(separator: ", ")). Try again in a moment.",
                           systemImage: "icloud.and.arrow.down")
-                        .font(.system(size: 12.5)).foregroundStyle(Color.appAmber)
+                        .font(.caption1).foregroundStyle(Color.appAmber)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
             Text("The copy holds real student information. Please keep it only where your school's policy allows.")
-                .font(.system(size: 12)).foregroundStyle(Color.ink3)
+                .font(.label).foregroundStyle(Color.ink3)
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack {
@@ -116,22 +116,22 @@ struct ArchiveYearSheet: View {
     private func finished(_ r: Result<ArchiveSummary, ArchivePlan.Failure>) -> some View {
         switch r {
         case .success(let s):
-            Text("Archive made").font(.system(size: 22, weight: .bold))
+            Text("Archive made").font(.metric)
             Text("Your data is unchanged. A copy is in")
-                .font(.system(size: 13)).foregroundStyle(Color.ink2)
+                .font(.body1).foregroundStyle(Color.ink2)
             VStack(alignment: .leading, spacing: 6) {
-                Text(s.archive.path).font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+                Text(s.archive.path).font(.labelMono).textSelection(.enabled)
                 Text("\(plural(s.tables.count, "file")) and \(plural(s.photos, "photo")). A README.txt inside lists what is in it.")
-                    .font(.system(size: 12)).foregroundStyle(Color.ink2)
+                    .font(.label).foregroundStyle(Color.ink2)
                 Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([s.archive]) }
             }
             .card()
             HStack { Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction) }
         case .failure(let f):
-            Text("No archive was made").font(.system(size: 22, weight: .bold))
-            Text(message(f)).font(.system(size: 13)).foregroundStyle(Color.ink2)
+            Text("No archive was made").font(.metric)
+            Text(message(f)).font(.body1).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Your data was not changed.").font(.system(size: 12.5)).foregroundStyle(Color.ink3)
+            Text("Your data was not changed.").font(.caption1).foregroundStyle(Color.ink3)
             HStack { Spacer(); Button("Close") { dismiss() }.keyboardShortcut(.defaultAction) }
         }
     }
@@ -207,8 +207,8 @@ struct ImportSheet: View {
 
     private var form: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Import from folder").font(.system(size: 22, weight: .bold))
-            Text(source.path).font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+            Text("Import from folder").font(.metric)
+            Text(source.path).font(.labelMono).textSelection(.enabled)
                 .lineLimit(2).truncationMode(.middle)
 
             Picker("What to import", selection: $scope) {
@@ -224,7 +224,7 @@ struct ImportSheet: View {
                     .onChange(of: includeShared) { refresh() }
                 if let plan, !plan.sharedPlannerLeftOut.isEmpty {
                     Text("Your planner folder is shared with colleagues, so its files are left alone unless you tick this.")
-                        .font(.system(size: 12)).foregroundStyle(Color.ink3)
+                        .font(.label).foregroundStyle(Color.ink3)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -234,43 +234,43 @@ struct ImportSheet: View {
                     VStack(alignment: .leading, spacing: 5) {
                         ForEach(plan.items) { it in
                             HStack {
-                                Text(it.table.rawValue + ".csv").font(.system(size: 12, design: .monospaced))
+                                Text(it.table.rawValue + ".csv").font(.labelMono)
                                 Spacer()
-                                Text(line(it)).font(.system(size: 12)).foregroundStyle(Color.ink2)
+                                Text(line(it)).font(.label).foregroundStyle(Color.ink2)
                             }
                         }
                         if !plan.photos.isEmpty {
                             HStack {
-                                Text("photos").font(.system(size: 12, design: .monospaced))
+                                Text("photos").font(.labelMono)
                                 Spacer()
-                                Text(plural(plan.photos.count, "photo")).font(.system(size: 12)).foregroundStyle(Color.ink2)
+                                Text(plural(plan.photos.count, "photo")).font(.label).foregroundStyle(Color.ink2)
                             }
                         }
                         if !plan.workFiles.isEmpty {
                             HStack {
-                                Text("work").font(.system(size: 12, design: .monospaced))
+                                Text("work").font(.labelMono)
                                 Spacer()
-                                Text(plural(plan.workFiles.count, "work photo")).font(.system(size: 12)).foregroundStyle(Color.ink2)
+                                Text(plural(plan.workFiles.count, "work photo")).font(.label).foregroundStyle(Color.ink2)
                             }
                         }
                         if !plan.recordingFiles.isEmpty {
                             HStack {
-                                Text("recordings").font(.system(size: 12, design: .monospaced))
+                                Text("recordings").font(.labelMono)
                                 Spacer()
-                                Text(plural(plan.recordingFiles.count, "recording")).font(.system(size: 12)).foregroundStyle(Color.ink2)
+                                Text(plural(plan.recordingFiles.count, "recording")).font(.label).foregroundStyle(Color.ink2)
                             }
                         }
                     }
                     .card()
                     if plan.replacesSomething {
                         Text("Files this replaces are first copied into a Before import folder in Holocron archive, next to your data folder.")
-                            .font(.system(size: 12)).foregroundStyle(Color.ink3)
+                            .font(.label).foregroundStyle(Color.ink3)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 } else {
                     ForEach(plan.problems, id: \.self) { p in
                         Label(p, systemImage: "exclamationmark.triangle")
-                            .font(.system(size: 12.5)).foregroundStyle(Color.appAmber)
+                            .font(.caption1).foregroundStyle(Color.appAmber)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -310,33 +310,33 @@ struct ImportSheet: View {
     private func finished(_ o: AppModel.ImportOutcome) -> some View {
         switch o {
         case .done(let s):
-            Text("Imported").font(.system(size: 22, weight: .bold))
+            Text("Imported").font(.metric)
             Text(broughtIn(s))
-                .font(.system(size: 13)).foregroundStyle(Color.ink2)
+                .font(.body1).foregroundStyle(Color.ink2)
             if s.photosSkipped > 0 {
                 Text("\(plural(s.photosSkipped, "photo")) could not be copied and were skipped.")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.appAmber)
+                    .font(.caption1).foregroundStyle(Color.appAmber)
             }
             if s.workSkipped > 0 {
                 Text("\(plural(s.workSkipped, "work photo")) could not be copied and were skipped. Their tiles will show as missing.")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.appAmber)
+                    .font(.caption1).foregroundStyle(Color.appAmber)
             }
             if s.recordingsSkipped > 0 {
                 Text("\(plural(s.recordingsSkipped, "recording")) could not be copied and were skipped.")
-                    .font(.system(size: 12.5)).foregroundStyle(Color.appAmber)
+                    .font(.caption1).foregroundStyle(Color.appAmber)
             }
             if let b = s.backup {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("The files it replaced are in").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.ink2)
-                    Text(b.path).font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+                    Text("The files it replaced are in").font(.labelSemibold).foregroundStyle(Color.ink2)
+                    Text(b.path).font(.labelMono).textSelection(.enabled)
                     Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([b]) }
                 }
                 .card()
             }
             HStack { Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction) }
         case .failed(let message):
-            Text("Nothing was changed").font(.system(size: 22, weight: .bold))
-            Text(message).font(.system(size: 13)).foregroundStyle(Color.ink2)
+            Text("Nothing was changed").font(.metric)
+            Text(message).font(.body1).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
             HStack { Spacer(); Button("Close") { dismiss() }.keyboardShortcut(.defaultAction) }
         }

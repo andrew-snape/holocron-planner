@@ -17,6 +17,7 @@ struct HolocronApp: App {
         // Light mode only, by choice.
         NSApplication.shared.appearance = NSAppearance(named: .aqua)
         let m = AppModel()
+        m.whatsNew = WhatsNew.pending()
         _model = State(initialValue: m)
         IntentHost.model = m
     }

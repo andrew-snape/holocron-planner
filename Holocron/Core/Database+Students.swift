@@ -62,9 +62,10 @@ extension Database {
     /// Removes a student and every note attached to them.
     func removeStudent(_ id: String) {
         let logs: [TableName] = [.assessments, .taskdone, .plannotes, .wellbeing, .behaviour, .lessonnotes, .reportjudge, .reportcomment, .strandcomments, .interviews]
-        withUndo("Delete Student", done: "Student deleted", tables: [.students] + logs) {
+        withUndo("Delete Student", done: "Student deleted", tables: [.students, .groups] + logs) {
             remove(.students, where: { $0.s("id") == id })
             for t in logs { remove(t, where: { $0.s("student_id") == id }) }
+            removeFromGroups(id)
             touch(Set([.students] + logs))
         }
     }
