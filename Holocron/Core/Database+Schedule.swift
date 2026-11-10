@@ -119,11 +119,13 @@ extension Database {
     func swapDates(_ d1: String, _ p1: Int, _ d2: String, _ p2: Int) {
         let s1 = plannedSubject(d1, p1), s2 = plannedSubject(d2, p2)
         let c1 = content(d1, p1), c2 = content(d2, p2)
-        setDayPlan(d1, p1, s2)
-        setDayPlan(d2, p2, s1)
-        putContent(d1, p1, s2, c2)
-        putContent(d2, p2, s1, c1)
-        touch(.dayplan, .lessons)
+        withUndo("Swap Lessons", done: "Swapped for these dates", tables: [.dayplan, .lessons]) {
+            setDayPlan(d1, p1, s2)
+            setDayPlan(d2, p2, s1)
+            putContent(d1, p1, s2, c2)
+            putContent(d2, p2, s1, c1)
+            touch(.dayplan, .lessons)
+        }
     }
 
     /// Swap two slots in the fortnight template, so it sticks every cycle.
@@ -132,6 +134,17 @@ extension Database {
         let s2 = slotSubject(week: w2, day: day2, per: p2)
         setSlot(week: w1, day: day1, per: p1, subject: s2)
         setSlot(week: w2, day: day2, per: p2, subject: s1)
+    }
+
+    /// The whole "every cycle" swap as one step: the timetable and the lessons that move with it.
+    func swapTemplateWithLessons(_ a: SlotRef, _ b: SlotRef) {
+        withUndo("Swap Lessons", done: "Timetable updated", tables: [.timetable, .lessons]) {
+            swapTemplate(a.week, a.day, a.per, b.week, b.day, b.per)
+            let c1 = content(a.date, a.per), c2 = content(b.date, b.per)
+            putContent(a.date, a.per, plannedSubject(a.date, a.per), c2)
+            putContent(b.date, b.per, plannedSubject(b.date, b.per), c1)
+            touch(.lessons)
+        }
     }
 
     // MARK: Lessons

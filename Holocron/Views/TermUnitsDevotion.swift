@@ -315,6 +315,7 @@ func unitDatesText(_ db: Database, _ u: Row) -> String {
 
 struct UnitsView: View {
     @Environment(AppModel.self) private var model
+    @State private var query = ""
 
     var body: some View {
         let db = model.db
@@ -325,12 +326,19 @@ struct UnitsView: View {
             if today > u.s("end") { return 3 }
             return 0
         }
-        let us = db.unitsSorted.sorted { rank($0) < rank($1) }
+        let all = db.unitsSorted.sorted { rank($0) < rank($1) }
+        let words = JumpSearch.words(query)
+        let us = words.isEmpty ? all : all.filter { u in
+            JumpSearch.matches(words, JumpSearch.words(u.s("title") + " " + u.s("theme") + " " + u.s("central_idea") + " " + u.s("concepts") + " " + u.s("lines")))
+        }
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                if us.isEmpty {
+                if all.isEmpty {
                     EmptyNote(title: "No units yet",
-                              message: "Add your unit of inquiry with its theme, central idea and dates. TDL lessons in those dates will show it, and Term will mark the weeks.")
+                              message: "Add your unit of inquiry with its theme, central idea and dates. TDL lessons in those dates will show it, and Term will mark the weeks.",
+                              actionTitle: "New unit") { model.sheet = .unit(id: UnitSheet.newID) }
+                } else if us.isEmpty {
+                    EmptyNote(title: "Nothing matches", message: "Try another word from the title, theme or central idea.")
                 } else {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 380), spacing: 14, alignment: .top)], spacing: 14) {
                         ForEach(us, id: \Row.["id"]) { u in UnitCard(unit: u) }
@@ -343,6 +351,7 @@ struct UnitsView: View {
         }
         .navigationTitle("Units of inquiry")
         .navigationSubtitle("\(us.count) unit\(us.count == 1 ? "" : "s")")
+        .searchable(text: $query, placement: .toolbar, prompt: "Search units")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { model.sheet = .unit(id: UnitSheet.newID) } label: { Label("New unit", systemImage: "plus") }

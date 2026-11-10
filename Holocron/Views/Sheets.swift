@@ -267,17 +267,11 @@ struct SwapSheet: View {
             HStack {
                 Button("Just these dates") {
                     db.swapDates(a.date, a.per, b.date, b.per)
-                    model.showToast("Swapped for these dates")
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
                 Button("Every cycle from now on") {
-                    db.swapTemplate(a.week, a.day, a.per, b.week, b.day, b.per)
-                    let c1 = db.content(a.date, a.per), c2 = db.content(b.date, b.per)
-                    db.putContent(a.date, a.per, db.plannedSubject(a.date, a.per), c2)
-                    db.putContent(b.date, b.per, db.plannedSubject(b.date, b.per), c1)
-                    db.touch(.lessons)
-                    model.showToast("Timetable updated")
+                    db.swapTemplateWithLessons(a, b)
                     dismiss()
                 }
             }

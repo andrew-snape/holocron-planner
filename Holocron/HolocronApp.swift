@@ -43,6 +43,12 @@ struct HolocronApp: App {
                     .disabled(model.sheet != nil || !model.isEnabled(.assess) || !model.folderOK)
             }
             AppCommands(model: model)
+            CommandGroup(replacing: .undoRedo) {
+                Button(model.undoName.map { "Undo \($0)" } ?? "Undo") { model.undo() }
+                    .keyboardShortcut("z", modifiers: .command)
+                Button(model.redoName.map { "Redo \($0)" } ?? "Redo") { model.redo() }
+                    .keyboardShortcut("z", modifiers: [.command, .shift])
+            }
             CommandMenu("Go") {
                 ForEach(model.sidebarOrder) { item in
                     if model.isEnabled(item) {
@@ -54,6 +60,10 @@ struct HolocronApp: App {
                         }
                     }
                 }
+                Divider()
+                Button("Jump to…") { model.sheet = .jump }
+                    .keyboardShortcut("k", modifiers: .command)
+                    .disabled(model.sheet != nil)
                 Divider()
                 Button(model.stepUnit.map { "Previous \($0)" } ?? "Previous") { model.step(-1) }
                     .keyboardShortcut("[", modifiers: .command)

@@ -60,9 +60,8 @@ struct StudentsView: View {
 
     private var noStudents: some View {
         VStack(spacing: 14) {
-            EmptyNote(title: "No students yet", message: "Add your class to log notes, mark work and build report packs.")
-            Button("Add student") { model.sheet = .newStudent }
-                .buttonStyle(.borderedProminent)
+            EmptyNote(title: "No students yet", message: "Add your class to log notes, mark work and build report packs.",
+                      actionTitle: "Add student") { model.sheet = .newStudent }
         }
         .padding(40)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -78,6 +77,13 @@ struct StudentsView: View {
                                 .onTapGesture { model.selectedStudent = s.id }
                                 .accessibilityElement(children: .combine)
                                 .accessibilityAddTraits(model.selectedStudent == s.id ? [.isButton, .isSelected] : .isButton)
+                                .contextMenu {
+                                    Button("Log Note…") { model.sheet = .quick(ids: [s.id]) }
+                                    Button("SSG or Report Pack…") { model.sheet = .pack(studentID: s.id) }
+                                    Button("Copy Notes as Text") { model.copyText(model.db.timelineText(s.id)) }
+                                    Divider()
+                                    Button("Record Interview…") { model.sheet = .interview(sid: s.id) }
+                                }
                         }
                         if roster.isEmpty {
                             Text("No match for \u{201C}\(query)\u{201D}")
@@ -173,12 +179,10 @@ struct StudentListRow: View {
 
 enum StudentTab: String, CaseIterable, Identifiable {
     case summary = "Summary"
-    case lessons = "Lesson notes"
-    case interviews = "Interviews"
+    case notes = "Notes"
     case assess = "Assessment"
     case plan = "ILP and NCCD"
-    case wellbeing = "Wellbeing"
-    case behaviour = "Behaviour"
+    case interviews = "Interviews"
     case work = "Work"
     case report = "Report"
     case details = "Details"
@@ -188,12 +192,10 @@ enum StudentTab: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .summary: return "person.text.rectangle"
-        case .lessons: return "pencil"
+        case .notes: return "pencil"
         case .interviews: return "mic"
         case .assess: return "checkmark.seal"
         case .plan: return "doc.text"
-        case .wellbeing: return "heart"
-        case .behaviour: return "exclamationmark.bubble"
         case .work: return "photo.on.rectangle"
         case .report: return "doc.richtext"
         case .details: return "info.circle"
@@ -202,13 +204,22 @@ enum StudentTab: String, CaseIterable, Identifiable {
 
     var colour: Color {
         switch self {
-        case .summary, .lessons, .report: return .appBlue
-        case .interviews: return .appBlue
-        case .assess, .wellbeing: return .appGreen
+        case .summary, .notes, .report, .interviews: return .appBlue
+        case .assess, .work: return .appGreen
         case .plan: return .weekB
-        case .behaviour: return .appAmber
-        case .work: return .appGreen
         case .details: return .ink2
+        }
+    }
+
+    /// The tables whose entries for this student are counted on the tab.
+    var countedTables: [TableName] {
+        switch self {
+        case .notes: return [.lessonnotes, .wellbeing, .behaviour]
+        case .assess: return [.assessments]
+        case .plan: return [.plannotes]
+        case .interviews: return [.interviews]
+        case .work: return [.work]
+        case .summary, .report, .details: return []
         }
     }
 }
@@ -229,7 +240,8 @@ struct StudentDetail: View {
                             let on = tab == t
                             Button { tab = t } label: {
                                 Label {
-                                    Text(t.rawValue)
+                                    let n = db.entryCount(t.countedTables, student: sid)
+                                    Text(n > 0 ? "\(t.rawValue) \(n)" : t.rawValue)
                                 } icon: {
                                     // Selected tabs use their own colour and a filled icon, so the selection
                                     // does not rely on colour alone.
@@ -253,12 +265,10 @@ struct StudentDetail: View {
                     }
                     switch tab {
                     case .summary: SummaryTab(sid: sid)
-                    case .lessons: LessonNotesTab(sid: sid)
+                    case .notes: NotesTab(sid: sid)
                     case .interviews: InterviewsTab(sid: sid)
                     case .assess: AssessTab(sid: sid)
                     case .plan: PlanNotesTab(sid: sid)
-                    case .wellbeing: WellbeingTab(sid: sid)
-                    case .behaviour: BehaviourTab(sid: sid)
                     case .work: StudentWorkTab(sid: sid)
                     case .report: ReportTab(sid: sid)
                     case .details: DetailsTab(sid: sid)
@@ -352,6 +362,7 @@ struct StudentDetail: View {
 // MARK: - Shared pieces
 
 struct EntryCard: View {
+    @Environment(AppModel.self) private var model
     var date: String
     var title: String
     var badge: String = ""
@@ -360,6 +371,7 @@ struct EntryCard: View {
     var tint: Color = .appBlue
     var onDelete: (() -> Void)? = nil
     @State private var armed = false
+    @State private var confirming = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -390,6 +402,21 @@ struct EntryCard: View {
         .background(Color.cardBG)
         .clipShape(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous))
         .hairlineEdge(Radius.inset)
+        .contextMenu {
+            Button("Copy") {
+                let lines = [title + (badge.isEmpty ? "" : " [" + badge + "]"), dLong(date), text, sub].filter { !$0.isEmpty }
+                model.copyText(lines.joined(separator: "\n"), toast: "Copied")
+            }
+            if onDelete != nil {
+                Divider()
+                Button("Delete…", role: .destructive) { confirming = true }
+            }
+        }
+        .confirmationDialog("Delete this entry?", isPresented: $confirming, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) { onDelete?() }
+        } message: {
+            Text("You can undo it from the Edit menu.")
+        }
     }
 }
 
@@ -438,6 +465,7 @@ struct SummaryTab: View {
     var sid: String
 
     var body: some View {
+        SummaryOverview(sid: sid)
         let items = model.db.timeline(sid)
         if items.isEmpty {
             EmptyNote(title: "Nothing recorded yet", message: "Notes, assessments, wellbeing and behaviour entries appear here, newest first.")
@@ -448,6 +476,62 @@ struct SummaryTab: View {
                 }
             }
         }
+    }
+}
+
+/// The top of the Summary tab: how much has been written this term, how long since the last note, and the
+/// latest result in each subject. Counted and picked in code.
+private struct SummaryOverview: View {
+    @Environment(AppModel.self) private var model
+    var sid: String
+
+    var body: some View {
+        let db = model.db
+        let today = todayISO()
+        let noteDates: [String] = [TableName.lessonnotes, .wellbeing, .behaviour].flatMap { t in
+            db.rows(t).filter { $0.s("student_id") == sid }.map { $0.s("date") }
+        }
+        let term = db.termOf(today)
+        let inTerm = term.map { t in noteDates.filter { $0 >= t.start && $0 <= t.end }.count }
+        let results = db.latestResults(student: sid)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 28) {
+                stat(inTerm.map(String.init) ?? String(noteDates.count),
+                     inTerm == nil ? "notes in all" : "notes this term")
+                stat(lastNote(noteDates, today), "last note")
+                stat(String(results.count), results.count == 1 ? "subject with a result" : "subjects with a result")
+            }
+            if !results.isEmpty {
+                Divider()
+                Text("Latest result in each subject").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.ink2)
+                ForEach(results, id: \Row.["subject"]) { r in
+                    HStack(spacing: 10) {
+                        SubjectChip(name: r.s("subject"))
+                        Text(r.s("task")).font(.system(size: 13)).lineLimit(1)
+                        Spacer(minLength: 0)
+                        if !r.s("result").isEmpty { TagLabel(text: r.s("result")) }
+                        Text(shortDate(r.s("date"))).font(.system(size: 12)).foregroundStyle(Color.ink2)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+    }
+
+    private func stat(_ value: String, _ label: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value).font(.system(size: 22, weight: .bold, design: .rounded))
+            Text(label).font(.system(size: 12)).foregroundStyle(Color.ink2)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func lastNote(_ dates: [String], _ today: String) -> String {
+        guard let d = dates.max() else { return "None yet" }
+        let n = daysBetween(d, today)
+        if n <= 0 { return "Today" }
+        return n == 1 ? "Yesterday" : "\(n) days ago"
     }
 }
 
@@ -470,23 +554,7 @@ struct LogEntries<Card: View>: View {
     }
 }
 
-// MARK: - Lesson notes
-
-struct LessonNotesTab: View {
-    @Environment(AppModel.self) private var model
-    var sid: String
-
-    var body: some View {
-        LessonNoteForm(sid: sid)
-        LogEntries(table: .lessonnotes, sid: sid, emptyTitle: "No lesson notes",
-                   emptyMessage: "Quick notes you add here or from Quick log appear here.") { x in
-            EntryCard(date: x.s("date"), title: (x.s("subject").isEmpty ? "Lesson" : x.s("subject")) + " note",
-                      sub: fmtTime(x.s("time")), text: x.s("note"), tint: timelineTint("les")) {
-                model.db.deleteRow(.lessonnotes, id: x.s("id"))
-            }
-        }
-    }
-}
+// MARK: - Notes (lesson, wellbeing and behaviour together)
 
 private struct LessonNoteForm: View {
     @Environment(AppModel.self) private var model
@@ -636,22 +704,6 @@ private struct PlanNoteForm: View {
 
 // MARK: - Wellbeing
 
-struct WellbeingTab: View {
-    @Environment(AppModel.self) private var model
-    var sid: String
-
-    var body: some View {
-        WellbeingForm(sid: sid)
-        LogEntries(table: .wellbeing, sid: sid, emptyTitle: "No wellbeing entries",
-                   emptyMessage: "Log the time and the period lost so it shows in your hours.") { x in
-            EntryCard(date: x.s("date"), title: "Wellbeing", sub: model.db.wellbeingDetail(x), text: x.s("note"),
-                      tint: timelineTint("well")) {
-                model.db.deleteRow(.wellbeing, id: x.s("id"))
-            }
-        }
-    }
-}
-
 private struct WellbeingForm: View {
     @Environment(AppModel.self) private var model
     var sid: String
@@ -692,21 +744,6 @@ private struct WellbeingForm: View {
 
 // MARK: - Behaviour
 
-struct BehaviourTab: View {
-    @Environment(AppModel.self) private var model
-    var sid: String
-
-    var body: some View {
-        BehaviourForm(sid: sid)
-        LogEntries(table: .behaviour, sid: sid, emptyTitle: "No behaviour entries",
-                   emptyMessage: "Each entry is a date and free text.") { x in
-            EntryCard(date: x.s("date"), title: "Behaviour", text: x.s("note"), tint: timelineTint("beh")) {
-                model.db.deleteRow(.behaviour, id: x.s("id"))
-            }
-        }
-    }
-}
-
 private struct BehaviourForm: View {
     @Environment(AppModel.self) private var model
     var sid: String
@@ -723,6 +760,96 @@ private struct BehaviourForm: View {
                 note = ""
             }
             .disabled(note.trimmed.isEmpty)
+        }
+    }
+}
+
+/// The three kinds of entry that sit in the Notes tab. Each keeps its own file.
+private enum NoteKind: String, CaseIterable, Identifiable {
+    case lesson = "Lesson"
+    case wellbeing = "Wellbeing"
+    case behaviour = "Behaviour"
+    var id: String { rawValue }
+
+    var table: TableName {
+        switch self {
+        case .lesson: return .lessonnotes
+        case .wellbeing: return .wellbeing
+        case .behaviour: return .behaviour
+        }
+    }
+
+    /// The label on the add picker.
+    var addLabel: String { self == .lesson ? "Lesson note" : "\(rawValue) entry" }
+}
+
+private struct NoteItem: Identifiable {
+    var kind: NoteKind
+    var row: Row
+    var id: String { kind.rawValue + "-" + row.s("id") }
+}
+
+struct NotesTab: View {
+    @Environment(AppModel.self) private var model
+    var sid: String
+    @State private var adding: NoteKind = .lesson
+    /// Nil shows every kind.
+    @State private var showing: NoteKind? = nil
+
+    var body: some View {
+        Picker("Add", selection: $adding) {
+            ForEach(NoteKind.allCases) { Text($0.addLabel).tag($0) }
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .frame(maxWidth: 420)
+        .accessibilityLabel("Kind of entry to add")
+        switch adding {
+        case .lesson: LessonNoteForm(sid: sid)
+        case .wellbeing: WellbeingForm(sid: sid)
+        case .behaviour: BehaviourForm(sid: sid)
+        }
+        Picker("Show", selection: $showing) {
+            Text("All").tag(NoteKind?.none)
+            ForEach(NoteKind.allCases) { Text($0.rawValue).tag(NoteKind?.some($0)) }
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .frame(maxWidth: 420)
+        .accessibilityLabel("Show which entries")
+        let list = items(model.db)
+        ForEach(list) { i in card(i) }
+        if list.isEmpty {
+            EmptyNote(title: "Nothing here yet",
+                      message: "Lesson notes, wellbeing entries and behaviour entries for this student appear here, newest first.")
+        }
+    }
+
+    private func items(_ db: Database) -> [NoteItem] {
+        let kinds = showing.map { [$0] } ?? NoteKind.allCases
+        var out: [NoteItem] = []
+        for k in kinds { for x in db.logRows(k.table, student: sid) { out.append(NoteItem(kind: k, row: x)) } }
+        return out.sorted { ($0.row.s("date") + $0.row.s("time")) > ($1.row.s("date") + $1.row.s("time")) }
+    }
+
+    @ViewBuilder
+    private func card(_ i: NoteItem) -> some View {
+        let x = i.row
+        switch i.kind {
+        case .lesson:
+            EntryCard(date: x.s("date"), title: (x.s("subject").isEmpty ? "Lesson" : x.s("subject")) + " note",
+                      sub: fmtTime(x.s("time")), text: x.s("note"), tint: timelineTint("les")) {
+                model.db.deleteRow(.lessonnotes, id: x.s("id"))
+            }
+        case .wellbeing:
+            EntryCard(date: x.s("date"), title: "Wellbeing", sub: model.db.wellbeingDetail(x), text: x.s("note"),
+                      tint: timelineTint("well")) {
+                model.db.deleteRow(.wellbeing, id: x.s("id"))
+            }
+        case .behaviour:
+            EntryCard(date: x.s("date"), title: "Behaviour", text: x.s("note"), tint: timelineTint("beh")) {
+                model.db.deleteRow(.behaviour, id: x.s("id"))
+            }
         }
     }
 }
@@ -892,7 +1019,6 @@ struct DetailsTab: View {
                 if !armDelete { armDelete = true; return }
                 model.db.removeStudent(sid)
                 model.selectedStudent = model.db.roster.first?.id
-                model.showToast("Student deleted")
             }
             .foregroundStyle(Color.appRed)
         }
@@ -1011,7 +1137,8 @@ struct QuickLogView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 if db.roster.isEmpty {
-                    EmptyNote(title: "No students yet", message: "Add your class under Students, then log notes from here.")
+                    EmptyNote(title: "No students yet", message: "Add your class under Students, then log notes from here.",
+                              actionTitle: model.isEnabled(.students) ? "Add student" : nil) { model.sheet = .newStudent }
                 } else {
                     LazyVGrid(columns: cols, spacing: 12) {
                         ForEach(db.roster) { s in
@@ -1164,6 +1291,7 @@ struct QuickLogSheet: View {
             if !loaded {
                 let guess = model.lastLessonSubject.isEmpty ? model.nowSubject() : model.lastLessonSubject
                 subject = guess
+                kind = model.lastQuickKind
                 loaded = true
             }
         }
@@ -1176,6 +1304,7 @@ struct QuickLogSheet: View {
         let t = note.trimmed
         guard !t.isEmpty else { return }
         let db = model.db
+        model.lastQuickKind = kind
         switch kind {
         case .lesson:
             db.addLessonNote(students: ids, subject: subject, note: t)

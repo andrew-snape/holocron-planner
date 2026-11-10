@@ -21,14 +21,23 @@ struct RootView: View {
                     DetailRouter()
                 }
                 if let t = model.toast {
-                    Text(t)
-                        .accessibilityLabel(t)
-                        .font(.system(size: 12.5, weight: .medium))
-                        .padding(.vertical, 7)
-                        .padding(.horizontal, 14)
-                        .glassEffect(.regular, in: .capsule)
-                        .padding(.bottom, 18)
-                        .transition(.opacity)
+                    HStack(spacing: 10) {
+                        Text(t)
+                            .accessibilityLabel(t)
+                            .font(.system(size: 12.5, weight: .medium))
+                        if model.toastUndo {
+                            Button("Undo") { model.undo() }
+                                .buttonStyle(.plain)
+                                .font(.system(size: 12.5, weight: .semibold))
+                                .foregroundStyle(Color.appBlue)
+                                .accessibilityHint("Takes this change back")
+                        }
+                    }
+                    .padding(.vertical, 7)
+                    .padding(.horizontal, 14)
+                    .glassEffect(.regular, in: .capsule)
+                    .padding(.bottom, 18)
+                    .transition(.opacity)
                 }
             }
             .animation(.easeInOut(duration: 0.2), value: model.toast)
@@ -113,6 +122,7 @@ struct SheetRouter: View {
         case .newStudent: NewStudentSheet()
         case .importResults(let u): ImportResultsSheet(url: u)
         case .dictate: DictateSheet()
+        case .jump: JumpSheet()
         case .interview(let sid): InterviewSheet(studentID: sid)
         case .addWork(let sid): AddWorkSheet(studentID: sid)
         case .editWork(let id): EditWorkSheet(rowID: id)
@@ -207,13 +217,22 @@ struct SidebarView: View {
             List(selection: Binding<NavItem?>(
                 get: { model.nav },
                 set: { if let n = $0 { model.nav = n } })) {
-                ForEach(model.visibleNav) { item in
-                    Label {
-                        Text(item.title)
-                    } icon: {
-                        Image(systemName: item.symbol).foregroundStyle(item.tint)
+                // Three headings. The order set in Settings still applies inside each one, and a heading
+                // with every screen switched off is left out.
+                ForEach(NavGroup.allCases) { group in
+                    let items = model.visibleNav.filter { $0.group == group }
+                    if !items.isEmpty {
+                        Section(group.rawValue) {
+                            ForEach(items) { item in
+                                Label {
+                                    Text(item.title)
+                                } icon: {
+                                    Image(systemName: item.symbol).foregroundStyle(item.tint)
+                                }
+                                .tag(item)
+                            }
+                        }
                     }
-                    .tag(item)
                 }
             }
             .listStyle(.sidebar)

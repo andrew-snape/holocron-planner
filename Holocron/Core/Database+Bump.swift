@@ -78,8 +78,10 @@ extension Database {
     /// Applies the plans and returns a snapshot of lessons.csv so the move can be undone.
     func applyBump(_ plans: [BumpPlan]) -> [Row] {
         let snap = rows(.lessons)
-        putContents(plans.flatMap { $0.changes }.map { (date: $0.date, per: $0.per, subject: $0.subject, content: $0.to) })
-        touch(.lessons)
+        withUndo("Move Lessons", done: "Lessons moved", tables: [.lessons]) {
+            putContents(plans.flatMap { $0.changes }.map { (date: $0.date, per: $0.per, subject: $0.subject, content: $0.to) })
+            touch(.lessons)
+        }
         return snap
     }
 

@@ -24,6 +24,11 @@ Everything built so far, with the version it arrived in ([CHANGELOG.md](../CHANG
 | Subject rename | 1.8.11 | Follows through timetable, one-offs, lessons, results, notes, reports and the private setting. |
 | Week and Month mini calendar | 1.6.2 | In the sidebar. Week shows one row. Remembered. Even row heights fixed in 1.6.1. |
 | Sidebar order | 1.6.2 | Today, Week, Term, Units, Devotion, Class screen, Students, Work, Quick log, Mark class, Hours. |
+| Sidebar headings | Unreleased | Plan, Teach and Class (`NavItem.group`). The order chosen in Settings applies within each heading. |
+| Jump (Cmd+K) | Unreleased | Finds students, screens, units and lessons from a few letters, worked out in code ([Core/JumpSearch.swift](../Holocron/Core/JumpSearch.swift), [Views/JumpSheet.swift](../Holocron/Views/JumpSheet.swift)). Students are left out while a Class screen is showing. |
+| Undo and Redo | Unreleased | Delete a note, result, plan note, wellbeing or behaviour entry, unit, to-do, DOTTL entry or student, swap lessons, move lessons. A short history in memory ([Core/UndoLog.swift](../Holocron/Core/UndoLog.swift)). Cleared for a table when anything else changes it. Work photos and interviews are not undoable because their files move. |
+| Right-click menus | Unreleased | Week and Today lessons, student list, note entries, to-dos, work tiles. |
+| Week: Return opens the plan | Unreleased | In a lesson's summary. Shift+Return starts a new line. |
 
 ## In class
 
@@ -40,7 +45,7 @@ Everything built so far, with the version it arrived in ([CHANGELOG.md](../CHANG
 
 | Feature | Version | Notes |
 |---|---|---|
-| Student records | Start | Class list and a record with tabs: Summary, Lesson notes, Assessment, ILP and NCCD, Wellbeing, Behaviour, Report, Details. Photos, birth dates and adjustments stay in the student folder. |
+| Student records | Start | Class list and a record with tabs: Summary, Notes, Assessment, ILP and NCCD, Interviews, Work, Report, Details. Notes holds lesson, wellbeing and behaviour entries together (unreleased), and the Summary starts with counts and the latest result per subject (unreleased). Photos, birth dates and adjustments stay in the student folder. |
 | Search | 1.9.0 | A search field in the Students toolbar. |
 | New Student, Log Note | 1.9.0 | File menu, Cmd+N and Cmd+L. |
 | Quick log | Start | Pick several students from the photo grid and log one note. Badges show today's entries. |

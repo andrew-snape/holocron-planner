@@ -59,7 +59,7 @@ struct HelpUsingPage: View {
         VStack(alignment: .leading, spacing: 12) {
             Group {
                 HelpTitle("Using Holocron")
-                HelpPara("The sidebar on the left lists your screens, with the class name and the current term week (A or B) at the top. Settings opens in its own window from the gear button at the top right, or with Cmd+comma.")
+                HelpPara("The sidebar on the left lists your screens under Plan, Teach and Class, with the class name and the current term week (A or B) at the top. Settings opens in its own window from the gear button at the top right, or with Cmd+comma.")
 
                 HelpHeading("Your screens")
                 HelpBullets([
@@ -69,7 +69,7 @@ struct HelpUsingPage: View {
                     "**Units:** your units of inquiry.",
                     "**Devotion:** daily devotion and Circle Time scripts.",
                     "**Class screen:** a student friendly view for the projector. It shows what we are learning (We are learning to), the success criteria (I can), First, Then and Next steps you can type straight onto the screen, what is on now and what comes next, and a timer. Click a step's heading to highlight the one the class is on. **Pop out** opens it in its own window.",
-                    "**Students:** the class list on the left and a record on the right, with tabs for notes, assessments, wellbeing, behaviour and plan notes, plus a report pack.",
+                    "**Students:** the class list on the left and a record on the right, with tabs for Notes (lesson, wellbeing and behaviour entries together), assessment, ILP and NCCD, interviews, work, report and details, plus a report pack.",
                     "**Quick log:** pick several students from the photo grid and add one note to all of them.",
                     "**Mark class:** mark the whole class on one task. Type a score or pick an achievement level. Tick **Done** when a student has finished a task, such as a project, without giving it a mark. **Import results…** brings in results from a spreadsheet such as an Essential Assessment export, or Essential Assessment's report comments for a strand, which are then used to draft the Mathematics or English points. You check the columns, subjects and students before anything is saved, and students who are not on your roll are left out.",
                     "**Hours:** face to face time, release time and duties other than teaching and learning (DOTTL), by term and for the year. Wellbeing entries record which period was lost.",
@@ -340,6 +340,7 @@ struct HelpShortcutsPage: View {
                 HelpHeading("Moving around")
                 HelpKeyRow(keys: "Cmd+1 to Cmd+0", action: "Jump between screens, in sidebar order: Today, Week, Term, Units, Devotion, Class screen, Students, Quick log, Mark class, Hours. Work has no number key.")
                 HelpKeyRow(keys: "Cmd+[ and Cmd+]", action: "Go back or forward by a day on Today, a week on Week, a term on Term, or a devotion on Devotion")
+                HelpKeyRow(keys: "Cmd+K", action: "Jump to a student, a screen, a unit or a lesson. Type a few letters, such as \u{201C}mat thu\u{201D} for Thursday's Maths, then press Return")
                 HelpKeyRow(keys: "Cmd+T", action: "Go to Today")
                 HelpKeyRow(keys: "Cmd+,", action: "Open Settings")
                 HelpKeyRow(keys: "Shift+Cmd+/", action: "Open Help")
@@ -348,6 +349,7 @@ struct HelpShortcutsPage: View {
             }
             Group {
                 HelpHeading("Working with data")
+                HelpKeyRow(keys: "Cmd+Z, Shift+Cmd+Z", action: "Undo or redo a delete, a swap or a lesson move. The Edit menu names what it will undo. A change can be undone until something else changes the same file. Typing in a box keeps its own undo")
                 HelpKeyRow(keys: "Shift+Cmd+R", action: "Reload from the data folders after editing a CSV file")
                 HelpKeyRow(keys: "Option+Cmd+C", action: "Copy the day as rich text (on Today)")
 

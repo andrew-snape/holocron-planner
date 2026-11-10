@@ -3,8 +3,15 @@ import AppKit
 
 // MARK: - Mark the whole class against one task
 
+/// A box in the class list that Return moves down, one student at a time.
+private enum MarkField: Hashable {
+    case result(String)
+    case comment(String)
+}
+
 struct MarkClassView: View {
     @Environment(AppModel.self) private var model
+    @FocusState private var focus: MarkField?
     @State private var subject = ""
     @State private var task = ""
     @State private var date = todayISO()
@@ -93,7 +100,8 @@ struct MarkClassView: View {
                 .card()
 
                 if roster.isEmpty {
-                    EmptyNote(title: "No students on the roll", message: "Add them under Students first.")
+                    EmptyNote(title: "No students on the roll", message: "Add them under Students first.",
+                              actionTitle: model.isEnabled(.students) ? "Add student" : nil) { model.sheet = .newStudent }
                 } else {
                     VStack(spacing: 0) {
                         ForEach(roster) { s in
@@ -122,9 +130,13 @@ struct MarkClassView: View {
                                     TextField("Result", text: bindResult(s.id))
                                         .textFieldStyle(.roundedBorder)
                                         .frame(width: 170)
+                                        .focused($focus, equals: .result(s.id))
+                                        .onSubmit { focus = nextID(after: s.id, in: roster).map { MarkField.result($0) } }
                                 }
                                 TextField("Comment", text: bindComment(s.id))
                                     .textFieldStyle(.roundedBorder)
+                                    .focused($focus, equals: .comment(s.id))
+                                    .onSubmit { focus = nextID(after: s.id, in: roster).map { MarkField.comment($0) } }
                             }
                             .padding(.vertical, 6)
                             .padding(.horizontal, 12)
@@ -138,7 +150,7 @@ struct MarkClassView: View {
                         Button("Save the whole class") { save() }
                             .buttonStyle(.borderedProminent)
                             .keyboardShortcut("s", modifiers: .command)
-                        Text("Blank rows are skipped. Clearing a row that was saved before removes it. Ticks for Done are saved too.")
+                        Text("Return moves to the next student. Blank rows are skipped. Clearing a row that was saved before removes it. Ticks for Done are saved too.")
                             .font(.system(size: 12.5)).foregroundStyle(Color.ink2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -161,6 +173,12 @@ struct MarkClassView: View {
     }
 
     // MARK: Bindings and data
+
+    /// The student below this one on the roll, or nil at the end.
+    private func nextID(after id: String, in roster: [Student]) -> String? {
+        guard let i = roster.firstIndex(where: { $0.id == id }), i + 1 < roster.count else { return nil }
+        return roster[i + 1].id
+    }
 
     private func bindResult(_ sid: String) -> Binding<String> {
         Binding(get: { results[sid] ?? "" }, set: { results[sid] = $0 })

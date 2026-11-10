@@ -88,8 +88,9 @@ struct GeneralPane: View {
             }
 
             Section {
-                let items = model.sidebarOrder
-                ForEach(Array(items.enumerated()), id: \.element) { idx, item in
+                // The same headings as the sidebar. The arrows move a screen within its heading.
+                let items = NavGroup.allCases.flatMap { g in model.sidebarOrder.filter { $0.group == g } }
+                ForEach(items, id: \.self) { item in
                     HStack(spacing: 8) {
                         if item.canDisable {
                             Toggle(isOn: Binding(get: { model.isEnabled(item) }, set: { model.setEnabled(item, $0) })) {
@@ -100,11 +101,11 @@ struct GeneralPane: View {
                         }
                         Spacer(minLength: 0)
                         Button { model.moveSidebar(item, by: -1) } label: { Image(systemName: "chevron.up") }
-                            .disabled(idx == 0)
+                            .disabled(!model.canMoveSidebar(item, by: -1))
                             .help("Move \(item.title) up the sidebar")
                             .accessibilityLabel("Move \(item.title) up")
                         Button { model.moveSidebar(item, by: 1) } label: { Image(systemName: "chevron.down") }
-                            .disabled(idx == items.count - 1)
+                            .disabled(!model.canMoveSidebar(item, by: 1))
                             .help("Move \(item.title) down the sidebar")
                             .accessibilityLabel("Move \(item.title) down")
                     }
@@ -114,7 +115,7 @@ struct GeneralPane: View {
             } header: {
                 Text("Modules")
             } footer: {
-                Text("Use the arrows to choose the order of the sidebar. Switched-off modules disappear from the sidebar and the Go menu. Your data is kept, and Today always stays on.")
+                Text("Use the arrows to choose the order under each sidebar heading (Plan, Teach and Class). Switched-off modules disappear from the sidebar and the Go menu. Your data is kept, and Today always stays on.")
             }
 
             Section {

@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- The sidebar has three headings: Plan (Today, Week, Term, Units, Devotion), Teach (Class screen, Quick log, Mark class) and Class (Students, Work, Hours). Units and Devotion have new icons. In Settings, the arrows under Modules move a screen within its heading.
+- Jump (Cmd+K, or Go, Jump to…) finds a student, a screen, a unit or a lesson from a few letters. Type "mat thu" for Thursday's Maths, then press Return. Student names are left out while a Class screen is showing.
+- Undo and Redo (Cmd+Z, Shift+Cmd+Z) take back a delete, a swap or a lesson move. The Edit menu names what it will undo, and the message after the change has an Undo button. A change can be undone until something else changes the same file. Nothing extra is saved on the Mac.
+- A student's record has eight tabs. Lesson notes, Wellbeing and Behaviour are one Notes tab with a picker to add an entry and a filter to show one kind. Tabs show how many entries they hold.
+- The Summary tab starts with notes this term, days since the last note, and the latest result in each subject.
+- Right-click menus on Week and Today lessons (plan, change, move, show on the Class screen), on students, on note entries (Copy, Delete), on to-dos and on work.
+- Deleting an entry from its right-click menu asks first.
+- Empty screens have a button for the next step: Add student on Students, Quick log and Mark class, and New unit on Units.
+- Units has a search field in the toolbar.
+- On Week, press Return in a lesson's summary to open its plan. Shift+Return starts a new line.
+- In Mark class, Return moves to the next student's box.
+- Quick log starts on the kind of entry you saved last.
+
 ## 1.24.2
 
 - Note boxes check spelling as you type, with the Mac's own spell checker. Words that look wrong get a red underline. Nothing is changed for you, and nothing leaves this Mac.

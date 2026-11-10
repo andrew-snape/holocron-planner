@@ -51,11 +51,25 @@ extension AppModel {
 
     var visibleNav: [NavItem] { sidebarOrder.filter { isEnabled($0) } }
 
-    /// Moves a screen one place up (-1) or down (+1). Does nothing at either end.
+    /// Where a screen would go if moved up (-1) or down (+1): the next screen under the same sidebar heading.
+    private func sidebarTarget(_ item: NavItem, by step: Int) -> Int? {
+        let items = sidebarOrder
+        guard let i = items.firstIndex(of: item) else { return nil }
+        var j = i + step
+        while items.indices.contains(j) {
+            if items[j].group == item.group { return j }
+            j += step
+        }
+        return nil
+    }
+
+    func canMoveSidebar(_ item: NavItem, by step: Int) -> Bool { sidebarTarget(item, by: step) != nil }
+
+    /// Moves a screen one place up (-1) or down (+1) among the screens under its heading. Does nothing at either end.
     func moveSidebar(_ item: NavItem, by step: Int) {
+        guard let j = sidebarTarget(item, by: step), let i = sidebarOrder.firstIndex(of: item) else { return }
         var items = sidebarOrder
-        guard let i = items.firstIndex(of: item), items.indices.contains(i + step) else { return }
-        items.swapAt(i, i + step)
+        items.swapAt(i, j)
         db.setSetting(NavItem.orderKey, items.map(\.rawValue).joined(separator: ","))
     }
 

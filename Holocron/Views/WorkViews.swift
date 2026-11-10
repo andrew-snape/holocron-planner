@@ -210,15 +210,7 @@ struct WorkTile: View {
             }
 
             Menu {
-                Button("Quick Look") { previewURL = url }
-                    .disabled(!exists)
-                Button("Edit details…") { model.sheet = .editWork(id: row.s("id")) }
-                Button("Show in Finder") {
-                    if let url { NSWorkspace.shared.activateFileViewerSelecting([url]) }
-                }
-                .disabled(!exists)
-                Divider()
-                Button("Remove…", role: .destructive) { confirmRemove = true }
+                actions(url: url, exists: exists)
             } label: {
                 Label("Actions", systemImage: "ellipsis.circle")
                     .font(.system(size: 12.5))
@@ -228,6 +220,7 @@ struct WorkTile: View {
             .accessibilityLabel("Actions for \(title)")
         }
         .card(padding: 10)
+        .contextMenu { actions(url: url, exists: exists) }
         .sheet(isPresented: Binding(get: { previewURL != nil }, set: { if !$0 { previewURL = nil } })) {
             if let previewURL {
                 SheetFrame(title: title, width: 760) {
@@ -244,6 +237,20 @@ struct WorkTile: View {
                  ? "The photo moves to the removed folder inside the work folder. Other students who share it keep their copy. Nothing is deleted."
                  : "The photo moves to the removed folder inside the work folder. Nothing is deleted.")
         }
+    }
+
+    /// The tile's actions, in the Actions menu and in the right-click menu.
+    @ViewBuilder
+    private func actions(url: URL?, exists: Bool) -> some View {
+        Button("Quick Look") { previewURL = url }
+            .disabled(!exists)
+        Button("Edit details…") { model.sheet = .editWork(id: row.s("id")) }
+        Button("Show in Finder") {
+            if let url { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+        }
+        .disabled(!exists)
+        Divider()
+        Button("Remove…", role: .destructive) { confirmRemove = true }
     }
 
     private func remove() {
