@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.25
+
 - The sidebar has three headings: Plan (Today, Week, Term, Units, Devotion), Teach (Class screen, Quick log, Mark class) and Class (Students, Work, Hours). Units and Devotion have new icons. In Settings, the arrows under Modules move a screen within its heading.
 - Jump (Cmd+K, or Go, Jump to…) finds a student, a screen, a unit or a lesson from a few letters. Type "mat thu" for Thursday's Maths, then press Return. While a Class screen is showing, Jump only finds screens, so no names or lesson text show on the Mac.
 - Undo and Redo (Cmd+Z, Shift+Cmd+Z) take back a delete, a swap or a lesson move. The Edit menu names what it will undo, and the message after the change has an Undo button. A change can be undone until something else changes the same file. Nothing extra is saved on the Mac.
