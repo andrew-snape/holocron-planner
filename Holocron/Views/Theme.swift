@@ -291,13 +291,18 @@ struct NoteBox: View {
                     .help("Dismiss the message")
                 }
             }
-            TextField(placeholder, text: $text, axis: .vertical)
-                .lineLimit(lines...max(lines, lines + 6))
-                .textFieldStyle(.plain)
-                .writingToolsBehavior(.complete)
-                // Locked while listening, so the words heard cannot overwrite an edit.
-                .disabled(dictation.isBusy)
-                .padding(8)
+            ZStack(alignment: .topLeading) {
+                SpellCheckField(text: $text, minLines: lines, maxLines: lines + 6,
+                                // Locked while listening, so the words heard cannot overwrite an edit.
+                                isEditable: !dictation.isBusy, accessibilityLabel: label)
+                if text.isEmpty && !placeholder.isEmpty {
+                    Text(placeholder)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.ink3)
+                        .allowsHitTesting(false)
+                }
+            }
+            .padding(8)
                 .background(Color.fieldBG)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.field, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: Radius.field, style: .continuous).stroke(Color.fieldStroke, lineWidth: 0.5))
