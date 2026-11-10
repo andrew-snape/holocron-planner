@@ -77,15 +77,9 @@ struct MarkbookView: View {
                 EmptyNote(title: "No results yet", message: "Mark a task in Mark class, or import results, and the whole class shows here.")
             } else {
                 ScrollView([.horizontal, .vertical]) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack(spacing: 0) {
-                            headerCell("Student", key: "name", width: W.name)
-                            ForEach(grid.tasks) { t in headerCell(title(t), key: t.id, width: W.task) }
-                            headerCell("Average", key: "avg", width: W.avg)
-                            ForEach(grid.pairs) { p in headerCell("Growth: " + p.base, key: p.id, width: W.growth) }
-                        }
-                        Rectangle().fill(Color.hairline).frame(height: 1)
-                        ForEach(rows) { row in
+                    LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
+                        Section {
+                            ForEach(rows) { row in
                             HStack(spacing: 0) {
                                 Text(row.name).font(.body1Medium)
                                     .frame(width: W.name, alignment: .leading)
@@ -102,7 +96,21 @@ struct MarkbookView: View {
                                 }
                             }
                             .padding(.vertical, 6)
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel(rowLabel(row, grid, db))
                             Rectangle().fill(Color.hairline).frame(height: 1)
+                            }
+                        } header: {
+                            VStack(alignment: .leading, spacing: 0) {
+                                HStack(spacing: 0) {
+                                    headerCell("Student", key: "name", width: W.name)
+                                    ForEach(grid.tasks) { t in headerCell(title(t), key: t.id, width: W.task) }
+                                    headerCell("Average", key: "avg", width: W.avg)
+                                    ForEach(grid.pairs) { p in headerCell("Growth: " + p.base, key: p.id, width: W.growth) }
+                                }
+                                Rectangle().fill(Color.hairline).frame(height: 1)
+                            }
+                            .background(Color.cardBG)
                         }
                     }
                 }
@@ -144,6 +152,22 @@ struct MarkbookView: View {
         .foregroundStyle(Color.ink2)
         .padding(.vertical, 6)
         .accessibilityLabel("Sort by \(text)")
+        .accessibilityValue(sortKey == key ? (ascending ? "Sorted ascending" : "Sorted descending") : "Not sorted")
+        .accessibilityAddTraits(sortKey == key ? .isSelected : [])
+    }
+
+    /// One sentence per row for VoiceOver: the student, then each task, the average and the growth.
+    private func rowLabel(_ row: MarkRow, _ grid: Markbook.Grid, _ db: Database) -> String {
+        var parts = [row.name]
+        for t in grid.tasks {
+            let r = row.line.results[t.id] ?? ""
+            parts.append("\(title(t)): \(r.isEmpty ? "Missing" : r)")
+        }
+        if let a = row.values["avg"] { parts.append("Average \(Int(a.rounded())) percent") }
+        for p in grid.pairs {
+            if let g = row.values[p.id] { parts.append("Growth \(p.base): \(Markbook.growthText(g))") }
+        }
+        return parts.joined(separator: ", ")
     }
 
     private func title(_ t: Markbook.TaskColumn) -> String {
