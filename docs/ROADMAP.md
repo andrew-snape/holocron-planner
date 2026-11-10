@@ -1,6 +1,6 @@
 # Roadmap
 
-Suggestions, not promises. Each one is tied to something in the code or the history. Sizes are rough: S is under a day, M a few days, L about a week or more. Problems already known are in [PROBLEMS.md](PROBLEMS.md).
+Suggestions, not promises. Each one is tied to something in the code or the history. Sizes are rough: S is under a day, M a few days, L about a week or more. Problems already known are in [PROBLEMS.md](PROBLEMS.md). A teacher-first plan for the interface, new functions and the look, with a release order, is in [Claude outputs/holocron-teacher-plan.md](../Claude%20outputs/holocron-teacher-plan.md).
 
 ## Now
 
@@ -30,7 +30,7 @@ Setup: add a test target to `Holocron.xcodeproj` and run `xcodebuild test` in CI
 
 | Item | Why | Size |
 |---|---|---|
-| Undo for delete, swap and bump | Only bump has Undo, and it lasts only while the sheet is open. Deleting a student removes every note attached to them. The HIG plan (item 8) asks for it. State is CSV-backed, so it needs a design pass: snapshot per table, or a short in-memory history, registered with `UndoManager` using named actions ("Undo Swap Lessons"). | L |
+| Undo for more actions | Done (unreleased) for deletes, swaps and bump, as a short in-memory history of table snapshots ([Core/UndoLog.swift](../Holocron/Core/UndoLog.swift)). Still to do: day type changes, subject changes, Mark class saves, imports of results, and a row-level history so a later edit does not end an earlier undo. | M |
 | Remaining HIG items | See the table below. Empty states, context menus and search on Units are not done. | M |
 | Schema version | There is no version in the data folders, so a renamed or split column has no migration path. A `holocron.version` row in `settings.csv`, or a small `schema.json`, lets a later release upgrade files on load, with a copy into `Holocron archive` first. | M |
 | File change guard | There are no lock files. Before writing, compare the file's signature with the one stored at the last read, and if it changed on disk, reload or ask. `DataFolder.signature` and `fileSigs` already exist. | M |
@@ -78,10 +78,10 @@ Status checked against the code.
 | 2 Destructive actions | Partly done. 10 `role: .destructive`, 6 alerts or dialogs. Re-audit deletes in Students, Units and Term. |
 | 3 Menu bar | Partly done. New Student, Log Note and a Go menu exist. No Window menu items for Class screen or Help. |
 | 4 Accessibility labels | Done in 1.9.0 for the main screens (53 labels). New views need them. |
-| 5 Empty states | Partly done. `EmptyNote` is used (14 places). No `ContentUnavailableView`. |
-| 6 Search | Students only (`.searchable` in `StudentsView`). Not on Units. No Cmd+F. |
-| 7 Context menus | Not done. No `contextMenu` anywhere. |
-| 8 Undo and redo | Not done, apart from bump Undo. |
+| 5 Empty states | Partly done. `EmptyNote` is used (14 places) and takes an optional button (unreleased: Students, Quick log, Mark class, Units). No `ContentUnavailableView`. |
+| 6 Search | Students and Units (unreleased), plus Cmd+K Jump across students, screens, units and lessons. |
+| 7 Context menus | Done for Week and Today lessons, students, note entries, to-dos and work (unreleased). Not on Term, Units or Devotion cards. |
+| 8 Undo and redo | Done for deletes, swaps and bump (unreleased), with Cmd+Z and Shift+Cmd+Z. |
 | 9 Hours chart | Done in 1.9.0 (Swift Charts in `HoursView`). |
 | 10 Toolbar hygiene | Done. The window title is the current screen. |
 | 11 Settings window | Done. Now a sidebar of eight panes with search (unreleased). The last pane is remembered and the title follows it. |

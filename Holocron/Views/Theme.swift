@@ -189,10 +189,18 @@ extension PageHeader where Trailing == EmptyView {
 struct EmptyNote: View {
     var title: String
     var message: String
+    /// An optional button that does the obvious next thing, such as "Add student".
+    var actionTitle: String? = nil
+    var action: (() -> Void)? = nil
     var body: some View {
         VStack(spacing: 4) {
             Text(title).font(.system(size: 14, weight: .semibold))
             Text(message).font(.system(size: 13)).foregroundStyle(Color.ink2).multilineTextAlignment(.center)
+            if let actionTitle, let action {
+                Button(actionTitle, action: action)
+                    .buttonStyle(.borderedProminent)
+                    .padding(.top, 10)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(28)

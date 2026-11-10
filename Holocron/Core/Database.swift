@@ -214,6 +214,14 @@ final class Database {
     /// Called whenever something changes, with the files that need saving.
     var persistHandler: ((Set<TableName>) -> Void)?
 
+    /// Changes that can be taken back, newest last, and the ones that were taken back. Memory only. See UndoLog.swift.
+    var undoSteps: [UndoStep] = []
+    var redoSteps: [UndoStep] = []
+    /// Greater than zero while an undoable change is being made, so its own saves do not clear the history.
+    var undoQuiet = 0
+    /// Called when the history changes. The text is what was just done, for a message, or nil.
+    var onUndoChange: ((String?) -> Void)?
+
     init() {
         var s: [TableName: TableStamp] = [:]
         for t in TableName.allCases {
@@ -252,10 +260,19 @@ final class Database {
         headers[t.rawValue] = h
         tables[t.rawValue] = rows
         changed(t)
+        // Rows read from disk may not match a saved copy any more.
+        forgetUndo(touching: [t])
     }
 
-    func touch(_ names: TableName...) { persistHandler?(Set(names)) }
-    func touch(_ names: Set<TableName>) { persistHandler?(names) }
+    func touch(_ names: TableName...) { touched(Set(names)) }
+    func touch(_ names: Set<TableName>) { touched(names) }
+
+    /// Any change that is not itself undoable ends the history for the tables it touches, so going back
+    /// can never wipe out something typed afterwards.
+    private func touched(_ names: Set<TableName>) {
+        if undoQuiet == 0 { forgetUndo(touching: names) }
+        persistHandler?(names)
+    }
 
     func append(_ t: TableName, _ row: Row) {
         tables[t.rawValue, default: []].append(row)

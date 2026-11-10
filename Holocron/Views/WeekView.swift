@@ -17,8 +17,8 @@ struct WeekView: View {
         let colWidth = max(150, (viewport - 20 - WeekGrid.labelW - 4 * 5) / 5)
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text("Type into a slot, click a subject to change it, drag to swap")
-                    .font(.system(size: 12)).foregroundStyle(Color.ink3).fixedSize(horizontal: false, vertical: true)
+                Text("Type in a slot, press Return to open the plan, drag to swap, right-click for more.")
+                    .font(.system(size: 12)).foregroundStyle(Color.ink2).fixedSize(horizontal: false, vertical: true)
                 ScrollView(.horizontal, showsIndicators: true) {
                     WeekGrid(mon: mon, wk: wk, colW: colWidth)
                 }
@@ -123,6 +123,7 @@ struct WeekGrid: View {
 
 struct SlotCell: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.openWindow) private var openWindow
     var date: String
     var day: Int
     var wk: String
@@ -170,6 +171,12 @@ struct SlotCell: View {
                     set: { db.setSummary(date, pn, subj, $0) }
                 ), axis: .vertical)
                     .focused($focused)
+                    // Return opens the full plan. Shift+Return still starts a new line.
+                    .onKeyPress(.return, phases: .down) { press in
+                        guard !press.modifiers.contains(.shift), !subj.isEmpty, !info.isRelease else { return .ignored }
+                        model.sheet = .plan(date: date, per: pn, edit: !c.hasPlan)
+                        return .handled
+                    }
                     .lineLimit(2...6)
                     .textFieldStyle(.plain)
                     .font(.system(size: 12))
@@ -224,6 +231,16 @@ struct SlotCell: View {
         .background(tintedBlock(tone, release: info.isRelease))
         .clipShape(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous))
         .opacity(dim ? 0.4 : 1)
+        .contextMenu {
+            Button(c.hasPlan ? "Open Plan" : "Plan Lesson…") { model.sheet = .plan(date: date, per: pn, edit: !c.hasPlan) }
+                .disabled(subj.isEmpty || info.isRelease)
+            Button("Change Subject…") { model.sheet = .change(date: date, per: pn) }
+            Button("Move or Push Lessons…") { model.sheet = .move(date: date, per: pn) }
+                .disabled(subj.isEmpty)
+            Divider()
+            Button("Show on Class Screen") { openWindow(id: "classscreen", value: ClassTarget(date: date, per: pn)) }
+                .disabled(subj.isEmpty || info.isRelease)
+        }
         .dropDestination(for: SlotRef.self) { items, _ in
             guard let a = items.first, a != ref else { return false }
             model.sheet = .swap(a: a, b: ref)

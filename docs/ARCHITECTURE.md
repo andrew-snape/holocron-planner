@@ -213,6 +213,8 @@ Line counts are approximate. Paths are relative to the repository root.
 | `Holocron/Core/Database.swift` | Row storage, typed views, per-table stamps, lookup index, helpers for links and ids. |
 | `Holocron/Core/Database+Schedule.swift` | Terms, A/B weeks, planned subject, one-off and standing changes, swaps, lessons, rename, day types, units. |
 | `Holocron/Core/Database+Bump.swift` | Push and pull lesson plans, undo snapshot. |
+| `Holocron/Core/UndoLog.swift` | The undo history: `withUndo` copies the tables a change touches, `undo` and `redo` put them back, `touch` clears the history for a table changed by anything else. Memory only. |
+| `Holocron/Core/JumpSearch.swift` | What Cmd+K finds. Pure code over `Database`. |
 | `Holocron/Core/Database+Hours.swift` | Face to face, release and DOTTL minutes. |
 | `Holocron/Core/Database+Students.swift` | Students, logs, timeline, birthdays, to-do, packs, report judgements and text. |
 | `Holocron/Core/Database+Settings.swift` | Key and value settings, class name, private subject settings. |
@@ -247,6 +249,7 @@ Line counts are approximate. Paths are relative to the repository root.
 | `Holocron/Views/TermUnitsDevotion.swift` | Term grid and stats, units of inquiry, devotion scripts. |
 | `Holocron/Views/ClassScreen.swift` | Class screen, shared timer, stopwatch (`AppModel.stopwatch`), work modes, First Then Next steps, Now and Next strip. |
 | `Holocron/Views/DayStrip.swift` | Today's timetable strip above the Class screen lesson, and the `Stopwatch` and `clockText`. |
+| `Holocron/Views/JumpSheet.swift` | The Cmd+K sheet. |
 | `Holocron/Views/Sheets.swift` | Shared sheet frame, plan, change, move, day type, swap and bump sheets. The lesson editor holds Draft lesson… and Scan text…. |
 | `Holocron/Views/StudentsView.swift` | Student list and detail tabs, Quick log, report tab, pack sheet, new student. Typed note forms have Suggest subject and kind and Scan text…. |
 | `Holocron/Views/MarkClassView.swift` | Mark the whole class on one task, rubric descriptors. |

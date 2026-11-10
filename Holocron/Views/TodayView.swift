@@ -121,6 +121,7 @@ struct BreakRow: View {
 
 struct BlockRow: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.openWindow) private var openWindow
     var date: String
     var period: Period
     /// Minutes since midnight when the date is today, otherwise nil.
@@ -195,6 +196,18 @@ struct BlockRow: View {
             RoundedRectangle(cornerRadius: Radius.panel, style: .continuous)
                 .stroke(Color.appBlue, lineWidth: isNow ? 2 : 0)
         )
+        .contextMenu {
+            Button(c.hasPlan ? "Open Plan" : (lesExists ? "Edit Plan…" : "Add Plan…")) {
+                model.sheet = .plan(date: date, per: pn, edit: !c.hasPlan)
+            }
+            .disabled(subj.isEmpty || info.isRelease)
+            Button("Change Subject…") { model.sheet = .change(date: date, per: pn) }
+            Button("Move or Push Lessons…") { model.sheet = .move(date: date, per: pn) }
+                .disabled(subj.isEmpty)
+            Divider()
+            Button("Show on Class Screen") { openWindow(id: "classscreen", value: ClassTarget(date: date, per: pn)) }
+                .disabled(subj.isEmpty || info.isRelease)
+        }
     }
 }
 
@@ -392,6 +405,12 @@ struct TodoPanel: View {
                 .foregroundStyle(Color.ink3)
                 .accessibilityLabel("Delete to-do")
                 .help("Delete this item")
+        }
+        .contextMenu {
+            Button(done ? "Mark Not Done" : "Mark Done") { model.db.setTodoDone(id, done: !done) }
+            Button("Copy") { model.copyText(x.s("text"), toast: "Copied") }
+            Divider()
+            Button("Delete", role: .destructive) { model.db.deleteRow(.todo, id: id) }
         }
     }
 

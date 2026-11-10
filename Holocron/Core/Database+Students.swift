@@ -61,15 +61,37 @@ extension Database {
 
     /// Removes a student and every note attached to them.
     func removeStudent(_ id: String) {
-        remove(.students, where: { $0.s("id") == id })
         let logs: [TableName] = [.assessments, .taskdone, .plannotes, .wellbeing, .behaviour, .lessonnotes, .reportjudge, .reportcomment, .strandcomments, .interviews]
-        for t in logs { remove(t, where: { $0.s("student_id") == id }) }
-        touch(Set([.students] + logs))
+        withUndo("Delete Student", done: "Student deleted", tables: [.students] + logs) {
+            remove(.students, where: { $0.s("id") == id })
+            for t in logs { remove(t, where: { $0.s("student_id") == id }) }
+            touch(Set([.students] + logs))
+        }
     }
 
+    /// What Undo calls a deleted row from each table. Tables that keep files on disk (interviews, work) are
+    /// left out, because putting the row back would not put the file back.
+    private static let deleteNames: [TableName: (name: String, done: String)] = [
+        .lessonnotes: ("Delete Note", "Note deleted"),
+        .assessments: ("Delete Result", "Result deleted"),
+        .plannotes: ("Delete Plan Note", "Plan note deleted"),
+        .wellbeing: ("Delete Wellbeing Entry", "Entry deleted"),
+        .behaviour: ("Delete Behaviour Entry", "Entry deleted"),
+        .units: ("Delete Unit", "Unit deleted"),
+        .todo: ("Delete To-Do", "To-do deleted"),
+        .dottl: ("Delete DOTTL Entry", "Entry deleted"),
+    ]
+
     func deleteRow(_ t: TableName, id: String) {
-        remove(t, where: { $0.s("id") == id })
-        touch(t)
+        let go = {
+            self.remove(t, where: { $0.s("id") == id })
+            self.touch(t)
+        }
+        if let n = Self.deleteNames[t] {
+            withUndo(n.name, done: n.done, tables: [t], go)
+        } else {
+            go()
+        }
     }
 
     // MARK: Logs
@@ -112,6 +134,23 @@ extension Database {
     func logRows(_ t: TableName, student sid: String) -> [Row] {
         rows(t).filter { $0.s("student_id") == sid }
             .sorted { ($0.s("date") + $0.s("time")) > ($1.s("date") + $1.s("time")) }
+    }
+
+    /// How many entries these tables hold for a student, for the counts on the student's tabs.
+    func entryCount(_ ts: [TableName], student sid: String) -> Int {
+        var n = 0
+        for t in ts { for x in rows(t) where x.s("student_id") == sid { n += 1 } }
+        return n
+    }
+
+    /// The most recent result in each subject for a student, by subject name.
+    func latestResults(student sid: String) -> [Row] {
+        var best: [String: Row] = [:]
+        for x in rows(.assessments) where x.s("student_id") == sid && !x.s("subject").isEmpty {
+            if let b = best[x.s("subject")], b.s("date") >= x.s("date") { continue }
+            best[x.s("subject")] = x
+        }
+        return best.values.sorted { $0.s("subject") < $1.s("subject") }
     }
 
     /// How many things have been logged today against each student, for the Quick log badges.

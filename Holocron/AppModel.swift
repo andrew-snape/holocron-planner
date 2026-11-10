@@ -4,10 +4,27 @@ import Observation
 import UniformTypeIdentifiers
 import ImageIO
 
+/// The headings in the sidebar.
+enum NavGroup: String, CaseIterable, Identifiable {
+    case plan = "Plan"
+    case teach = "Teach"
+    case classroom = "Class"
+    var id: String { rawValue }
+}
+
 enum NavItem: String, CaseIterable, Identifiable {
     case today, week, term, units, devotion, classScreen, students, work, quick, assess, hours
 
     var id: String { rawValue }
+
+    /// Which heading this screen sits under in the sidebar.
+    var group: NavGroup {
+        switch self {
+        case .today, .week, .term, .units, .devotion: return .plan
+        case .classScreen, .quick, .assess: return .teach
+        case .students, .work, .hours: return .classroom
+        }
+    }
 
     /// The Cmd+digit key for this screen in the Go menu. Work has none, so the ten original
     /// screens keep the keys they have always had.
@@ -49,8 +66,8 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .week: return "calendar"
         case .classScreen: return "tv"
         case .term: return "tablecells"
-        case .units: return "magnifyingglass"
-        case .devotion: return "plus"
+        case .units: return "globe.asia.australia"
+        case .devotion: return "book.closed"
         case .students: return "person.2"
         case .work: return "photo.on.rectangle"
         case .quick: return "square.grid.2x2"
@@ -91,6 +108,7 @@ enum ActiveSheet: Identifiable {
     case newStudent
     case importResults(url: URL)
     case dictate
+    case jump
     case interview(sid: String)
     case addWork(studentID: String?)
     case editWork(id: String)
@@ -109,6 +127,7 @@ enum ActiveSheet: Identifiable {
         case .newStudent: return "newstudent"
         case .importResults(let u): return "importresults-" + u.path
         case .dictate: return "dictate"
+        case .jump: return "jump"
         case .interview(let s): return "interview-" + s
         case .addWork(let s): return "addwork-" + (s ?? "")
         case .editWork(let i): return "editwork-" + i
@@ -132,6 +151,8 @@ final class AppModel {
     var termSubject: String = ""
     var sheet: ActiveSheet? = nil
     var lastLessonSubject: String = ""
+    /// The kind of entry last saved from Quick log, so the next one starts there. Lasts until the app closes.
+    var lastQuickKind: QuickKind = .lesson
     @ObservationIgnored var quoteKey: String? = nil
 
     // Data folder
@@ -143,6 +164,12 @@ final class AppModel {
 
     // Toast
     var toast: String? = nil
+    /// True when the toast has an Undo button, for a change that can be taken back.
+    var toastUndo = false
+
+    /// What Edit, Undo and Edit, Redo would do, such as "Delete Note". Nil when there is nothing to go back to.
+    var undoName: String? = nil
+    var redoName: String? = nil
 
     /// Set while a save has failed and is waiting to be tried again. Cleared when a save works.
     var saveProblem: String? = nil
@@ -191,6 +218,12 @@ final class AppModel {
         let plannerSaved = UserDefaults.standard.string(forKey: AppModel.plannerKey)
         folder = DataFolder(url: url, plannerURL: plannerSaved.map { URL(fileURLWithPath: $0, isDirectory: true) })
         db.persistHandler = { [weak self] names in self?.schedule(names) }
+        db.onUndoChange = { [weak self] done in
+            guard let self else { return }
+            self.undoName = self.db.undoName
+            self.redoName = self.db.redoName
+            if let done { self.showToast(done, offerUndo: true) }
+        }
         updater.prepareToQuit = { [weak self] in self?.flushNow(wait: true) }
 
         if folder.exists() {
@@ -580,12 +613,62 @@ final class AppModel {
         showToast("Could not save \(names)")
     }
 
-    func showToast(_ text: String) {
+    func showToast(_ text: String, offerUndo: Bool = false) {
         toast = text
+        toastUndo = offerUndo
         toastWork?.cancel()
-        let w = DispatchWorkItem { [weak self] in self?.toast = nil }
+        let w = DispatchWorkItem { [weak self] in self?.toast = nil; self?.toastUndo = false }
         toastWork = w
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6, execute: w)
+        // Longer when there is an Undo button to reach.
+        DispatchQueue.main.asyncAfter(deadline: .now() + (offerUndo ? 6 : 1.6), execute: w)
+    }
+
+    // MARK: Jump
+
+    /// Goes to what Jump found. A sheet is opened a moment later, once Jump has closed.
+    func jump(to target: JumpResult.Target) {
+        switch target {
+        case .screen(let n):
+            nav = n
+        case .student(let id):
+            selectedStudent = id
+            nav = .students
+        case .unit(let id):
+            nav = .units
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in self?.sheet = .unit(id: id) }
+        case .lesson(let d, let p):
+            cursor = d
+            weekMonday = mondayOf(d)
+            nav = .week
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in self?.sheet = .plan(date: d, per: p, edit: false) }
+        }
+    }
+
+    // MARK: Undo
+
+    /// The Undo button on the toast. It always takes back the last change, even when a note box has focus.
+    func undoLastChange() {
+        guard let name = db.undo() else { return }
+        showToast("Undone: \(name)")
+    }
+
+    /// Edit, Undo. A text box being edited keeps its own undo, so typing is never undone by this.
+    func undo() {
+        if let tv = NSApp.keyWindow?.firstResponder as? NSTextView, tv.undoManager?.canUndo == true {
+            tv.undoManager?.undo()
+            return
+        }
+        guard sheet == nil, let name = db.undo() else { return }
+        showToast("Undone: \(name)")
+    }
+
+    func redo() {
+        if let tv = NSApp.keyWindow?.firstResponder as? NSTextView, tv.undoManager?.canRedo == true {
+            tv.undoManager?.redo()
+            return
+        }
+        guard sheet == nil, let name = db.redo() else { return }
+        showToast("Redone: \(name)")
     }
 
     // MARK: Photos
@@ -827,6 +910,7 @@ final class AppModel {
         termKey = ""
         termSubject = ""
         lastLessonSubject = ""
+        lastQuickKind = .lesson
         loadAll()
         return .done(archive: plan.moves.isEmpty ? nil : plan.archive, disconnectedShared: plan.disconnectsSharedPlanner)
     }
