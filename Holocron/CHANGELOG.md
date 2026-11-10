@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.32
 
 - Mark class has a Markbook view. Choose a subject and see the whole class in one grid, students down and tasks across, coloured by result. Click a column heading to sort. Empty cells say Missing, and a list under the grid names who is missing each result. A pre-test and post-test of the same thing, such as Fractions pre-test and Fractions post-test, get a Growth column. Export CSV saves the grid for a spreadsheet.
 - A student's Assessment tab has a Growth chart with a line for each subject. Scores show as a percentage and achievement levels from Emerging 20 up to Extending 100.
