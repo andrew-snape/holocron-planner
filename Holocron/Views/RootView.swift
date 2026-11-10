@@ -26,10 +26,13 @@ struct RootView: View {
                             .accessibilityLabel(t)
                             .font(.system(size: 12.5, weight: .medium))
                         if model.toastUndo {
-                            Button("Undo") { model.undo() }
+                            Button("Undo") { model.undoLastChange() }
                                 .buttonStyle(.plain)
                                 .font(.system(size: 12.5, weight: .semibold))
                                 .foregroundStyle(Color.appBlue)
+                                .padding(.vertical, 2)
+                                .contentShape(Rectangle())
+                                .help("Take this change back")
                                 .accessibilityHint("Takes this change back")
                         }
                     }

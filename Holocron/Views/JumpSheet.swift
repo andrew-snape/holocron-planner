@@ -29,7 +29,7 @@ struct JumpSheet: View {
             .padding(14)
             Divider()
             if list.isEmpty {
-                Text("Nothing matches \u{201C}\(query)\u{201D}")
+                Text(query.trimmed.isEmpty ? "Nothing to jump to." : "Nothing matches \u{201C}\(query)\u{201D}.")
                     .font(.system(size: 13)).foregroundStyle(Color.ink2)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -40,6 +40,8 @@ struct JumpSheet: View {
                                 row(r, selected: i == picked)
                                     .id(r.id)
                                     .onTapGesture { go(r) }
+                                    .accessibilityAction { go(r) }
+                                    .accessibilityHint("Opens it")
                             }
                         }
                         .padding(8)
@@ -50,12 +52,12 @@ struct JumpSheet: View {
                 }
             }
             Divider()
-            Text("Return to go, Esc to close")
-                .font(.system(size: 11.5)).foregroundStyle(Color.ink3)
+            Text("Return to go, Esc to close.")
+                .font(.system(size: 12)).foregroundStyle(Color.ink2)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 14).padding(.vertical, 8)
         }
-        .frame(width: 520, height: 420)
+        .frame(minWidth: 420, idealWidth: 520, minHeight: 320, idealHeight: 420)
         .background(Color.appBG)
         .onAppear { focused = true }
         .onChange(of: query) { _, _ in picked = 0 }
@@ -66,14 +68,14 @@ struct JumpSheet: View {
         HStack(spacing: 10) {
             Image(systemName: r.symbol).frame(width: 22).foregroundStyle(Color.appBlue)
             VStack(alignment: .leading, spacing: 1) {
-                Text(r.title).font(.system(size: 13.5, weight: .medium)).lineLimit(1)
-                Text(r.detail).font(.system(size: 11.5)).foregroundStyle(Color.ink2).lineLimit(1)
+                Text(r.title).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                Text(r.detail).font(.system(size: 12)).foregroundStyle(Color.ink2).lineLimit(1)
             }
             Spacer(minLength: 0)
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 10)
-        .background(selected ? Color.appBlue.opacity(0.14) : Color.clear)
+        .background(selected ? Color.fillStrong : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: Radius.field, style: .continuous))
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)

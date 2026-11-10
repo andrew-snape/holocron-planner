@@ -17,8 +17,8 @@ struct WeekView: View {
         let colWidth = max(150, (viewport - 20 - WeekGrid.labelW - 4 * 5) / 5)
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text("Type into a slot and press Return to open the plan, click a subject to change it, drag to swap, or right-click for more")
-                    .font(.system(size: 12)).foregroundStyle(Color.ink3).fixedSize(horizontal: false, vertical: true)
+                Text("Type in a slot, press Return to open the plan, drag to swap, right-click for more.")
+                    .font(.system(size: 12)).foregroundStyle(Color.ink2).fixedSize(horizontal: false, vertical: true)
                 ScrollView(.horizontal, showsIndicators: true) {
                     WeekGrid(mon: mon, wk: wk, colW: colWidth)
                 }
@@ -173,7 +173,7 @@ struct SlotCell: View {
                     .focused($focused)
                     // Return opens the full plan. Shift+Return still starts a new line.
                     .onKeyPress(.return, phases: .down) { press in
-                        guard !press.modifiers.contains(.shift), !subj.isEmpty else { return .ignored }
+                        guard !press.modifiers.contains(.shift), !subj.isEmpty, !info.isRelease else { return .ignored }
                         model.sheet = .plan(date: date, per: pn, edit: !c.hasPlan)
                         return .handled
                     }

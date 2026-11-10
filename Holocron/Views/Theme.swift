@@ -199,7 +199,6 @@ struct EmptyNote: View {
             if let actionTitle, let action {
                 Button(actionTitle, action: action)
                     .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
                     .padding(.top, 10)
             }
         }

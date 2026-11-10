@@ -259,6 +259,7 @@ struct StudentDetail: View {
                                 .shadow(color: on ? t.colour.opacity(0.35) : .clear, radius: 4)
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel(t.countedTables.isEmpty ? t.rawValue : "\(t.rawValue), \(db.entryCount(t.countedTables, student: sid)) entries")
                             .accessibilityAddTraits(on ? .isSelected : [])
                             .animation(.easeInOut(duration: 0.15), value: on)
                         }
@@ -415,7 +416,7 @@ struct EntryCard: View {
         .confirmationDialog("Delete this entry?", isPresented: $confirming, titleVisibility: .visible) {
             Button("Delete", role: .destructive) { onDelete?() }
         } message: {
-            Text("You can undo it from the Edit menu.")
+            Text("Straight after, you can undo it from the message or the Edit menu.")
         }
     }
 }
@@ -495,8 +496,8 @@ private struct SummaryOverview: View {
         let inTerm = term.map { t in noteDates.filter { $0 >= t.start && $0 <= t.end }.count }
         let results = db.latestResults(student: sid)
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 28) {
-                stat(inTerm.map(String.init) ?? String(noteDates.count),
+            FlowLayout(spacing: 28) {
+                stat(inTerm.map { String($0) } ?? String(noteDates.count),
                      inTerm == nil ? "notes in all" : "notes this term")
                 stat(lastNote(noteDates, today), "last note")
                 stat(String(results.count), results.count == 1 ? "subject with a result" : "subjects with a result")
@@ -797,26 +798,32 @@ struct NotesTab: View {
     @State private var showing: NoteKind? = nil
 
     var body: some View {
-        Picker("Add", selection: $adding) {
-            ForEach(NoteKind.allCases) { Text($0.addLabel).tag($0) }
+        VStack(alignment: .leading, spacing: 4) {
+            FieldLabel(text: "Add")
+            Picker("Add", selection: $adding) {
+                ForEach(NoteKind.allCases) { Text($0.addLabel).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: 420)
+            .accessibilityLabel("Kind of entry to add")
         }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .frame(maxWidth: 420)
-        .accessibilityLabel("Kind of entry to add")
         switch adding {
         case .lesson: LessonNoteForm(sid: sid)
         case .wellbeing: WellbeingForm(sid: sid)
         case .behaviour: BehaviourForm(sid: sid)
         }
-        Picker("Show", selection: $showing) {
-            Text("All").tag(NoteKind?.none)
-            ForEach(NoteKind.allCases) { Text($0.rawValue).tag(NoteKind?.some($0)) }
+        VStack(alignment: .leading, spacing: 4) {
+            FieldLabel(text: "Show")
+            Picker("Show", selection: $showing) {
+                Text("All").tag(NoteKind?.none)
+                ForEach(NoteKind.allCases) { Text($0.rawValue).tag(NoteKind?.some($0)) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: 420)
+            .accessibilityLabel("Show which entries")
         }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .frame(maxWidth: 420)
-        .accessibilityLabel("Show which entries")
         let list = items(model.db)
         ForEach(list) { i in card(i) }
         if list.isEmpty {

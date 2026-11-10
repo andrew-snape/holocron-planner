@@ -646,6 +646,12 @@ final class AppModel {
 
     // MARK: Undo
 
+    /// The Undo button on the toast. It always takes back the last change, even when a note box has focus.
+    func undoLastChange() {
+        guard let name = db.undo() else { return }
+        showToast("Undone: \(name)")
+    }
+
     /// Edit, Undo. A text box being edited keeps its own undo, so typing is never undone by this.
     func undo() {
         if let tv = NSApp.keyWindow?.firstResponder as? NSTextView, tv.undoManager?.canUndo == true {
