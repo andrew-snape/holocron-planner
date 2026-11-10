@@ -43,14 +43,23 @@ private struct MarkSort: SortComparator {
 struct MarkbookView: View {
     @Environment(AppModel.self) private var model
     @State private var subject = ""
-    @State private var sort = [MarkSort(key: "name")]
+    @State private var sortKey = "name"
+    @State private var ascending = true
+
+    /// Column widths for the grid. Header and rows share them so they line up.
+    private enum W {
+        static let name: CGFloat = 170
+        static let task: CGFloat = 120
+        static let avg: CGFloat = 80
+        static let growth: CGFloat = 130
+    }
 
     var body: some View {
         let db = model.db
         let subjects = subjectsWithResults(db)
         let current = subjects.contains(subject) ? subject : (subjects.first ?? "")
         let grid = Markbook.build(assessments: db.rows(.assessments), students: db.roster.map(\.id), subject: current)
-        let rows = markRows(grid, db).sorted(using: sort)
+        let rows = markRows(grid, db).sorted(using: MarkSort(key: sortKey, order: ascending ? .forward : .reverse))
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -67,27 +76,34 @@ struct MarkbookView: View {
             if subjects.isEmpty || grid.tasks.isEmpty {
                 EmptyNote(title: "No results yet", message: "Mark a task in Mark class, or import results, and the whole class shows here.")
             } else {
-                Table(rows, sortOrder: $sort) {
-                    TableColumn("Student", sortUsing: MarkSort(key: "name")) { row in
-                        Text(row.name).font(.body1Medium)
-                    }
-                    .width(min: 130, ideal: 170)
-                    TableColumnForEach(grid.tasks) { t in
-                        TableColumn(title(t), sortUsing: MarkSort(key: t.id)) { row in
-                            cell(row.line.results[t.id] ?? "", db)
+                ScrollView([.horizontal, .vertical]) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack(spacing: 0) {
+                            headerCell("Student", key: "name", width: W.name)
+                            ForEach(grid.tasks) { t in headerCell(title(t), key: t.id, width: W.task) }
+                            headerCell("Average", key: "avg", width: W.avg)
+                            ForEach(grid.pairs) { p in headerCell("Growth: " + p.base, key: p.id, width: W.growth) }
                         }
-                        .width(min: 90, ideal: 110)
-                    }
-                    TableColumn("Average", sortUsing: MarkSort(key: "avg")) { row in
-                        Text(row.values["avg"].map { "\(Int($0.rounded()))%" } ?? "")
-                            .font(.body1).foregroundStyle(Color.ink2)
-                    }
-                    .width(min: 70, ideal: 80)
-                    TableColumnForEach(grid.pairs) { p in
-                        TableColumn("Growth: " + p.base, sortUsing: MarkSort(key: p.id)) { row in
-                            growthCell(row.values[p.id])
+                        Rectangle().fill(Color.hairline).frame(height: 1)
+                        ForEach(rows) { row in
+                            HStack(spacing: 0) {
+                                Text(row.name).font(.body1Medium)
+                                    .frame(width: W.name, alignment: .leading)
+                                ForEach(grid.tasks) { t in
+                                    cell(row.line.results[t.id] ?? "", db)
+                                        .frame(width: W.task, alignment: .leading)
+                                }
+                                Text(row.values["avg"].map { "\(Int($0.rounded()))%" } ?? "")
+                                    .font(.body1).foregroundStyle(Color.ink2)
+                                    .frame(width: W.avg, alignment: .leading)
+                                ForEach(grid.pairs) { p in
+                                    growthCell(row.values[p.id])
+                                        .frame(width: W.growth, alignment: .leading)
+                                }
+                            }
+                            .padding(.vertical, 6)
+                            Rectangle().fill(Color.hairline).frame(height: 1)
                         }
-                        .width(min: 100, ideal: 120)
                     }
                 }
                 .frame(minHeight: 260)
@@ -108,6 +124,26 @@ struct MarkbookView: View {
     private func subjectsWithResults(_ db: Database) -> [String] {
         let have = Set(db.rows(.assessments).filter { !$0.s("task").isEmpty }.map { $0.s("subject") })
         return db.subjectNames.filter { have.contains($0) }
+    }
+
+    /// A column heading that sorts the grid. Click once to sort, again to reverse.
+    private func headerCell(_ text: String, key: String, width: CGFloat) -> some View {
+        Button {
+            if sortKey == key { ascending.toggle() } else { sortKey = key; ascending = true }
+        } label: {
+            HStack(spacing: 4) {
+                Text(text).font(.caption1Semibold).lineLimit(2).multilineTextAlignment(.leading)
+                if sortKey == key {
+                    Image(systemName: ascending ? "chevron.up" : "chevron.down").font(.label)
+                }
+            }
+            .frame(width: width, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(Color.ink2)
+        .padding(.vertical, 6)
+        .accessibilityLabel("Sort by \(text)")
     }
 
     private func title(_ t: Markbook.TaskColumn) -> String {

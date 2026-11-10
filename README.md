@@ -10,12 +10,12 @@ Holocron keeps your fortnightly timetable, lesson summaries, student notes and t
 
 ## What it does
 
-- **Today**: every block of the day in a vertical list, with the current period highlighted, birthdays coming up, and a quote card.
+- **Today**: a Now card for the lesson on now, with what is next and a button for the Class screen. Every block of the day follows in a vertical list, with finished lessons faded, birthdays coming up, and a quote card.
 - **Week and Term**: plan a whole fortnight in a grid. Type straight into a slot, drag to swap lessons, change a slot for one day or for every cycle, push or pull lessons when a day is lost, and print the week on one A4 page or save it as a PDF.
 - **Copy lessons**: copy a whole day (times, lessons and resources) as rich text to paste into your school LMS for a relief teacher.
 - **Class screen**: a student friendly view for the projector, with We are learning to and I can, First, Then and Next steps typed straight onto the screen, a Now and Next strip, and a timer.
 - **Students**: a class list and a record for each student with notes, assessments, wellbeing, behaviour, plan notes and a report pack. Photos, birth dates and adjustments are kept on your Mac only.
-- **Quick log and Mark class**: log a note for several students at once, or mark the whole class on one task, typing a score or picking an achievement level.
+- **Quick log and Mark class**: log a note for several students at once, or mark the whole class on one task, typing a score or picking an achievement level. Groups select the students you want, and the Markbook shows the whole class in one grid.
 - **Hours**: face to face time, release time and duties other than teaching and learning, by term and for the year, including the period lost to wellbeing work.
 - **Units and Devotion**: units of inquiry and daily devotion scripts. Every module can be switched off in Settings. When the planner is shared, subjects and devotion scripts can be kept private (see Your data).
 - **Apple Intelligence and Siri**: dictate notes, draft report comments and learning intentions, and ask Siri or Shortcuts what is on next. It all runs on your Mac, every draft waits for you to choose Use, and each feature can be switched off in Settings.
@@ -25,6 +25,10 @@ The timetable runs on an A and B fortnightly cycle that restarts each term. Whol
 
 ## What's new
 
+- **1.32**: A new look for the Mac, with clearer type and sheets. Today opens with a Now card for the lesson on now, and subject colours come from twelve that read well. Work has its own toolbar. The Class screen text is larger, and the timer says Time's up.
+- **1.31**: A Markbook for the whole class in one grid, a Growth chart on each student's Assessment tab, a report progress board, and groups for reading, maths and inquiry teams.
+- **1.26**: Two teachers can share a planner folder safely. Changes are added together row by row, and a sheet asks which to keep when you both changed the same thing. A copy of each file is kept in Holocron archive first.
+- **1.25**: Sidebar headings, Jump (Cmd+K) to any student, screen, unit or lesson, Undo and Redo for deletes and moves, right-click menus, and one Notes tab on each student.
 - **1.13.1**: A report draft that Apple Intelligence refuses is tried again with fewer notes, and a message says which notes were left out.
 - **1.13**: Import Essential Assessment report comments, and use them to draft the Mathematics and English points.
 - **1.12**: Report drafts follow school reporting style and your own rules. Preferred names, an ILP sentence, and English and Mathematics dot points with Copy for SIMON.
@@ -68,6 +72,8 @@ The data is split in two folders:
 - **Student folder (private)**: students, notes, assessments, wellbeing, behaviour, reports, photos, your hours log, your to-do list, your settings, and any private subject lessons or Devotion files (`lessonsprivate.csv`).
 - **Planner folder**: the timetable, lessons, terms, units, devotions, quotes, rubrics, subjects and periods. In Settings, then Folders, you can point this at a folder shared with colleagues (for example a shared iCloud Drive folder) so a team can share one planner while keeping student records private. Subjects marked private keep their lessons in the student folder instead, and private Devotion scripts and quotes move there too. Your colleagues' own lessons are never touched.
 
+If the planner folder is shared, Holocron merges a colleague's changes into yours when it saves, instead of overwriting them. Each merge copies the file into `Holocron archive/Before merge` first.
+
 Edit a CSV in Numbers or a text editor, then press Shift+Cmd+R to reload. Files are written safely (to a temporary file, then swapped in), a file that cannot be read is never overwritten, and a warning shows if the data folder is not connected.
 
 To begin again, use **Start over** in Settings, then Year End. You can clear just the planner (timetable, lessons, terms, subjects and so on) or everything. The current files are moved into a dated folder in `Holocron archive`, next to the data folder, so nothing is lost. A shared planner folder is only disconnected, never cleared.
@@ -102,7 +108,7 @@ Every push to `main` and every pull request is also built on a Mac by GitHub Act
 
 ## Keyboard shortcuts
 
-Cmd+1 to Cmd+0 jump between screens in this order: Today, Week, Term, Units, Devotion, Class screen, Students, Quick log, Mark class, Hours. Cmd+comma opens Settings. Cmd+N adds a student and Cmd+L logs a note. Option+Cmd+C copies the day's lessons as rich text. Shift+Cmd+R reloads from the folder. On the Week screen, Cmd+P prints the week and Shift+Cmd+P saves it as a PDF.
+Cmd+1 to Cmd+0 jump between screens in this order: Today, Week, Term, Units, Devotion, Class screen, Students, Quick log, Mark class, Hours. Cmd+comma opens Settings. Cmd+N adds a student and Cmd+L logs a note. Option+Cmd+C copies the day's lessons as rich text. Cmd+K jumps to any student, screen, unit or lesson. Cmd+Z and Shift+Cmd+Z undo and redo a delete, a swap or a lesson move. Shift+Cmd+R reloads from the folder. On the Week screen, Cmd+P prints the week and Shift+Cmd+P saves it as a PDF.
 
 ## Publishing a release (for maintainers)
 

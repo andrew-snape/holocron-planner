@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.26.1
+
+- Fixed: the Markbook could show a blank screen. Its grid is rebuilt, and clicking a column heading still sorts it.
+
 ## 1.32
 
 - Mark class has a Markbook view. Choose a subject and see the whole class in one grid, students down and tasks across, coloured by result. Click a column heading to sort. Empty cells say Missing, and a list under the grid names who is missing each result. A pre-test and post-test of the same thing, such as Fractions pre-test and Fractions post-test, get a Growth column. Export CSV saves the grid for a spreadsheet.

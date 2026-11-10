@@ -1,6 +1,6 @@
 # Holocron: teacher-first plan
 
-Written 10 Nov 2026 against version 1.24.2. This plan looks at Holocron as a Year 6 teacher uses it (IB PYP, Australian Curriculum v9.0, ILPs, NCCD, SIMON, parent emails) and lists what to build next, why, and how.
+Written 10 Nov 2026 against version 1.24.2. Status updated 11 Nov 2026 after 1.32. This plan looks at Holocron as a Year 6 teacher uses it (IB PYP, Australian Curriculum v9.0, ILPs, NCCD, SIMON, parent emails) and lists what to build next, why, and how.
 
 It sits beside the existing plans and does not replace them:
 
@@ -22,6 +22,31 @@ Holocron already covers the planning loop well (Today, Week, Term, Units, lesson
 7. **The look is half way** between the old cards and the macOS 26 style, with 452 fixed font sizes.
 
 The recommended order is in [Release order](#release-order). The decisions that need your call are in [Decisions for Andrew](#decisions-for-andrew).
+
+## Status (11 Nov 2026, after 1.32)
+
+**Shipped**
+
+- **1.25:** sidebar groups (1.1), eight-tab student record and Notes merge (1.2), Jump / Cmd+K (1.3), right-click menus (1.4), Undo and Redo (1.5), and the smaller frictions (1.6).
+- **1.26:** schema version in `settings.csv`, Core tests (`scripts/test-core.sh`), and merge by row (Part 5), with the conflict sheet and copies in `Holocron archive`.
+- **1.31:** class markbook (2.7), report progress board (2.11), and groups (2.10).
+- **1.32:** Liquid Glass phases 2 to 6 (3.1), type scale (3.2, mostly), Today Now card (3.3), subject colours (3.4), Week grid polish (3.5), and Class screen sizing (3.6).
+
+**Still to build:** 1.27 to 1.30 and 2.12. That is the lesson-plan work (2.1, 2.9, 2.13, 2.14), curriculum and units (2.2, 2.3), the rest of the student record (2.5, 2.6, 2.8), and ILP and NCCD (2.4). Also the Today side panel items for ILP reviews, follow-ups and events (3.3), which wait for those.
+
+**Partly done**
+
+- 3.2 type scale: about 400 matching sizes replaced. About 98 odd sizes (icons and some one-off sizes) remain as `.system(size:)`.
+- 3.1: nearly everything was already in place from 1.25. Work's toolbar was the gap, now fixed.
+- Part 4 foundations: schema version, Core tests and undo are done. The docs catch-up is done for 1.25 to 1.32 in `docs/FEATURES.md`, but check the roadmap items against it.
+
+**Known gaps** (recorded in `docs/PROBLEMS.md` unless noted)
+
+- Watching the planner folder while the app is open was not built. A partner's changes appear at the next save or when the app becomes active.
+- A lesson that is pushed, pulled or renamed changes its merge key. A colleague's simultaneous edit of it can give a duplicate rather than a question.
+- Results import can report "not imported" after a save when a merge brought in rows from elsewhere. The data is safe, but the message is wrong. Not yet fixed.
+- "Keep theirs" on two lessons with the same date, period and subject can update both. Not yet fixed.
+- An older Holocron copies all files before it opens a newer folder, but it still saves on top of them afterwards.
 
 ## Rules every item keeps
 
@@ -325,18 +350,18 @@ From the roadmap, and needed before new columns land.
 
 Each release is small enough to test in a school week.
 
-| Release | Theme | Items |
-|---|---|---|
-| 1.25 | Easier to get around | 1.1 sidebar groups, 1.4 context menus, 1.6 frictions, docs catch-up |
-| 1.26 | Safer | Schema version, first Core tests, 5.2 merge by row |
-| 1.26.1 | Safer, continued | 1.5 undo |
-| 1.27 | Better plans | 2.1 differentiation, 2.14 Rosenshine prompts, 2.9 copy, paste and repeat, 2.13 events |
-| 1.28 | Curriculum and units | 2.2 coverage, 2.3 lessons in units |
-| 1.29 | Student record | 1.2 tabs and overview, 2.5 contact log, 2.6 SIMON and email wording, 2.8 note gaps |
-| 1.30 | ILP and NCCD | 2.4 goals, levels, evidence pack |
-| 1.31 | Results and reports | 2.7 markbook, 2.11 report board, 2.10 groups |
-| 1.32 | Look | 3.1 glass phases, 3.2 type scale, 3.3 Today, 3.4 to 3.6 |
-| Later | | 1.3 Cmd+K if not pulled forward, 2.12 printing, roadmap AI items T1 to T7 |
+| Release | Theme | Items | Status |
+|---|---|---|---|
+| 1.25 | Easier to get around | 1.1 sidebar groups, 1.2 tabs, 1.3 Jump, 1.4 context menus, 1.5 undo, 1.6 frictions | Shipped |
+| 1.26 | Safer | Schema version, first Core tests, 5.2 merge by row | Shipped |
+| 1.26.1 | Safer, continued | 1.5 undo | Shipped in 1.25 |
+| 1.27 | Better plans | 2.1 differentiation, 2.14 Rosenshine prompts, 2.9 copy, paste and repeat, 2.13 events | To do |
+| 1.28 | Curriculum and units | 2.2 coverage, 2.3 lessons in units | To do |
+| 1.29 | Student record | 2.5 contact log, 2.6 SIMON and email wording, 2.8 note gaps | To do |
+| 1.30 | ILP and NCCD | 2.4 goals, levels, evidence pack | To do |
+| 1.31 | Results and reports | 2.7 markbook, 2.11 report board, 2.10 groups | Shipped |
+| 1.32 | Look | 3.1 glass phases, 3.2 type scale, 3.3 Today, 3.4 to 3.6 | Shipped (3.2 partly) |
+| Later | | 2.12 printing, roadmap AI items T1 to T7 | To do |
 
 The look could run in parallel, one phase per release, if you would rather see it sooner.
 
