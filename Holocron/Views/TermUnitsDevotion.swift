@@ -511,7 +511,6 @@ struct UnitSheet: View {
                     Button(armDelete ? "Click again to delete" : "Delete unit", role: .destructive) {
                         if !armDelete { armDelete = true; return }
                         model.db.deleteRow(.units, id: unitID)
-                        model.showToast("Unit deleted")
                         dismiss()
                     }
                     .foregroundStyle(Color.appRed)

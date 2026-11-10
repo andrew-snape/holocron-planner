@@ -6,14 +6,13 @@ struct JumpSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
     @State private var picked = 0
+    @State private var list: [JumpResult] = []
     @FocusState private var focused: Bool
 
     /// Names stay off the list while a Class screen could be showing them to the room.
     private var namesOK: Bool { model.classScreens.isEmpty && model.nav != .classScreen }
 
     var body: some View {
-        let list = JumpSearch.results(query, db: model.db, screens: model.visibleNav,
-                                      includeStudents: namesOK, today: todayISO())
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass").foregroundStyle(Color.ink2)
@@ -59,8 +58,8 @@ struct JumpSheet: View {
         }
         .frame(minWidth: 420, idealWidth: 520, minHeight: 320, idealHeight: 420)
         .background(Color.appBG)
-        .onAppear { focused = true }
-        .onChange(of: query) { _, _ in picked = 0 }
+        .onAppear { focused = true; search() }
+        .onChange(of: query) { _, _ in picked = 0; search() }
         .onExitCommand { dismiss() }
     }
 
@@ -80,6 +79,12 @@ struct JumpSheet: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+    }
+
+    /// Looks again when the typing changes. Arrow keys only move the highlight.
+    private func search() {
+        list = JumpSearch.results(query, db: model.db, screens: model.visibleNav,
+                                  includeStudents: namesOK, today: todayISO())
     }
 
     private func open(_ list: [JumpResult]) {

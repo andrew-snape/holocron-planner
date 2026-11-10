@@ -38,7 +38,8 @@ enum JumpSearch {
         !query.isEmpty && query.allSatisfy { q in text.contains { $0.hasPrefix(q) } }
     }
 
-    /// `screens` are the screens that are switched on. Students are left out when `includeStudents` is false.
+    /// `screens` are the screens that are switched on. When `includeStudents` is false (a Class screen could be
+    /// showing), only screens are found, because names can turn up in any free text.
     static func results(_ typed: String, db: Database, screens: [NavItem], includeStudents: Bool,
                         today: String, lessonLimit: Int = 6) -> [JumpResult] {
         let q = words(typed)
@@ -57,7 +58,8 @@ enum JumpSearch {
             }
         }
 
-        if screens.contains(.units) {
+        // Unit titles and lesson summaries are free text, so they are left out too while names are hidden.
+        if includeStudents && screens.contains(.units) {
             for u in db.unitsSorted where matches(q, words(u.s("title") + " " + u.s("theme") + " " + u.s("central_idea"))) {
                 out.append(JumpResult(target: .unit(u.s("id")), title: u.s("title"),
                                       detail: u.s("theme").isEmpty ? "Unit of inquiry" : u.s("theme"),
@@ -65,7 +67,7 @@ enum JumpSearch {
             }
         }
 
-        if screens.contains(.week) {
+        if includeStudents && screens.contains(.week) {
             var found: [(gap: Int, result: JumpResult)] = []
             for x in db.rows(.lessons) {
                 let date = x.s("date")

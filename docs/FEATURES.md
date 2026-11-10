@@ -25,7 +25,7 @@ Everything built so far, with the version it arrived in ([CHANGELOG.md](../CHANG
 | Week and Month mini calendar | 1.6.2 | In the sidebar. Week shows one row. Remembered. Even row heights fixed in 1.6.1. |
 | Sidebar order | 1.6.2 | Today, Week, Term, Units, Devotion, Class screen, Students, Work, Quick log, Mark class, Hours. |
 | Sidebar headings | Unreleased | Plan, Teach and Class (`NavItem.group`). The order chosen in Settings applies within each heading. |
-| Jump (Cmd+K) | Unreleased | Finds students, screens, units and lessons from a few letters, worked out in code ([Core/JumpSearch.swift](../Holocron/Core/JumpSearch.swift), [Views/JumpSheet.swift](../Holocron/Views/JumpSheet.swift)). Students are left out while a Class screen is showing. |
+| Jump (Cmd+K) | Unreleased | Finds students, screens, units and lessons from a few letters, worked out in code ([Core/JumpSearch.swift](../Holocron/Core/JumpSearch.swift), [Views/JumpSheet.swift](../Holocron/Views/JumpSheet.swift)). While a Class screen is showing, only screens are found. |
 | Undo and Redo | Unreleased | Delete a note, result, plan note, wellbeing or behaviour entry, unit, to-do, DOTTL entry or student, swap lessons, move lessons. A short history in memory ([Core/UndoLog.swift](../Holocron/Core/UndoLog.swift)). Cleared for a table when anything else changes it. Work photos and interviews are not undoable because their files move. |
 | Right-click menus | Unreleased | Week and Today lessons, student list, note entries, to-dos, work tiles. |
 | Week: Return opens the plan | Unreleased | In a lesson's summary. Shift+Return starts a new line. |
