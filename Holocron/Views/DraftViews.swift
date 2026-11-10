@@ -246,7 +246,7 @@ struct DotPointCommentBox: View {
                                     .font(.labelSemibold)
                                 ForEach([("Success", "success"), ("Growth", "growth"), ("Improvement", "improve")], id: \.1) { label, key in
                                     if !c.s(key).isEmpty {
-                                        Text("\(label): ").font(.labelMedium) + Text(c.s(key)).font(.label)
+                                        Text("\(Text("\(label): ").font(.labelMedium))\(Text(c.s(key)).font(.label))")
                                     }
                                 }
                             }

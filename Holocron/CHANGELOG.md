@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.33
+
+- Fixed: the Markbook could show a blank screen when a subject had many missing results. The list of missing results is gone, because each empty box already says Missing.
+- In the Markbook, click any result box to type a result. Return, or clicking away, saves it. Escape cancels. Clearing a box removes the result. A comment saved with it stays.
+
 ## 1.32.1
 
 - Fixed: the Markbook could show a blank screen. Its grid is rebuilt, and clicking a column heading still sorts it.

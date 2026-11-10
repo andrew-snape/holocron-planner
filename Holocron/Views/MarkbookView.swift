@@ -84,7 +84,7 @@ struct MarkbookView: View {
                                 Text(row.name).font(.body1Medium)
                                     .frame(width: W.name, alignment: .leading)
                                 ForEach(grid.tasks) { t in
-                                    cell(row.line.results[t.id] ?? "", db)
+                                    GradeCell(result: row.line.results[t.id] ?? "", label: "\(row.name), \(title(t))") { setResult(row.id, t, $0) }
                                         .frame(width: W.task, alignment: .leading)
                                 }
                                 Text(row.values["avg"].map { "\(Int($0.rounded()))%" } ?? "")
@@ -115,7 +115,6 @@ struct MarkbookView: View {
                     }
                 }
                 .frame(minHeight: 260)
-                missingList(grid, db)
             }
         }
         .padding(24)
@@ -184,24 +183,32 @@ struct MarkbookView: View {
         }
     }
 
-    @ViewBuilder
-    private func cell(_ result: String, _ db: Database) -> some View {
-        if result.isEmpty {
-            Text("Missing")
-                .font(.label).foregroundStyle(Color.ink2)
-                .padding(.horizontal, 8).padding(.vertical, 3)
-                .background(Color.appAmber.opacity(0.14), in: RoundedRectangle(cornerRadius: Radius.tiny, style: .continuous))
-                .accessibilityLabel("Missing result")
-        } else if let band = Markbook.band(result) {
-            let tone = db.tone(forHex: band.hex)
-            Text(result)
-                .font(.caption1Medium)
-                .foregroundStyle(tone.inkColor)
-                .padding(.horizontal, 8).padding(.vertical, 3)
-                .background(tone.tintColor, in: RoundedRectangle(cornerRadius: Radius.tiny, style: .continuous))
-        } else {
-            Text(result).font(.caption1)
+    /// Saves one result typed in the grid the same way Mark class does: it updates the row, adds one,
+    /// or removes it when the box is cleared.
+    private func setResult(_ sid: String, _ t: Markbook.TaskColumn, _ res: String) {
+        let db = model.db
+        guard model.canWrite(.assessments) else {
+            model.showToast("Assessments could not be saved. Its file failed to read.")
+            return
         }
+        let isMine: (Row) -> Bool = {
+            $0.s("student_id") == sid && $0.s("subject") == t.subject && $0.s("task") == t.task && $0.s("date") == t.date
+        }
+        if res.isEmpty {
+            // A row with a comment stays, so the comment is not lost. Mark class removes only rows with neither.
+            let hasComment = db.rows(.assessments).contains { isMine($0) && !$0.s("comment").isEmpty }
+            if hasComment {
+                db.update(.assessments, where: isMine) { $0["result"] = "" }
+            } else {
+                db.remove(.assessments, where: isMine)
+            }
+        } else if db.rows(.assessments).contains(where: isMine) {
+            db.update(.assessments, where: isMine) { $0["result"] = res }
+        } else {
+            db.append(.assessments, ["id": uid(), "student_id": sid, "date": t.date, "subject": t.subject,
+                                     "task": t.task, "result": res, "comment": ""])
+        }
+        db.touch(.assessments)
     }
 
     @ViewBuilder
@@ -237,23 +244,6 @@ struct MarkbookView: View {
         case .developing: return "Developing"
         case .low: return "Emerging"
         case .modified: return "Modified"
-        }
-    }
-
-    @ViewBuilder
-    private func missingList(_ grid: Markbook.Grid, _ db: Database) -> some View {
-        let gaps = grid.tasks.map { ($0, Markbook.missing(grid, task: $0)) }.filter { !$0.1.isEmpty }
-        if !gaps.isEmpty {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Missing results").font(.hSection)
-                ForEach(gaps, id: \.0.id) { t, ids in
-                    (Text(title(t) + ": ").font(.caption1Semibold)
-                     + Text(ids.map { db.studentName($0) }.joined(separator: ", ")).font(.caption1))
-                        .foregroundStyle(Color.ink2)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .card()
         }
     }
 
@@ -310,5 +300,79 @@ struct GrowthChart: View {
     private func date(_ s: String) -> Date {
         guard let (y, m, d) = Cal.parts(s) else { return Date() }
         return Date(timeIntervalSince1970: Double(Cal.daysFromCivil(y, m, d)) * 86400)
+    }
+}
+
+// MARK: - A result box in the grid
+
+/// A result in the Markbook grid. Click it to type a result. Return, or clicking away, saves it.
+/// An empty box says Missing. A box that is cleared is removed, as in Mark class.
+private struct GradeCell: View {
+    @Environment(AppModel.self) private var model
+    var result: String
+    var label: String
+    var onCommit: (String) -> Void
+    @State private var editing = false
+    @State private var text = ""
+    @State private var cancelled = false
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        if editing {
+            TextField("Result", text: $text)
+                .textFieldStyle(.plain)
+                .font(.caption1)
+                .padding(.horizontal, 6).padding(.vertical, 3)
+                .frame(width: 112, alignment: .leading)
+                .background(Color.fieldBG, in: RoundedRectangle(cornerRadius: Radius.tiny, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Radius.tiny, style: .continuous).stroke(Color.fieldStroke))
+                .focused($focused)
+                .onAppear { focused = true }
+                .onSubmit { finish() }
+                .onChange(of: focused) { _, now in if !now { finish() } }
+                .onExitCommand { cancelled = true; finish() }
+                .accessibilityLabel(label)
+        } else {
+            Button {
+                text = result
+                cancelled = false
+                editing = true
+            } label: {
+                pill
+                    .frame(width: 112, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(label)
+            .accessibilityValue(result.isEmpty ? "Missing" : result)
+            .help("Click to type a result")
+        }
+    }
+
+    @ViewBuilder
+    private var pill: some View {
+        if result.isEmpty {
+            Text("Missing")
+                .font(.label).foregroundStyle(Color.ink2)
+                .padding(.horizontal, 8).padding(.vertical, 3)
+                .background(Color.appAmber.opacity(0.14), in: RoundedRectangle(cornerRadius: Radius.tiny, style: .continuous))
+        } else if let band = Markbook.band(result) {
+            let tone = model.db.tone(forHex: band.hex)
+            Text(result)
+                .font(.caption1Medium)
+                .foregroundStyle(tone.inkColor)
+                .padding(.horizontal, 8).padding(.vertical, 3)
+                .background(tone.tintColor, in: RoundedRectangle(cornerRadius: Radius.tiny, style: .continuous))
+        } else {
+            Text(result).font(.caption1)
+        }
+    }
+
+    private func finish() {
+        guard editing else { return }
+        editing = false
+        if cancelled { return }
+        let new = text.trimmingCharacters(in: .whitespaces)
+        if new != result { onCommit(new) }
     }
 }
