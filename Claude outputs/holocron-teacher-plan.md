@@ -18,7 +18,8 @@ Holocron already covers the planning loop well (Today, Week, Term, Units, lesson
 3. **The lesson plan has no place for differentiation**, and curriculum codes are typed but never counted.
 4. **ILP, NCCD and parent contact are free text.** Nothing reminds you a review is due or shows the evidence in one place.
 5. **The class view of results and notes is missing.** You can see one student or one task, not the whole class at a glance.
-6. **The look is half way** between the old cards and the macOS 26 style, with 452 fixed font sizes.
+6. **Sharing a planner folder can lose work.** Two Macs write the same files and the last save wins.
+7. **The look is half way** between the old cards and the macOS 26 style, with 452 fixed font sizes.
 
 The recommended order is in [Release order](#release-order). The decisions that need your call are in [Decisions for Andrew](#decisions-for-andrew).
 
@@ -243,9 +244,82 @@ From the roadmap, and needed before new columns land.
 |---|---|---|
 | Schema version in `settings.csv` | Parts 2.1 to 2.5 add columns and tables. A version makes later changes safe, with a copy to `Holocron archive` first. | M |
 | Tests for `Holocron/Core` | New reuse and coverage logic moves real lessons. | M |
-| File change guard | More tables means more chances of a hand edit clashing with a save. | M |
+| Merge by row (Part 5) | Replaces the file change guard. Makes the shared folder safe for two teachers, and protects against hand edits while the app is open. | L |
 | Undo (1.5) | Before Paste lesson and Repeat weekly. | L |
 | Update `docs/FEATURES.md` and `ROADMAP.md` | Both stop before 1.20 to 1.24 (Work, Classroom, Done ticks, spell check). | S |
+
+## Part 5. Sharing lesson plans with other teachers
+
+**Now:** the planner folder sits in a shared iCloud folder and each Mac points to it. Both Macs write the same files, and Holocron saves a whole file at a time. There is no file locking, so the last save wins and the other teacher's changes can be lost. `AppModel` re-reads changed files when the app becomes active (`fileSigs`, `reloadIfIdle`), but it does not check again before it writes.
+
+### 5.1 What was considered
+
+| Option | What it is | Outcome |
+|---|---|---|
+| Share as a file | Send a unit or week as a bundle by AirDrop, Teams or email. | Not now. Good for handing over a unit. Could come later. |
+| One file per teacher | Each Mac writes its own lessons file and reads the others. | Not now. |
+| **Merge by row** | Keep the shared iCloud folder. Before saving, read the file again and merge row by row. | **Chosen (10 Nov 2026).** |
+| OneDrive folder | Point Holocron at a OneDrive folder. | Dropped. The school's OneDrive is locked down. |
+| Sync server or CloudKit | Live sync through a service. | Ruled out. It breaks the rule that the update check is the only network request. |
+
+### 5.2 Merge by row (L)
+
+**What the teacher sees:** nothing, most of the time. Two teachers can plan in the same shared folder on the same afternoon and both sets of lessons stay. If both change the same lesson, Holocron asks which to keep. This also replaces the file change guard in the roadmap, and protects against a hand edit or an AI assistant editing a CSV while the app is open.
+
+**How it works**
+
+1. **Remember the base.** For each table, keep the rows as last read or written (in memory only), beside the signature already kept in `fileSigs`.
+2. **Check before every write.** In `flushNow`, compare the file's signature on disk with `fileSigs[t]`. If it is the same, write as now.
+3. **If it changed, read it again and merge three ways:** base (last seen), mine (in memory) and theirs (on disk), matched by the row key below.
+4. **Write the merged rows** atomically, as now, then check the signature again. If the file changed during the merge, merge once more.
+5. **Show the merged rows** on screen with `db.touch(.table)` and a toast: "Added changes from the shared folder."
+
+**Row keys**
+
+| Table | Key |
+|---|---|
+| `lessons` | date, period, subject |
+| `timetable` | week, day, period |
+| `dayplan` | date, period |
+| `subjects` | subject |
+| `periods` | period |
+| `terms` | year, term |
+| `nonteaching`, `dayoverrides`, `devotion`, `quotes` | date |
+| `units` | id |
+| `rubrics` | rubric, element, level |
+| Student tables with an `id` | id |
+
+**Merge rules**
+
+| Case | Result |
+|---|---|
+| Only they changed, added or removed a row | Take theirs. |
+| Only I changed, added or removed a row | Keep mine. |
+| Both made the same change | Keep it. |
+| Both changed different columns of one row | Keep both changes. |
+| Both changed the same column | Conflict. Ask. |
+| One removed a row, the other edited it | Keep the edited row. |
+
+**Conflicts:** the file keeps their version until I answer, and my version stays in memory. A sheet lists each one in plain words ("You and the shared folder both changed Maths, Tuesday 13 October, period 3") with Keep mine, Keep theirs, and the two versions side by side. Nothing is dropped without a choice.
+
+**Data safety**
+
+- A file that fails to read during a merge goes into `badLoads` and is not written, as now.
+- Wait for iCloud placeholders (`.name.csv.icloud`) before reading.
+- Before the first merge of a table each day, copy the file on disk into `Holocron archive/Before merge`. Copies are never removed.
+- If iCloud has made a conflict copy (such as `lessons 2.csv`), say so and offer to merge it in. Never delete it.
+- Private lessons are split out before the merge, as `mergeLessons` does now, so `lessonsprivate.csv` is never mixed into the shared file.
+- Push and pull move lessons to new dates, so they appear as rows removed and added. If a moved lesson lands on a slot the other teacher has just filled, that is a conflict and is asked about.
+
+**Also:** watch the planner folder while the app is open (`NSFilePresenter` or a dispatch source) and reload when idle, so a partner's changes appear without switching away and back. `FolderStatus` in the sidebar shows when the folder was last read.
+
+**How to build it**
+
+- `Core/RowMerge.swift`: a pure function `merge(base:mine:theirs:key:)` that returns merged rows and conflicts. Foundation only, so write its tests first (it is the first target for the Core test target in Part 4).
+- `AppModel.swift`: base rows beside `fileSigs`, the check in `flushNow`, and the conflict state.
+- `Views/MergeSheet.swift`: the conflict sheet, built on `SheetFrame`.
+- Run `code-reviewer` before committing. Test with two temporary folders and two copies of the app, never the real data folder.
+- A known limit to record in `docs/PROBLEMS.md`: two Macs that save in the same instant can still clash, because iCloud is not a lock. The second check in step 4 makes the window very small.
 
 ## Release order
 
@@ -254,7 +328,8 @@ Each release is small enough to test in a school week.
 | Release | Theme | Items |
 |---|---|---|
 | 1.25 | Easier to get around | 1.1 sidebar groups, 1.4 context menus, 1.6 frictions, docs catch-up |
-| 1.26 | Safer | Schema version, first Core tests, 1.5 undo |
+| 1.26 | Safer | Schema version, first Core tests, 5.2 merge by row |
+| 1.26.1 | Safer, continued | 1.5 undo |
 | 1.27 | Better plans | 2.1 differentiation, 2.14 Rosenshine prompts, 2.9 copy, paste and repeat, 2.13 events |
 | 1.28 | Curriculum and units | 2.2 coverage, 2.3 lessons in units |
 | 1.29 | Student record | 1.2 tabs and overview, 2.5 contact log, 2.6 SIMON and email wording, 2.8 note gaps |
@@ -277,3 +352,4 @@ The look could run in parallel, one phase per release, if you would rather see i
 | 6 | A model-drafted parent email from a note? | Not now. It would send behaviour or wellbeing text to the model, which the guardrails rule out. The code-built skeleton (2.6) covers most of the typing. |
 | 7 | Contact log minutes in Hours? | Optional tick per entry. |
 | 8 | Look first or functions first? | Functions first, look in parallel when a release is light. |
+| 9 | How to share lesson plans with other teachers? | Decided 10 Nov 2026: keep the shared iCloud folder and merge by row (Part 5). |
