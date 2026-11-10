@@ -1,9 +1,5 @@
 # Changelog
 
-## 1.24
-
-- Note boxes check spelling as you type, using the spell checker on this Mac. Nothing is sent anywhere.
-
 ## 1.23.1
 
 - Mark class has a Done tick for each student. Use it to show who has finished a task, such as a TDL project, without giving it a mark. Ticks save with the rest of the class.
