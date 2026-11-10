@@ -1,6 +1,6 @@
 # Roadmap
 
-Suggestions, not promises. Each one is tied to something in the code or the history. Sizes are rough: S is under a day, M a few days, L about a week or more. Problems already known are in [PROBLEMS.md](PROBLEMS.md).
+Suggestions, not promises. Each one is tied to something in the code or the history. Sizes are rough: S is under a day, M a few days, L about a week or more. Problems already known are in [PROBLEMS.md](PROBLEMS.md). A teacher-first plan for the interface, new functions and the look, with a release order, is in [Claude outputs/holocron-teacher-plan.md](../Claude%20outputs/holocron-teacher-plan.md).
 
 ## Now
 
