@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.24.2
+
+- Note boxes check spelling as you type, with the Mac's own spell checker. Words that look wrong get a red underline. Nothing is changed for you, and nothing leaves this Mac.
+
 ## 1.24.1
 
 - Fixed: note boxes, such as Quick log and the lesson sheet, could not be clicked into in 1.24. The spell check added in 1.24 has been taken out for now.
