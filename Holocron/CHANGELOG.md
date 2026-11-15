@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.34.1
+
+- Fixed: on a wide window the Welcome board no longer runs off the bottom. The timer has its own column, Documents and the Question share the last one, and What you need today scrolls inside its card. The timer buttons and work modes no longer squash their labels.
+
 ## 1.34
 
 - The Class screen has a Welcome board for the whole day, on a navy wall with coloured cards. It shows before school and at breaks, and the lesson view shows while a lesson is on. Click a lesson on the board to show it, or Welcome board to go back.

@@ -107,6 +107,8 @@ struct BoardCard<Accessory: View, Content: View>: View {
                     Text(title)
                         .font(titleFont)
                         .foregroundStyle(swatch.ink)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.75)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader)
                 }
@@ -186,18 +188,20 @@ struct WelcomeBoard: View {
         GeometryReader { geo in
             let w = geo.size.width, h = geo.size.height
             if w >= 1150 && h >= 640 {
-                HStack(alignment: .top, spacing: 26) {
-                    NeedsCard(date: date).frame(width: w * 0.22)
-                    ScheduleCard(date: date, hideDone: hideDone, openLesson: openLesson).frame(width: w * 0.32)
-                    VStack(spacing: 26) {
-                        HStack(alignment: .top, spacing: 26) {
-                            BoardTimerCard(swatch: BoardStyle.teal)
-                            DocsCard(date: date)
-                        }
-                        .fixedSize(horizontal: false, vertical: true)
-                        PromptCard(date: date)
+                let gap: CGFloat = 22
+                let cardsHeight = h - 22 - gap
+                HStack(alignment: .top, spacing: gap) {
+                    NeedsCard(date: date, scrolls: true).frame(width: w * 0.21)
+                    ScheduleCard(date: date, hideDone: hideDone, openLesson: openLesson).frame(width: w * 0.29)
+                    // The timer keeps its full size when there is room and a smaller ring when the window is short.
+                    BoardTimerCard(swatch: BoardStyle.teal, ringSize: cardsHeight >= 720 ? 210 : 160)
+                        .frame(width: min(max(w * 0.21, 300), 360))
+                    VStack(spacing: gap) {
+                        DocsCard(date: date).fixedSize(horizontal: false, vertical: true)
+                        PromptCard(date: date).frame(minHeight: 220)
                     }
                 }
+                .frame(height: cardsHeight, alignment: .top)
                 .padding(.top, 22)
             } else {
                 ScrollView {
@@ -408,6 +412,8 @@ struct ScheduleCard: View {
 struct NeedsCard: View {
     @Environment(AppModel.self) private var model
     var date: String
+    /// True on the wide board, where the card has a fixed height and its list scrolls inside it.
+    var scrolls = false
     @State private var typed = ""
     private let swatch = BoardStyle.pink
 
@@ -419,6 +425,17 @@ struct NeedsCard: View {
         let missing = last.filter { !haveNames.contains($0.lowercased()) }
 
         BoardCard(swatch: swatch, title: "What you need today", titleFont: .boardHand(26)) {
+            if scrolls {
+                ScrollView { list(items: items, missing: missing).padding(.trailing, 6) }
+                    .scrollIndicators(.automatic)
+            } else {
+                list(items: items, missing: missing)
+            }
+        }
+    }
+
+    @ViewBuilder private func list(items: [Row], missing: [String]) -> some View {
+        let db = model.db
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 10) {
                     TextField("Add something…", text: $typed)
@@ -474,7 +491,6 @@ struct NeedsCard: View {
 
                 WeatherPanel(swatch: swatch, date: date)
             }
-        }
     }
 
     private func add() {
@@ -688,6 +704,7 @@ struct WeatherPlaceEditor: View {
 struct BoardTimerCard: View {
     @Environment(AppModel.self) private var model
     var swatch: BoardSwatch
+    var ringSize: CGFloat = 210
     @State private var showWatch = false
 
     var body: some View {
@@ -726,7 +743,7 @@ struct BoardTimerCard: View {
                     .foregroundStyle(swatch.ink)
                     .padding(.horizontal, 24)
                 }
-                .frame(width: 210, height: 210)
+                .frame(width: ringSize, height: ringSize)
                 .frame(maxWidth: .infinity)
 
                 HStack(spacing: 24) {
@@ -756,7 +773,7 @@ struct BoardTimerCard: View {
 
                 HStack(spacing: 8) {
                     ForEach([5, 10, 15, 20], id: \.self) { m in
-                        Button("\(m)m") { t.start(minutes: m) }
+                        Button { t.start(minutes: m) } label: { Text("\(m)m").fixedSize() }
                             .buttonStyle(ChipButtonStyle(fill: swatch.soft, ink: swatch.ink, font: .system(size: 17, weight: .semibold)))
                             .help("Start a \(m) minute timer")
                             .accessibilityLabel("\(m) minutes")
@@ -818,16 +835,25 @@ struct WorkModeRow: View {
 
     var body: some View {
         let t = model.classTimer
-        HStack(spacing: 6) {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 6) { buttons(t, wrap: false) }
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) { buttons(t, wrap: true) }
+        }
+        .animation(.easeInOut(duration: 0.2), value: t.work)
+    }
+
+    @ViewBuilder private func buttons(_ t: ClassTimer, wrap: Bool) -> some View {
             ForEach(WorkModes.all) { w in
                 let on = t.work == w.id
                 Button { t.work = on ? "" : w.id } label: {
                     VStack(spacing: 4) {
                         Image(systemName: w.symbol).font(.system(size: 20, weight: .semibold))
-                        Text(w.short).font(.system(size: 15, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
+                        Text(w.short).font(.system(size: 15, weight: .semibold)).lineLimit(1)
+                            .fixedSize(horizontal: !wrap, vertical: false)
                     }
                     // Dark text on the light mode colours (green, orange, sky blue), so the label stays readable when chosen.
                     .foregroundStyle(on ? (["partner", "group", "whisper"].contains(w.id) ? Color.black.opacity(0.8) : Color.onAccent) : Color(hex: w.hex))
+                    .padding(.horizontal, 4)
                     .frame(maxWidth: .infinity, minHeight: 58)
                     .background(RoundedRectangle(cornerRadius: Radius.inset, style: .continuous).fill(on ? Color(hex: w.hex) : Color.white.opacity(0.75)))
                 }
@@ -836,8 +862,6 @@ struct WorkModeRow: View {
                 .accessibilityLabel(w.label)
                 .accessibilityValue(on ? "Selected" : "")
             }
-        }
-        .animation(.easeInOut(duration: 0.2), value: t.work)
     }
 }
 
