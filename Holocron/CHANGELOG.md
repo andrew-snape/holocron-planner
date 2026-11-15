@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.34
+
+- The Class screen has a Welcome board for the whole day, on a navy wall with coloured cards. It shows before school and at breaks, and the lesson view shows while a lesson is on. Click a lesson on the board to show it, or Welcome board to go back.
+- What's going on today lists every lesson and break with an icon and a bar that fills as the lesson goes. Hide completed takes away what has finished. Right-click a lesson to choose its icon.
+- What you need today: type what the class needs, or choose from ideas such as Hat and Library bag. Copy the last list brings back the last day's list.
+- The weather for the week, with the chance of rain and a Sun smart reminder when the UV index is 3 or more. Add your town to switch it on. Holocron sends the town you type to Open-Meteo once to find it, then only its location for the forecast, and nothing about your class.
+- Documents for today: add slides, Word files, PDFs and pictures, or drag them onto the card. The files stay where they are, and Holocron finds them if they move. Click one to open it.
+- A question of the day to talk about, in handwriting. A different one shows each day, the arrows step through them, and Prompts edits the list.
+- The timer is a ring with + and - for a minute either way, a big start button and 5, 10, 15 and 20 minute buttons. Work modes and the stopwatch sit on the same card.
+
 ## 1.33
 
 - Fixed: the Markbook could show a blank screen when a subject had many missing results. The list of missing results is gone, because each empty box already says Missing.

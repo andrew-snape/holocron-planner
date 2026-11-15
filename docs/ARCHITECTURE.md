@@ -247,8 +247,11 @@ Line counts are approximate. Paths are relative to the repository root.
 | `Holocron/Views/TodayView.swift` | Today list, quote card, to-do panel (plain-words due dates through `TodoParse`), birthdays. |
 | `Holocron/Views/WeekView.swift` | Week grid, slot cells, drag to swap, subject filter. |
 | `Holocron/Views/TermUnitsDevotion.swift` | Term grid and stats, units of inquiry, devotion scripts. |
-| `Holocron/Views/ClassScreen.swift` | Class screen, shared timer, stopwatch (`AppModel.stopwatch`), work modes, First Then Next steps, Now and Next strip. |
-| `Holocron/Views/DayStrip.swift` | Today's timetable strip above the Class screen lesson, and the `Stopwatch` and `clockText`. |
+| `Holocron/Views/ClassScreen.swift` | Class screen (Welcome board or lesson, `ClassMode`, follows the bell), shared timer, work modes, First Then Next steps, Now and Next strip. |
+| `Holocron/Views/ClassBoard.swift` | The Welcome board: wall, `BoardCard`, schedule, needs, weather, ring timer, documents and question cards. Colours are `BoardStyle` in Theme.swift. |
+| `Holocron/Core/BoardData.swift` | Foundation only: subject and item icons, "Copy the last list", the Open-Meteo forecast URL and parsing (`WeatherService`). |
+| `Holocron/Core/Database+Board.swift` | needs, docs, prompts and subject icon helpers, weather settings, and `BoardWeather` (the forecast in memory, `AppModel.weather`). |
+| `Holocron/Views/DayStrip.swift` | Today's timetable strip (shown when there are no lessons), and the `Stopwatch` and `clockText`. |
 | `Holocron/Views/JumpSheet.swift` | The Cmd+K sheet. |
 | `Holocron/Views/Sheets.swift` | Shared sheet frame, plan, change, move, day type, swap and bump sheets. The lesson editor holds Draft lesson… and Scan text…. |
 | `Holocron/Views/StudentsView.swift` | Student list and detail tabs, Quick log, report tab, pack sheet, new student. Typed note forms have Suggest subject and kind and Scan text…. |

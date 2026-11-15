@@ -31,7 +31,7 @@ enum AboutPanel {
             out.append(NSAttributedString(string: text + "\n", attributes: a))
         }
 
-        add("A classroom planner for primary school teachers in Victoria, Australia. It keeps the fortnightly A and B timetable, lesson plans, student notes, results, report drafts and teaching hours as plain CSV files that the teacher owns. Everything runs on the Mac. The only network request is the update check to GitHub Releases.", body)
+        add("A classroom planner for primary school teachers in Victoria, Australia. It keeps the fortnightly A and B timetable, lesson plans, student notes, results, report drafts and teaching hours as plain CSV files that the teacher owns. Everything runs on the Mac. The only network requests are the update check to GitHub Releases and, if a town is added on the Class screen, the weather forecast. The town you type is sent once to find it, and after that only its location.", body)
         add("", body)
         add("Dependencies", heading)
         add("No third-party libraries or packages. Holocron uses only Apple's system frameworks:", body)

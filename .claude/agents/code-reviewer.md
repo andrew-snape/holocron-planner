@@ -14,7 +14,7 @@ You review code changes in Holocron, a macOS SwiftUI planner that keeps teachers
    - the shared planner folder is never emptied or overwritten without an explicit choice,
    - iCloud placeholders (`.name.csv.icloud`) are handled,
    - older files that lack a newer column still load (`Row.s("x")` returns "").
-2. **Student privacy.** Student records, photos and notes must stay in the student folder, never reach the shared planner folder, Copy lessons, print output, the Class screen, logs or the update check. The repository must never contain CSV files or photos. The only network request is the update check.
+2. **Student privacy.** Student records, photos and notes must stay in the student folder, never reach the shared planner folder, Copy lessons, print output, the Class screen, logs or the update check. The repository must never contain CSV files or photos. The only network requests are the update check and the opt-in weather forecast (`WeatherService`, town coordinates only). Nothing about students may reach either.
 3. **Correctness.** Date and A/B cycle logic (`Dates.swift`, `Database+Schedule.swift`), bump and push, term and year handling, off-by-one errors, force unwraps, and main-thread work that can block on large photo folders.
 4. **Swift and SwiftUI quality.** State ownership (`@State`, `@Environment(AppModel.self)`), stale caches (`Database` index invalidation per table), retain cycles in closures and timers, and work done on every redraw.
 5. **Simplicity.** Duplicate code that an existing helper already covers (`StartOverPlan.uniqueFolder`, `stamp`, `chooseFolder`, `CSV`). Prefer matching the surrounding style over new patterns.

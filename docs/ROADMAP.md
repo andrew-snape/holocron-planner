@@ -101,5 +101,5 @@ Status checked against the code.
 
 ## Not suggested
 
-- Any feature that sends student data off the Mac. The privacy model depends on the only network request being the update check.
+- Any feature that sends student data off the Mac. The privacy model depends on the only network requests being the update check and the opt-in weather forecast, which carries only the town's coordinates.
 - Replacing CSV with a database. Teachers hand-edit and share the files, and that is the point of the project.

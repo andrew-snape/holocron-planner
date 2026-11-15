@@ -40,7 +40,7 @@ For an AI assistant that has to edit a teacher's live files, the operational sou
 
 | File | Columns | Meaning |
 |---|---|---|
-| `subjects.csv` | `subject`, `kind`, `colour` | One row per subject. `kind` is `teach`, `release` (specialist, counts as release time) or `dottl`. `colour` is a hex code such as `#34C759`. The name is the key used by timetable, lessons, notes and results, so a rename must change every table (`Database.renameSubject`). |
+| `subjects.csv` | `subject`, `kind`, `colour`, `icon` | One row per subject. `kind` is `teach`, `release` (specialist, counts as release time) or `dottl`. `colour` is a hex code such as `#34C759`. `icon` (optional, Unreleased) is an SF Symbol name for the Class screen; empty means one is worked out from the name (`BoardIcons.guess`). The name is the key used by timetable, lessons, notes and results, so a rename must change every table (`Database.renameSubject`). |
 | `periods.csv` | `period`, `name`, `start`, `end` | Bell times. `period` is the number, `start` and `end` are `HH:mm`. |
 | `timetable.csv` | `week`, `day`, `period`, `subject` | The A/B template. Key is week, day, period. |
 | `dayplan.csv` | `date`, `period`, `subject` | A one-off change. A row replaces the template for that date and period. A row equal to the template is deleted. |
@@ -70,6 +70,9 @@ For an AI assistant that has to edit a teacher's live files, the operational sou
 | `interviews.csv` | `id`, `student_id`, `date`, `time`, `minutes`, `audio`, `transcript`, `summary`, `not_private` | An interview recorded for a student. `audio` is the file name in `recordings/` in the student folder. `not_private` is `yes` only when the teacher marked it not private, which allows a summary. Private. |
 | `work.csv` | `id`, `student_id`, `date`, `period`, `subject`, `unit_id`, `task`, `caption`, `file`, `assessment_id`, `batch`, `sha`, `added` | Photos or scans of students' work. One row per student. See the Work section. Private. |
 | `classsteps.csv` | `date`, `period`, `first`, `then`, `next` | Class screen steps for one lesson. A lesson with no steps has no row. |
+| `needs.csv` | `id`, `date`, `item` | What the class needs on a day, on the Class screen's Welcome board. One row per item. |
+| `docs.csv` | `id`, `date`, `title`, `path`, `bookmark` | Files linked to a day on the Welcome board. `path` is the full path on this Mac and `bookmark` (base64) finds the file if it moves. The file is never copied, moved or changed. Student folder, because a path names the Mac's user. |
+| `prompts.csv` | `id`, `prompt` | Question prompts for the Welcome board, in order. Starts with twelve starter questions. |
 | `dottl.csv` | `id`, `date`, `type`, `minutes`, `note` | Hours log. `type` is one of `Lists.dottlTypes`. |
 | `todo.csv` | `id`, `text`, `due`, `done`, `created` | To-do items. `due` may be empty. `done` is the date ticked off. `created` is a date. |
 | `lessonsprivate.csv` | same as `lessons.csv` | Lessons for private subjects. Only exists once a subject is made private. |

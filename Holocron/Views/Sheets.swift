@@ -462,7 +462,7 @@ struct PlanSheet: View {
         HStack {
             Button("Edit plan") { editing = true; draft = model.db.content(date, per) }.buttonStyle(.borderedProminent)
             Button("Class screen") {
-                openWindow(id: "classscreen", value: ClassTarget(date: date, per: per))
+                openWindow(id: "classscreen", value: ClassTarget(date: date, per: per, board: false))
                 dismiss()
             }
             Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)

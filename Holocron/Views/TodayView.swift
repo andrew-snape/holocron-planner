@@ -210,7 +210,7 @@ struct BlockRow: View {
             Button("Move or Push Lessons…") { model.sheet = .move(date: date, per: pn) }
                 .disabled(subj.isEmpty)
             Divider()
-            Button("Show on Class Screen") { openWindow(id: "classscreen", value: ClassTarget(date: date, per: pn)) }
+            Button("Show on Class Screen") { openWindow(id: "classscreen", value: ClassTarget(date: date, per: pn, board: false)) }
                 .disabled(subj.isEmpty || info.isRelease)
         }
     }
@@ -322,7 +322,7 @@ struct NowCard: View {
                     Text(subj).font(.hSection).foregroundStyle(tone.inkColor)
                     Text("\(shown.start) to \(shown.end)").font(.label).foregroundStyle(tone.inkColor.opacity(0.8))
                     Spacer()
-                    Button { openWindow(id: "classscreen", value: ClassTarget(date: date, per: shown.period)) } label: {
+                    Button { openWindow(id: "classscreen", value: ClassTarget(date: date, per: shown.period, board: false)) } label: {
                         Label("Class screen", systemImage: "tv")
                     }
                     .buttonStyle(.bordered)

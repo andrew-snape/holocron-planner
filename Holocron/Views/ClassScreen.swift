@@ -50,6 +50,13 @@ final class ClassTimer {
         total = max(total, left)
     }
 
+    /// Takes a minute off, never below zero. At zero the countdown stops.
+    func subtractMinute() {
+        guard left > 0 else { return }
+        left = max(0, left - 60)
+        if left == 0 { pause(); total = 0 }
+    }
+
     func reset() {
         pause()
         left = total
@@ -72,6 +79,8 @@ struct WorkMode: Identifiable {
     var label: String
     var symbol: String
     var hex: String
+    /// A shorter label for the small buttons on the timer card.
+    var short: String { id == "ask" ? "Ask 3" : label }
 }
 
 enum WorkModes {
@@ -126,6 +135,12 @@ struct ClassScreenModule: View {
 
 // MARK: - The screen itself
 
+/// What the Class screen shows: the whole day, or one lesson.
+enum ClassMode: Equatable {
+    case board
+    case lesson
+}
+
 struct ClassScreenView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
@@ -134,17 +149,23 @@ struct ClassScreenView: View {
     var embedded: Bool
     @State private var date: String
     @State private var pn: Int
+    @State private var mode: ClassMode = .board
+    /// The lesson running when the screen last looked (or nil at a break), so the view follows the bell:
+    /// the lesson when one starts, the Welcome board when it ends. A choice made with the buttons holds until then.
+    @State private var lastPhase: Int?? = .none
+    /// Hides finished blocks on the Welcome board. Kept for this Mac.
+    @AppStorage("boardHideDone") private var hideDone = false
     /// Shows the First, Then, Next cards before anything has been typed in them.
     @State private var stepsOpen = false
     /// Which of First (1), Then (2) and Next (3) the class is on. 0 when none is picked.
     @State private var activeStep = 0
     /// Marks this screen as showing, so Siri leaves student names out.
     @State private var screenID = UUID()
-    /// The floating control bar fades after a few seconds of no mouse or key activity (own window only).
+    /// The buttons fade after a few seconds of no mouse or key activity (own window only).
     @State private var barVisible = true
     @State private var overBar = false
     @State private var hideTask: Task<Void, Never>?
-    /// True while the screen itself has keyboard focus (not a step field), so the arrow keys change lesson.
+    /// True while the screen itself has keyboard focus (not a text field), so the arrow keys and Space work.
     @FocusState private var screenFocused: Bool
 
     init(initial: ClassTarget, embedded: Bool = false) {
@@ -152,6 +173,8 @@ struct ClassScreenView: View {
         self.embedded = embedded
         _date = State(initialValue: initial.date)
         _pn = State(initialValue: initial.per)
+        // Opens on the view asked for, so the wrong one never flashes up first. With no choice, the bell decides.
+        if let b = initial.board { _mode = State(initialValue: b ? .board : .lesson) }
     }
 
     private var lessons: [Period] {
@@ -162,121 +185,62 @@ struct ClassScreenView: View {
         }
     }
 
+    /// The lesson running now, or nil before school, at a break or on another day.
+    private func runningLesson() -> Int? {
+        guard date == todayISO() else { return nil }
+        let n = nowMinutes()
+        return lessons.first(where: { (hm($0.start) ?? 0) <= n && n < (hm($0.end) ?? 0) })?.period
+    }
+
     var body: some View {
-        let db = model.db
-        let p = db.period(pn)
-        let subj = db.plannedSubject(date, pn)
-        let c = db.content(date, pn)
-        let sc = linesOf(c.sc).map { KidWords.strip($0, KidWords.scLeads) }
-        let tone = subj.isEmpty ? Tone.unset : db.tone(forSubject: subj)
         let ps = lessons
         let ix = ps.firstIndex(where: { $0.period == pn })
-        let unit: Row? = subj == "TDL" ? db.unitOn(date) : nil
-        let showSteps = stepsOpen || db.classSteps(date, pn).contains { !$0.isEmpty }
 
         VStack(alignment: .leading, spacing: 0) {
-            topBar(subj: subj, p: p, tone: tone, ps: ps, ix: ix)
-                .padding(.bottom, 14)
-
-            DayStrip()
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.bottom, 14)
-
-            ScrollView {
-                HStack(alignment: .top, spacing: 28) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        if let u = unit {
-                            let ut = db.tone(forHex: PYP.themeHex(u.s("theme")))
-                            Text(u.s("title") + (u.s("central_idea").isEmpty ? "" : " · " + u.s("central_idea")))
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundStyle(ut.inkColor)
-                                .padding(.vertical, 8).padding(.horizontal, 14)
-                                .background(ut.tintColor)
-                                .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
-                        }
-                        if !c.li.isEmpty {
-                            heading("We are learning to", tone)
-                            Text(KidWords.strip(c.li, KidWords.liLeads))
-                                .font(.system(size: 50, weight: .bold)).tracking(-1)
-                        } else {
-                            heading("Today", tone)
-                            Text(c.summary.isEmpty ? "Get ready to learn!" : c.summary)
-                                .font(.system(size: 44, weight: .bold)).tracking(-1)
-                        }
-                        if !sc.isEmpty {
-                            heading("I can", tone).padding(.top, 14)
-                            VStack(alignment: .leading, spacing: 14) {
-                                ForEach(sc, id: \.self) { x in
-                                    HStack(alignment: .top, spacing: 14) {
-                                        Image(systemName: "checkmark.circle").foregroundStyle(tone.barColor)
-                                        Text(x)
-                                    }
-                                    .font(.system(size: 28, weight: .medium))
-                                }
-                            }
-                        }
-                        if showSteps {
-                            stepsRow(tone: tone)
-                                .padding(.top, 14)
-                        } else {
-                            Button { stepsOpen = true } label: {
-                                Label("Add First, Then, Next", systemImage: "list.number")
-                            }
-                            .buttonStyle(.plain)
-                            .font(.boardBodyMedium)
-                            .foregroundStyle(Color.ink3)
-                            .frame(minWidth: 28, minHeight: 28)
-                            .contentShape(Rectangle())
-                            .help("Type three short steps for the class to follow")
-                        }
+            if mode == .board {
+                // Wide: the title in the middle with the buttons at the top right. Narrow: the buttons above the title.
+                ViewThatFits(in: .horizontal) {
+                    ZStack(alignment: .topTrailing) {
+                        WelcomeTitle(date: date)
+                            .fixedSize()
+                            .padding(.horizontal, 300)
+                            .frame(maxWidth: .infinity)
+                        controls(ps: ps, ix: ix)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    VStack(spacing: 16) {
-                        TimerCard(tone: tone)
-                        WorkCard()
-                        ClassGroupsCard(subject: subj)
+                    VStack(spacing: 6) {
+                        HStack { Spacer(minLength: 0); controls(ps: ps, ix: ix) }
+                        WelcomeTitle(date: date, size: 56)
                     }
-                    .frame(width: 320)
                 }
-                .padding(.trailing, 4)
-            }
-            // In the projector window the bar floats over the bottom of the page, so leave room to scroll clear of it.
-            .contentMargins(.bottom, embedded ? 0 : 96, for: .scrollContent)
-
-            if embedded {
-                // At the Mac the bar never hides, so it sits in the layout and covers nothing.
-                controlBar(ps: ps, ix: ix)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 14)
-            }
-
-            nowNext(subj: subj, p: p, tone: tone)
-                .padding(.top, 14)
-        }
-        .padding(24)
-        .background(Color.cardBG)
-        .overlay(alignment: .bottom) {
-            if !embedded {
-                controlBar(ps: ps, ix: ix)
-                    .padding(.bottom, 84)
-                    .opacity(barVisible ? 1 : 0)
-                    .allowsHitTesting(barVisible)
-                    .disabled(!barVisible)
-                    .accessibilityHidden(!barVisible)
-                    .animation(.easeInOut(duration: 0.25), value: barVisible)
+                WelcomeBoard(date: date, hideDone: hideDone) { per in
+                    pn = per
+                    mode = .lesson
+                }
+            } else {
+                lessonView(ps: ps, ix: ix)
             }
         }
+        .padding(.horizontal, 28)
+        .padding(.top, 20)
+        .padding(.bottom, 24)
+        // A click on the wall takes the keyboard back from a text box, so Space and the arrows work again.
+        .background(BoardWall().ignoresSafeArea().onTapGesture { screenFocused = true })
         .focusable()
         .focusEffectDisabled()
         .focused($screenFocused)
         .defaultFocus($screenFocused, true)
         .onKeyPress(.leftArrow) {
-            guard screenFocused else { return .ignored }
+            guard screenFocused, mode == .lesson else { return .ignored }
             wakeBar(); stepLesson(-1, ps: ps, ix: ix); return .handled
         }
         .onKeyPress(.rightArrow) {
-            guard screenFocused else { return .ignored }
+            guard screenFocused, mode == .lesson else { return .ignored }
             wakeBar(); stepLesson(1, ps: ps, ix: ix); return .handled
+        }
+        .onKeyPress(.space) {
+            // Only when no text box has the keyboard, so typing a space never starts the timer.
+            guard screenFocused, model.classTimer.left > 0 else { return .ignored }
+            model.classTimer.toggle(); return .handled
         }
         .onKeyPress { _ in wakeBar(); return .ignored }
         .onContinuousHover { phase in
@@ -284,14 +248,39 @@ struct ClassScreenView: View {
         }
         .onExitCommand { if !embedded { dismiss() } }
         .onChange(of: ClassTarget(date: date, per: pn)) { stepsOpen = false; activeStep = 0 }
+        // Follows the bell: checks every 15 seconds whether a lesson has started or ended.
+        .task(id: date) {
+            while !Task.isCancelled {
+                let now = runningLesson()
+                if lastPhase != .some(now) {
+                    let first = lastPhase == .none
+                    lastPhase = .some(now)
+                    if first {
+                        switch initial.board {
+                        case .some(true): mode = .board
+                        case .some(false): mode = .lesson
+                        case .none:
+                            if let p = now { pn = p; mode = .lesson } else { mode = .board }
+                        }
+                    } else if let p = now {
+                        pn = p
+                        mode = .lesson
+                    } else {
+                        mode = .board
+                    }
+                }
+                try? await Task.sleep(for: .seconds(15))
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: mode)
         .onAppear { model.classScreens.insert(screenID); screenFocused = true; wakeBar() }
         .onDisappear { model.classScreens.remove(screenID); hideTask?.cancel(); overBar = false }
     }
 
-    // MARK: Floating control bar
+    // MARK: Buttons
 
-    /// Shows the bar and, in the projector window, starts the countdown to hide it again.
-    /// The embedded screen is used at the Mac, so its bar stays put.
+    /// Shows the buttons and, in the projector window, starts the countdown to hide them again.
+    /// The embedded screen is used at the Mac, so its buttons stay put.
     private func wakeBar() {
         barVisible = true
         hideTask?.cancel()
@@ -307,9 +296,11 @@ struct ClassScreenView: View {
         pn = ps[i + by].period
     }
 
-    private func controlBar(ps: [Period], ix: Int?) -> some View {
-        GlassEffectContainer(spacing: 8) {
-            HStack(spacing: 8) {
+    private func controls(ps: [Period], ix: Int?) -> some View {
+        HStack(spacing: 8) {
+            if mode == .lesson {
+                Button { mode = .board } label: { Label("Welcome board", systemImage: "house") }
+                    .help("Show the whole day")
                 Button { stepLesson(-1, ps: ps, ix: ix) } label: { Image(systemName: "chevron.left") }
                     .disabled((ix ?? 0) <= 0)
                     .help("Go to the previous lesson")
@@ -318,22 +309,114 @@ struct ClassScreenView: View {
                     .disabled(ix == nil || (ix ?? 0) >= ps.count - 1)
                     .help("Go to the next lesson")
                     .accessibilityLabel("Next lesson")
-                if embedded {
-                    Button("Pop out") { openWindow(id: "classscreen", value: ClassTarget(date: date, per: pn)) }
-                        .help("Open on its own window for the projector")
-                } else {
-                    Button("Full screen") { NSApp.keyWindow?.toggleFullScreen(nil) }
-                    Button("Done") { dismiss() }.buttonStyle(.glassProminent)
-                }
+            } else {
+                Button(hideDone ? "Show completed" : "Hide completed") { hideDone.toggle() }
+                    .help(hideDone ? "Show the parts of the day that have finished" : "Hide the parts of the day that have finished")
             }
-            .buttonStyle(.glass)
+            if embedded {
+                Button("Pop out") { openWindow(id: "classscreen", value: ClassTarget(date: date, per: pn, board: mode == .board)) }
+                    .help("Open in its own window for the projector")
+            } else {
+                Button("Full screen") { NSApp.keyWindow?.toggleFullScreen(nil) }
+                    .help("Fill the whole screen, or go back to a window")
+                Button("Done") { dismiss() }
+                    .help("Close the Class screen (Esc)")
+            }
         }
-        .padding(10)
-        .glassEffect(.regular, in: .capsule)
+        .buttonStyle(WallButtonStyle())
+        .opacity(barVisible ? 1 : 0)
+        .allowsHitTesting(barVisible)
+        .accessibilityHidden(!barVisible)
+        .animation(.easeInOut(duration: 0.25), value: barVisible)
         .onHover { over in
             overBar = over
             if over { hideTask?.cancel() } else { wakeBar() }
         }
+    }
+
+    // MARK: Lesson
+
+    @ViewBuilder
+    private func lessonView(ps: [Period], ix: Int?) -> some View {
+        let db = model.db
+        let p = db.period(pn)
+        let subj = db.plannedSubject(date, pn)
+        let c = db.content(date, pn)
+        let sc = linesOf(c.sc).map { KidWords.strip($0, KidWords.scLeads) }
+        let tone = subj.isEmpty ? Tone.unset : db.tone(forSubject: subj)
+        let unit: Row? = subj == "TDL" ? db.unitOn(date) : nil
+        let showSteps = stepsOpen || db.classSteps(date, pn).contains { !$0.isEmpty }
+        let swatch = BoardStyle.subject(tone)
+
+        topBar(subj: subj, p: p, tone: tone, ps: ps, ix: ix)
+            .padding(.bottom, 26)
+
+        ScrollView {
+            HStack(alignment: .top, spacing: 26) {
+                BoardCard(swatch: swatch) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        if let u = unit {
+                            let ut = db.tone(forHex: PYP.themeHex(u.s("theme")))
+                            Text(u.s("title") + (u.s("central_idea").isEmpty ? "" : " · " + u.s("central_idea")))
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(ut.inkColor)
+                                .padding(.vertical, 8).padding(.horizontal, 14)
+                                .background(Color.veil)
+                                .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
+                        }
+                        if !c.li.isEmpty {
+                            heading("We are learning to", tone)
+                            Text(KidWords.strip(c.li, KidWords.liLeads))
+                                .font(.system(size: 50, weight: .bold)).tracking(-1)
+                                .foregroundStyle(swatch.ink)
+                        } else {
+                            heading("Today", tone)
+                            Text(c.summary.isEmpty ? "Get ready to learn!" : c.summary)
+                                .font(.system(size: 44, weight: .bold)).tracking(-1)
+                                .foregroundStyle(swatch.ink)
+                        }
+                        if !sc.isEmpty {
+                            heading("I can", tone).padding(.top, 14)
+                            VStack(alignment: .leading, spacing: 14) {
+                                ForEach(sc, id: \.self) { x in
+                                    HStack(alignment: .top, spacing: 14) {
+                                        Image(systemName: "checkmark.circle").foregroundStyle(tone.barColor)
+                                        Text(x)
+                                    }
+                                    .font(.system(size: 28, weight: .medium))
+                                    .foregroundStyle(swatch.ink)
+                                }
+                            }
+                        }
+                        if showSteps {
+                            stepsRow(tone: tone)
+                                .padding(.top, 14)
+                        } else {
+                            Button { stepsOpen = true } label: {
+                                Label("Add First, Then, Next", systemImage: "list.number")
+                            }
+                            .buttonStyle(.plain)
+                            .font(.boardBodyMedium)
+                            .foregroundStyle(swatch.ink.opacity(0.75))
+                            .frame(minWidth: 28, minHeight: 28)
+                            .contentShape(Rectangle())
+                            .help("Type three short steps for the class to follow")
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(spacing: 26) {
+                    BoardTimerCard(swatch: BoardStyle.teal)
+                    ClassGroupsCard(subject: subj)
+                }
+                .frame(width: 340)
+            }
+            .padding(.top, 22)
+            .padding(.trailing, 4)
+        }
+
+        nowNext(subj: subj, p: p, tone: tone)
+            .padding(.top, 18)
     }
 
     private func heading(_ s: String, _ tone: Tone) -> some View {
@@ -365,7 +448,7 @@ struct ClassScreenView: View {
                 pill(tag: "Now", title: subj.isEmpty ? p.name : subj, sub: "until " + fmtTime(p.end),
                      tint: tone.tintColor, ink: tone.inkColor)
                 if let n = nextBlock(after: p) {
-                    Image(systemName: "arrow.right").font(.metric).foregroundStyle(Color.ink3)
+                    Image(systemName: "arrow.right").font(.metric).foregroundStyle(BoardStyle.wallInk2)
                     pill(tag: "Next", title: n.title, sub: "at " + fmtTime(n.time),
                          tint: n.tone?.tintColor ?? Color.appBG, ink: n.tone?.inkColor ?? Color.primary)
                 }
@@ -378,7 +461,7 @@ struct ClassScreenView: View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(tag.uppercased()).font(.boardLabel).tracking(1).foregroundStyle(ink.opacity(0.8))
             Text(title).font(.system(size: 26, weight: .bold)).foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.6)
-            Text(sub).font(.system(size: 18, weight: .medium)).foregroundStyle(Color.ink2).lineLimit(1)
+            Text(sub).font(.system(size: 18, weight: .medium)).foregroundStyle(ink.opacity(0.8)).lineLimit(1)
         }
         .padding(.vertical, 12).padding(.horizontal, 18)
         .background(tint)
@@ -405,20 +488,21 @@ struct ClassScreenView: View {
         HStack(alignment: .center, spacing: 14) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(subj.isEmpty ? "No lesson" : subj)
-                    .font(.system(size: 38, weight: .bold)).tracking(-0.8)
-                    .foregroundStyle(tone.inkColor)
+                    .font(.system(size: 40, weight: .bold, design: .rounded)).tracking(-0.8)
+                    .foregroundStyle(BoardStyle.wallInk)
                     .lineLimit(1).minimumScaleFactor(0.6)
                 HStack(spacing: 10) {
                     Text("\(p?.name ?? "") · \(fmtTime(p?.start ?? "")) to \(fmtTime(p?.end ?? ""))")
                     if date != todayISO() { Text(longDate(date)) }
                     remaining(p)
                 }
-                .font(.boardBody).foregroundStyle(Color.ink2)
+                .font(.boardBody).foregroundStyle(BoardStyle.wallInk2)
             }
             Spacer(minLength: 8)
             TimelineView(.periodic(from: Date(), by: 10)) { _ in
-                Text(fmtTime(nowHHMM())).font(.metricRounded).foregroundStyle(Color.ink2)
+                Text(fmtTime(nowHHMM())).font(.metricRounded).foregroundStyle(BoardStyle.wallInk2)
             }
+            controls(ps: ps, ix: ix)
         }
     }
 
@@ -430,7 +514,7 @@ struct ClassScreenView: View {
                 let n = nowMinutes()
                 let a = hm(p.start) ?? 0, b = hm(p.end) ?? 0
                 if n >= a && n < b {
-                    Text("Ends in \(b - n) min").fontWeight(.semibold).foregroundStyle(Color.appBlue)
+                    Text("Ends in \(b - n) min").fontWeight(.semibold).foregroundStyle(BoardStyle.wallInk)
                 } else if n < a {
                     Text("Starts in \(a - n) min")
                 }
@@ -438,119 +522,6 @@ struct ClassScreenView: View {
         }
     }
 }
-
-// MARK: - Timer card
-
-struct TimerCard: View {
-    @Environment(AppModel.self) private var model
-    var tone: Tone
-
-    var body: some View {
-        let t = model.classTimer
-        let watch = model.stopwatch
-        VStack(spacing: 10) {
-            if t.finished {
-                Text("Time's up").font(.metricRounded).foregroundStyle(Color.appRed)
-            }
-            Text(clockText(t.left))
-                .font(.system(size: 72, weight: .bold, design: .rounded))
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-                .foregroundStyle(t.total > 0 && t.left == 0 ? Color.appRed : (t.running ? tone.inkColor : Color.primary))
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.fillStrong)
-                    Capsule().fill(tone.barColor)
-                        .frame(width: t.total > 0 ? geo.size.width * CGFloat(t.left) / CGFloat(t.total) : 0)
-                }
-            }
-            .frame(height: 8)
-            FlowLayout(spacing: 6) {
-                ForEach([1, 2, 5, 10, 15, 20], id: \.self) { m in
-                    Button("\(m) min") { t.start(minutes: m) }
-                }
-            }
-            HStack {
-                Button(t.running ? "Pause" : "Start") { t.toggle() }
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.space, modifiers: [])
-                Button("+1 min") { t.addMinute() }
-                Button("Reset") { t.reset() }
-            }
-            Toggle("Sound when time is up", isOn: Binding(get: { t.sound }, set: { t.sound = $0 }))
-                .toggleStyle(.checkbox).font(.boardLabel)
-
-            Divider()
-
-            // Counts up, for timing an activity. It keeps running when you leave the screen.
-            HStack(spacing: 8) {
-                Text("Stopwatch").font(.boardLabel).foregroundStyle(Color.ink2)
-                Spacer(minLength: 4)
-                TimelineView(.periodic(from: .now, by: 1)) { context in
-                    Text(clockText(Int(watch.now(context.date))))
-                        .font(.metricRounded)
-                        .monospacedDigit()
-                }
-                Button(watch.running ? "Pause" : "Start") { watch.toggle() }
-                Button("Reset") { watch.reset() }
-            }
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity)
-        .background(t.finished ? Color.appRed.opacity(0.14) : Color.appBG)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.board, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.board, style: .continuous)
-            .stroke(Color.appRed, lineWidth: t.finished ? 3 : 0))
-        .animation(.easeInOut(duration: 0.3), value: t.finished)
-    }
-}
-
-// MARK: - Work modes card
-
-struct WorkCard: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        let t = model.classTimer
-        let current = WorkModes.all.first(where: { $0.id == t.work })
-        VStack(spacing: 12) {
-            if let w = current {
-                HStack(spacing: 12) {
-                    Image(systemName: w.symbol).font(.system(size: 34))
-                    Text(w.label).font(.system(size: 30, weight: .bold))
-                }
-                .foregroundStyle(Color(hex: w.hex))
-                .padding(.vertical, 6)
-            }
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8)], spacing: 8) {
-                ForEach(WorkModes.all) { w in
-                    let on = t.work == w.id
-                    Button { t.work = on ? "" : w.id } label: {
-                        VStack(spacing: 6) {
-                            Image(systemName: w.symbol).font(.system(size: 24))
-                            Text(w.label).font(.boardLabel).lineLimit(1)
-                        }
-                        .foregroundStyle(on ? Color.onAccent : Color(hex: w.hex))
-                        .padding(.vertical, 12)
-                        .frame(maxWidth: .infinity)
-                        .background(on ? Color(hex: w.hex) : Color.cardBG)
-                        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                        .accessibilityValue(on ? "Selected" : "")
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity)
-        // A calm wash of the chosen mode's colour, so the room can see the mode from across it.
-        .background(current.map { Color(hex: $0.hex).opacity(0.14) } ?? Color.appBG)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.board, style: .continuous))
-        .animation(.easeInOut(duration: 0.3), value: t.work)
-    }
-}
-
 
 // MARK: - First, Then, Next card
 
@@ -584,6 +555,7 @@ struct StepCard: View {
             TextField("Type a step", text: $text, axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(.system(size: 26, weight: .semibold))
+                .foregroundStyle(tone.inkColor)
                 .lineLimit(1...4)
         }
         .padding(16)

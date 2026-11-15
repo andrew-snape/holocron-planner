@@ -54,6 +54,48 @@ extension Color {
     static let veil = Color.white
 }
 
+// MARK: - Class screen board
+
+/// One coloured card on the Class screen: its face, the ribbon in its corner, its text and a quiet fill for rows and chips.
+struct BoardSwatch {
+    let card: Color
+    let ribbon: Color
+    let ink: Color
+    let soft: Color
+}
+
+/// The Class screen's look: a navy wall with chalk doodles and pastel cards, read from across the room.
+enum BoardStyle {
+    static let wall = Color(red: 0.137, green: 0.290, blue: 0.424)
+    /// Buttons and chips that sit on the wall.
+    static let wallButton = Color.white.opacity(0.16)
+    static let wallInk = Color.white
+    static let wallInk2 = Color.white.opacity(0.82)
+    /// The chalk colours of the doodles behind the cards.
+    static let doodles: [Color] = [Color(red: 0.66, green: 0.85, blue: 0.86), Color(red: 0.95, green: 0.91, blue: 0.71),
+                                   Color(red: 0.80, green: 0.73, blue: 0.89), Color(red: 0.95, green: 0.72, blue: 0.71)]
+    /// The letters of "Welcome", one colour each.
+    static let letters: [Color] = [Color(red: 0.69, green: 0.64, blue: 0.86), Color(red: 0.42, green: 0.73, blue: 0.40),
+                                   Color(red: 0.91, green: 0.62, blue: 0.24), Color(red: 0.90, green: 0.45, blue: 0.42),
+                                   Color(red: 0.93, green: 0.62, blue: 0.67), Color(red: 0.55, green: 0.71, blue: 0.91),
+                                   Color(red: 0.55, green: 0.78, blue: 0.29)]
+
+    static let pink = BoardSwatch(card: Color(red: 0.96, green: 0.79, blue: 0.80), ribbon: Color(red: 0.74, green: 0.30, blue: 0.30),
+                                  ink: Color(red: 0.30, green: 0.15, blue: 0.16), soft: Color.white.opacity(0.55))
+    static let purple = BoardSwatch(card: Color(red: 0.67, green: 0.65, blue: 0.82), ribbon: Color(red: 0.37, green: 0.25, blue: 0.62),
+                                    ink: Color(red: 0.17, green: 0.13, blue: 0.33), soft: Color.white.opacity(0.45))
+    static let teal = BoardSwatch(card: Color(red: 0.67, green: 0.86, blue: 0.88), ribbon: Color(red: 0.24, green: 0.55, blue: 0.54),
+                                  ink: Color(red: 0.10, green: 0.30, blue: 0.29), soft: Color.white.opacity(0.55))
+    static let lilac = BoardSwatch(card: Color(red: 0.85, green: 0.72, blue: 0.85), ribbon: Color(red: 0.55, green: 0.29, blue: 0.62),
+                                   ink: Color(red: 0.24, green: 0.13, blue: 0.27), soft: Color.white.opacity(0.55))
+    static let yellow = BoardSwatch(card: Color(red: 0.97, green: 0.89, blue: 0.62), ribbon: Color(red: 0.90, green: 0.72, blue: 0.25),
+                                    ink: Color(red: 0.24, green: 0.18, blue: 0.04), soft: Color.white.opacity(0.75))
+    /// A card in a subject's colours, for the lesson view.
+    static func subject(_ t: Tone) -> BoardSwatch {
+        BoardSwatch(card: t.tintColor, ribbon: t.barColor, ink: t.inkColor, soft: Color.white.opacity(0.6))
+    }
+}
+
 // MARK: - Shape, space and type
 
 /// Corner radii. Use these instead of numbers so the house look changes in one place.
@@ -119,6 +161,12 @@ extension Font {
     /// Big numbers on summary cards.
     static let metric = Font.system(size: 22, weight: .bold)
     static let metricRounded = Font.system(size: 22, weight: .semibold, design: .rounded)
+    /// Class screen card titles and big rows.
+    static let boardTitle = Font.system(size: 26, weight: .bold, design: .rounded)
+    static let boardRow = Font.system(size: 28, weight: .bold, design: .rounded)
+    static let boardTime = Font.system(size: 18, weight: .semibold, design: .rounded)
+    /// Handwriting, for the Welcome board's friendly headings and the question of the day. Noteworthy comes with macOS.
+    static func boardHand(_ size: CGFloat) -> Font { .custom("Noteworthy-Bold", size: size) }
 }
 
 // MARK: - Card style

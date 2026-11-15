@@ -250,7 +250,7 @@ struct SlotCell: View {
             Button("Move or Push Lessons…") { model.sheet = .move(date: date, per: pn) }
                 .disabled(subj.isEmpty)
             Divider()
-            Button("Show on Class Screen") { openWindow(id: "classscreen", value: ClassTarget(date: date, per: pn)) }
+            Button("Show on Class Screen") { openWindow(id: "classscreen", value: ClassTarget(date: date, per: pn, board: false)) }
                 .disabled(subj.isEmpty || info.isRelease)
         }
         .dropDestination(for: SlotRef.self) { items, _ in

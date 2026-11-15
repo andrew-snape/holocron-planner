@@ -309,5 +309,25 @@ do {
     check(Grouping.sizes(total: 10, groups: 3) == [4, 3, 3], "uneven sizes")
 }
 
+// Welcome board: icons, Copy the last list and the forecast.
+do {
+    check(BoardIcons.guess("Maths") == "divide" && BoardIcons.guess("Literacy 1") == "book", "subject icons")
+    check(BoardIcons.guess("Morning org.") == "sun.max" && BoardIcons.guess("P.E.") == "figure.run", "block icons")
+    check(BoardIcons.guess("Start up") == "", "short words match whole words only")
+    check(BoardIcons.need("Water bottle") == "waterbottle" && BoardIcons.need("Chat book") == "book.closed", "need icons")
+    let rows: [[String: String]] = [["date": "2026-11-12", "item": "Hat"], ["date": "2026-11-13", "item": "Library bag"],
+                                    ["date": "2026-11-13", "item": "Device"], ["date": "2026-11-17", "item": "Later"]]
+    check(NeedsList.lastList(before: "2026-11-16", in: rows) == ["Library bag", "Device"], "last list is the latest earlier day")
+    check(NeedsList.lastList(before: "2026-11-12", in: rows).isEmpty, "no earlier list")
+    let json = #"{"daily":{"time":["2026-11-16","2026-11-17","2026-11-21","2026-11-23"],"weather_code":[3,3,3,null],"temperature_2m_max":[13.5,17.7,24.2,null],"temperature_2m_min":[8.7,7.3,14.8,null],"precipitation_probability_max":[8,6,42,null],"uv_index_max":[8.55,2.0,8.6,null]}}"#
+    let days = WeatherService.parseForecast(Data(json.utf8))
+    check(days.count == 3, "forecast drops a day with no temperature")
+    check(days.first?.sunSmart == true && days.dropFirst().first?.sunSmart == false, "sun smart from UV 3")
+    check(WeatherService.schoolDays(days, from: "2026-11-16").map(\.date) == ["2026-11-16", "2026-11-17"], "weekdays only")
+    check(WeatherService.parseForecast(Data("junk".utf8)).isEmpty, "bad forecast reads as nothing")
+    check(WeatherService.forecastURL(latitude: -38.147, longitude: 144.36)?.absoluteString.contains("latitude=-38.15") == true, "coordinates rounded")
+    check(WeatherService.parsePlace(Data(#"{"generationtime_ms":1}"#.utf8)) == nil, "no town found")
+}
+
 print(failures == 0 ? "All \(checks) checks passed." : "\(failures) of \(checks) checks failed.")
 exit(failures == 0 ? 0 : 1)

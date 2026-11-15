@@ -25,6 +25,13 @@ enum TableName: String, CaseIterable {
     case taskdone
     /// Mac app only: named groups of students (reading groups, maths groups, inquiry teams). Private, never shared.
     case groups
+    /// Mac app only: what the class needs to bring or have out today, one row per item. Shown on the Class screen's Welcome board.
+    case needs
+    /// Mac app only: links to files for a day (slides, documents, PDFs). The file stays where it is; only its path and a
+    /// bookmark are kept. Private, because a path names the Mac's user folder.
+    case docs
+    /// Mac app only: question prompts shown on the Class screen's Welcome board.
+    case prompts
 
     /// Which folder a table lives in. Planner tables can be shared with other staff;
     /// student tables (and personal ones such as the hours log and to-do) stay private.
@@ -41,7 +48,7 @@ enum TableName: String, CaseIterable {
     var header: [String] {
         switch self {
         case .students:      return ["id", "first", "surname", "birthdate", "parents", "house", "roles", "adjustments", "nccd", "medical", "notes", "preferred", "ilp"]
-        case .subjects:      return ["subject", "kind", "colour"]
+        case .subjects:      return ["subject", "kind", "colour", "icon"]
         case .periods:       return ["period", "name", "start", "end"]
         case .timetable:     return ["week", "day", "period", "subject"]
         case .dayplan:       return ["date", "period", "subject"]
@@ -69,6 +76,9 @@ enum TableName: String, CaseIterable {
         case .work:          return ["id", "student_id", "date", "period", "subject", "unit_id", "task", "caption", "file", "assessment_id", "batch", "sha", "added"]
         case .taskdone:      return ["id", "student_id", "date", "subject", "task"]
         case .groups:        return ["id", "name", "subject", "student_ids"]
+        case .needs:         return ["id", "date", "item"]
+        case .docs:          return ["id", "date", "title", "path", "bookmark"]
+        case .prompts:       return ["id", "prompt"]
         }
     }
 }

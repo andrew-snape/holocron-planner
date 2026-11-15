@@ -22,6 +22,8 @@ struct SubjectInfo: Equatable {
     var subject: String
     var kind: String          // "teach", "release" or "dottl"
     var colour: String
+    /// An SF Symbol name chosen for the subject, or "" to use the one worked out from its name.
+    var icon: String = ""
     var isRelease: Bool { kind == "release" }
 }
 
@@ -393,7 +395,7 @@ final class Database {
         var subjects: [SubjectInfo] {
             cached(&_subjects) {
                 rows(.subjects).map {
-                    SubjectInfo(subject: $0.s("subject"), kind: $0.s("kind"), colour: $0.s("colour"))
+                    SubjectInfo(subject: $0.s("subject"), kind: $0.s("kind"), colour: $0.s("colour"), icon: $0.s("icon"))
                 }
             }
         }

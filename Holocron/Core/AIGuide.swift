@@ -221,7 +221,7 @@ enum AIGuide {
         L.append("")
         if kind == .planner || !c.plannerShared {
             L.append("- `week`: `A` or `B`. `day`: `0` Monday, `1` Tuesday, `2` Wednesday, `3` Thursday, `4` Friday.")
-            L.append("- `subject` (`subjects.csv`) is any name. `kind` is `teach`, `release` or `dottl`. `colour` is a hex code such as `#34C759`.")
+            L.append("- `subject` (`subjects.csv`) is any name. `kind` is `teach`, `release` or `dottl`. `colour` is a hex code such as `#34C759`. `icon` is optional: an SF Symbol name such as `divide` or `book`, or empty to let Holocron choose one from the name.")
             L.append("- `dayoverrides.csv` `type`: \(q(Lists.dayTypes)).")
             L.append("- `units.csv` `theme`: \(q(PYP.themes.map { $0.name })). `concepts`: any of \(q(PYP.keyConcepts)). `atl`: any of \(q(PYP.atlSkills)). `profile`: any of \(q(PYP.profile)).")
             L.append("- `lessons.csv` `atl` and `profile` use the same lists as units.")
@@ -421,7 +421,7 @@ enum AIGuide {
     static func describe(_ t: TableName) -> String {
         switch t {
         case .students: return "One row per student: names, birth date, parents, house, roles, adjustments, NCCD, medical details, notes and whether they have an ILP."
-        case .subjects: return "Subjects with a kind (teach, release or dottl) and a hex colour."
+        case .subjects: return "Subjects with a kind (teach, release or dottl), a hex colour and an optional SF Symbol name for the Class screen."
         case .periods: return "The bell times for the school day."
         case .timetable: return "The A/B fortnight template: which subject is on in each week, day and period."
         case .dayplan: return "One-off changes to the timetable for a single date and period. They override the template."
@@ -449,6 +449,9 @@ enum AIGuide {
         case .interviews: return "Interviews recorded for a student: the date, minutes, the audio file in `recordings/`, the transcript and an optional summary. Private to the student folder."
         case .work: return "Photos or scans of students' work, one row for each student. `file` names the image in `work/<year>/`. A file shared by a group has one row per student with the same `file` and `batch`. Private to the student folder."
         case .groups: return "Named groups of students, such as reading groups, maths groups or inquiry teams. `student_ids` holds student ids from `students.csv` joined with semicolons (`s1;s2;s3`). `subject` is optional. Private to the student folder."
+        case .needs: return "What the class needs today, shown on the Class screen's Welcome board. One row per item, by date."
+        case .docs: return "Links to files for a day, shown on the Class screen's Welcome board. `path` is where the file sits on this Mac and `bookmark` lets Holocron find it if it moves. The file itself is never copied or changed. Private to the student folder."
+        case .prompts: return "Question prompts shown on the Class screen's Welcome board, one per row, in the order they are shown."
         case .settings: return "Holocron's own key and value settings, such as which subjects are private, and `schema_version`, the file layout version. Leave this file alone."
         }
     }

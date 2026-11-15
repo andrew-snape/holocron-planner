@@ -35,6 +35,7 @@ Everything built so far, with the version it arrived in ([Holocron/CHANGELOG.md]
 | Feature | Version | Notes |
 |---|---|---|
 | Class screen | Start | A projector view of a lesson, in the window or popped out. |
+| Welcome board | Unreleased | Whole-day Class screen view ([Views/ClassBoard.swift](../Holocron/Views/ClassBoard.swift)): navy wall, ribbon cards, What's going on today (live progress, Hide completed, subject icons), What you need today (`needs.csv`), weather (Open-Meteo, opt-in by town, `weather_*` settings), Documents for today (`docs.csv`, linked in place), question of the day (`prompts.csv`) and the ring timer. Follows the bell: the lesson view while a lesson is on, the board otherwise. |
 | Student friendly layout | 1.8.8 | We are learning to, I can, Get ready to learn! for lessons with no plan. |
 | First, Then and Next steps | 1.8.8 | Typed on the screen, saved in `classsteps.csv` (student folder). Click a heading to highlight the step. Moved below I can in 1.8.9. |
 | Now and Next strip | 1.8.8 | Current lesson and what follows, including Recess, Lunch and Home time. |

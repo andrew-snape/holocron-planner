@@ -24,5 +24,7 @@ swiftc -O -o "$OUT/core-tests" \
   Holocron/Core/Grouping.swift \
   Holocron/Core/Tone.swift \
   Holocron/Core/SubjectColours.swift \
+  Holocron/Core/Dates.swift \
+  Holocron/Core/BoardData.swift \
   Tests/Core/main.swift
 "$OUT/core-tests"

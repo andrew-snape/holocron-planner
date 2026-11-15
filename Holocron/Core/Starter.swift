@@ -26,6 +26,22 @@ enum Starter {
             ]
             return teach.map { ["subject": $0.0, "kind": "teach", "colour": $0.1] }
                 + release.map { ["subject": $0.0, "kind": "release", "colour": $0.1] }
+        case .prompts:
+            let qs = [
+                "What are you most looking forward to today?",
+                "What is something you are proud of this week?",
+                "If you could have any superpower, what would it be and why?",
+                "What is one thing you learnt yesterday?",
+                "Who is someone who helped you recently, and how?",
+                "What would you do if you were the teacher for a day?",
+                "What is a goal you have for this term?",
+                "Which animal would make the best class pet, and why?",
+                "What is something new you would like to learn?",
+                "What makes a good friend?",
+                "If you could visit anywhere in the world, where would you go?",
+                "What is one kind thing you could do for someone today?",
+            ]
+            return qs.enumerated().map { ["id": "p\($0.offset + 1)", "prompt": $0.element] }
         default:
             return []
         }

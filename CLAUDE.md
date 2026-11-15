@@ -2,7 +2,7 @@
 
 New to this repo? Read [AGENTS.md](AGENTS.md) first.
 
-Holocron is a native macOS SwiftUI classroom planner for a primary school teacher in Victoria, Australia. It keeps a fortnightly A/B timetable, lesson plans, student notes, results, report drafts and teaching hours as plain CSV files in two folders (a shareable planner folder and a private student folder). About 16k lines of Swift, no external dependencies, no test target, macOS 26 and Apple silicon only. Everything runs on the Mac. The only network request is the update check to GitHub Releases.
+Holocron is a native macOS SwiftUI classroom planner for a primary school teacher in Victoria, Australia. It keeps a fortnightly A/B timetable, lesson plans, student notes, results, report drafts and teaching hours as plain CSV files in two folders (a shareable planner folder and a private student folder). About 16k lines of Swift, no external dependencies, no test target, macOS 26 and Apple silicon only. Everything runs on the Mac. The only network requests are the update check to GitHub Releases and, when the teacher adds a town, the Class screen weather forecast from Open-Meteo (town coordinates only, no student data, hosts fixed in `WeatherService`).
 
 ## Build
 

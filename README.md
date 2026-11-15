@@ -65,7 +65,7 @@ Updates never touch your data, which lives in its own folders.
 
 ## Your data
 
-Everything is stored as CSV files in a folder you choose, by default `iCloud Drive/Holocron/data`. There is no account, no server, and no tracking. The only network request the app makes is the update check to GitHub. The first time you dictate, macOS itself may download its speech model from Apple. Your voice and notes are never sent.
+Everything is stored as CSV files in a folder you choose, by default `iCloud Drive/Holocron/data`. There is no account, no server, and no tracking. The app makes only two network requests: the update check to GitHub and, if you add your town on the Class screen, the weather forecast from Open-Meteo. The town you type is sent once to find it, and after that only its location. The first time you dictate, macOS itself may download its speech model from Apple. Your voice and notes are never sent.
 
 The data is split in two folders:
 

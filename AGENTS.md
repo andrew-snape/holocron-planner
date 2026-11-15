@@ -12,7 +12,7 @@ Holocron in five lines:
 - It keeps a fortnightly A/B timetable, lesson plans, student notes, results, report drafts and teaching hours.
 - All data is plain CSV in two folders: a planner folder (can be shared with colleagues) and a private student folder.
 - About 16,000 lines of Swift (15,971 at time of writing), no dependencies, no test target, Apple silicon only (`ARCHS = arm64`, `MACOSX_DEPLOYMENT_TARGET = 26.0`).
-- Everything runs on the Mac. Apple Intelligence features use the on-device model. The only network request is the update check to GitHub Releases.
+- Everything runs on the Mac. Apple Intelligence features use the on-device model. The only network requests are the update check to GitHub Releases and, when the teacher adds a town, the Class screen weather forecast (Open-Meteo, town coordinates only, no student data).
 
 ### If you are about to...
 
@@ -248,7 +248,7 @@ Formats:
 - `TableName.isPlanner` and `DataFolder.root(for:)` decide folders. Never put student information in a planner table or the planner guide.
 - Student names, photos, notes, wellbeing, behaviour, medical details, adjustments and plan notes must not reach the Class screen, Copy lessons, print output, logs, the update check, or any shared folder.
 - No student data in this repository: no CSVs, photos, real names in fixtures, tests, comments, docs or commit messages.
-- The only network request is the update check. (macOS itself may download its speech model the first time the teacher dictates. That is the system, not Holocron.)
+- The only network requests are the update check and, when a town is set, the weather forecast (town coordinates only, no student data). (macOS itself may download its speech model the first time the teacher dictates. That is the system, not Holocron.)
 
 **AI guardrails** (see `Intelligence.swift`, `CommentDraft.swift`, `NoteSorter.swift`)
 

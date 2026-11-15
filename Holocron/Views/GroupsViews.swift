@@ -139,28 +139,26 @@ struct ClassGroupsCard: View {
         let all = db.studentGroups
         let groups = all.filter { $0.subject.isEmpty || $0.subject == subject }
         if db.classGroupsOn, !groups.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Text("Groups").font(.hSection)
-                    Spacer()
-                    Button(hidden ? "Show names" : "Hide names") { hidden.toggle() }
-                        .buttonStyle(.bordered).controlSize(.small)
-                        .help("Show or hide students' names on the projector")
-                        .accessibilityHint("Shows or hides students' names on the projector")
-                }
+            let swatch = BoardStyle.lilac
+            BoardCard(swatch: swatch, title: "Groups") {
+                Button(hidden ? "Show names" : "Hide names") { hidden.toggle() }
+                    .buttonStyle(ChipButtonStyle(fill: swatch.soft, ink: swatch.ink))
+                    .help("Show or hide students' names on the projector")
+                    .accessibilityHint("Shows or hides students' names on the projector")
                 if hidden {
-                    Text("Names are hidden.").font(.body2).foregroundStyle(Color.ink2)
+                    Text("Names are hidden.").font(.boardBody).foregroundStyle(swatch.ink)
                 } else {
                     ForEach(groups) { g in
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(g.name).font(.system(size: 15, weight: .semibold))
+                            Text(g.name).font(.system(size: 18, weight: .bold))
                             Text(db.members(of: g).map(\.first).joined(separator: ", "))
-                                .font(.system(size: 15)).fixedSize(horizontal: false, vertical: true)
+                                .font(.system(size: 18)).fixedSize(horizontal: false, vertical: true)
                         }
+                        .foregroundStyle(swatch.ink)
                     }
                 }
             }
-            .card()
+            .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

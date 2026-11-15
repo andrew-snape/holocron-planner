@@ -93,6 +93,9 @@ struct SlotRef: Codable, Hashable, Transferable {
 struct ClassTarget: Codable, Hashable {
     var date: String
     var per: Int
+    /// Which view to open on: true for the Welcome board, false for the lesson, nil to choose by the time
+    /// (the lesson while one is on, the Welcome board before school and at breaks).
+    var board: Bool? = nil
 }
 
 enum ActiveSheet: Identifiable {
@@ -187,6 +190,8 @@ final class AppModel {
     let classTimer = ClassTimer()
     /// The Class screen stopwatch. Kept here, so it keeps running when you leave the screen and come back.
     let stopwatch = Stopwatch()
+    /// The Welcome board's forecast, in memory only and shared by every Class screen.
+    let weather = BoardWeather()
     /// The Class screens on show, in the window, popped out or in the sidebar.
     /// Siri leaves names out while any are.
     var classScreens: Set<UUID> = []

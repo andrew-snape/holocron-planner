@@ -403,6 +403,9 @@ enum CSVGuide {
         case .work: return "Photos and scans of students' work, with the lesson, task and caption, and the image file in the work folder"
         case .taskdone: return "Tasks each student has finished, ticked as Done in Mark class"
         case .groups: return "Named groups of students, such as reading groups"
+        case .needs: return "What the class needs today, on the Class screen's Welcome board"
+        case .docs: return "Links to files for a day, on the Class screen's Welcome board"
+        case .prompts: return "Question prompts on the Class screen's Welcome board"
         case .lessonsprivate, .settings: return ""
         }
     }
@@ -413,7 +416,7 @@ enum CSVGuide {
         case .students:
             return "One row per student. id must be unique and must never change, because other files refer to it. birthdate is yyyy-mm-dd. parents holds parent names only, never emails or phone numbers."
         case .subjects:
-            return "One row per subject. kind is teach (face to face teaching), release (a specialist lesson, counted as release time) or dottl. colour is a hex code such as #34C759."
+            return "One row per subject. kind is teach (face to face teaching), release (a specialist lesson, counted as release time) or dottl. colour is a hex code such as #34C759. icon is optional: an SF Symbol name such as divide or book, or empty to let Holocron choose."
         case .periods:
             return "The bell times for a school day. period is 1, 2, 3 and so on. start and end are 24 hour times such as 09:30."
         case .timetable:
@@ -466,6 +469,12 @@ enum CSVGuide {
             return "One row for each student who has finished a task. student_id matches students.csv. date is yyyy-mm-dd. subject matches subjects.csv and task is the task name, the same as in assessments.csv. It is ticked as Done in Mark class. It is private to the student folder."
         case .groups:
             return "One row per group. name is the group's name, subject is optional and student_ids holds student ids from students.csv joined with semicolons, like s1;s2;s3. Private to the student folder."
+        case .needs:
+            return "One row per item the class needs on a day. date is yyyy-mm-dd and item is a few words, such as Library bag. id must be unique."
+        case .docs:
+            return "One row per file linked to a day. date is yyyy-mm-dd, title is the name shown, path is the full path to the file on this Mac. Do not edit bookmark by hand. Private to the student folder."
+        case .prompts:
+            return "One question per row, in the order they are shown. id must be unique and prompt is the question."
         case .lessonsprivate, .settings:
             return ""
         }
