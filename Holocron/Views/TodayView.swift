@@ -83,15 +83,16 @@ struct TodayView: View {
             EmptyNote(title: ov.s("type"), message: ov.s("note").isEmpty ? "Timetable does not run today." : ov.s("note"))
         } else {
             TimelineView(.periodic(from: .now, by: 30)) { _ in
-                let ps = db.periods
+                // Back-to-back periods of the same subject show as one block.
+                let rs = db.dayRuns(date)
                 let isToday = date == todayISO()
                 let nm: Int? = isToday ? nowMinutes() : nil
                 VStack(spacing: 8) {
                     if let nm { NowCard(date: date, minutes: nm) }
-                    ForEach(Array(ps.enumerated()), id: \.element.id) { idx, p in
-                        BlockRow(date: date, period: p, minutesNow: nm)
-                        if idx + 1 < ps.count, mins(p.end, ps[idx + 1].start) > 0 {
-                            BreakRow(from: p.end, to: ps[idx + 1].start)
+                    ForEach(Array(rs.enumerated()), id: \.element.id) { idx, r in
+                        BlockRow(date: date, run: r, minutesNow: nm)
+                        if idx + 1 < rs.count, mins(r.end, rs[idx + 1].start) > 0 {
+                            BreakRow(from: r.end, to: rs[idx + 1].start)
                         }
                     }
                 }
@@ -120,27 +121,33 @@ struct BlockRow: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openWindow) private var openWindow
     var date: String
-    var period: Period
+    /// One period, or back-to-back periods of the same subject joined into one block.
+    var run: LessonRun
     /// Minutes since midnight when the date is today, otherwise nil.
     var minutesNow: Int?
 
-    /// True when the date is today and the period has finished, so it fades back and the eye lands on now.
+    /// True when the date is today and the block has finished, so it fades back and the eye lands on now.
     private var isPast: Bool {
-        guard let n = minutesNow, let b = hm(period.end) else { return false }
+        guard let n = minutesNow, let b = hm(run.end) else { return false }
         return n >= b
     }
 
     var body: some View {
         let db = model.db
-        let pn = period.period
-        let subj = db.plannedSubject(date, pn)
-        let moved = db.isMoved(date, pn)
+        // The plan button opens the period that holds the plan, so a plan written on the second period still shows.
+        let pn = db.planPeriod(date, run)
+        let subj = run.subject
+        let moved = run.periods.contains { db.isMoved(date, $0.period) }
         let info = db.subjectInfo(subj)
         let tone = subj.isEmpty ? Tone.unset : db.tone(forSubject: subj)
         let c = db.content(date, pn)
         let lesExists = db.lessonRow(date, pn) != nil
+        /// Plans on the other periods of a joined block, shown underneath so nothing written is hidden.
+        let others = run.periods.filter { $0.period != pn }.map { (name: $0.name, c: db.content(date, $0.period)) }
+            .filter { !$0.c.summary.isEmpty && $0.c.summary != c.summary }
+        let anyPlan = run.periods.contains { db.content(date, $0.period).hasPlan }
         let isNow: Bool = {
-            guard let n = minutesNow, let a = hm(period.start), let b = hm(period.end) else { return false }
+            guard let n = minutesNow, let a = hm(run.start), let b = hm(run.end) else { return false }
             return n >= a && n < b
         }()
         let showDevotion = model.isEnabled(.devotion) && (subj == "Circle Time" || c.summary.hasPrefix("Circle Time"))
@@ -150,8 +157,8 @@ struct BlockRow: View {
         HStack(alignment: .top, spacing: 0) {
             Rectangle().fill(tone.barColor).frame(width: 4)
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(period.start) to \(period.end)").font(.system(size: 13, weight: .medium, design: .rounded))
-                Text(period.name).font(.small).foregroundStyle(Color.ink2)
+                Text("\(run.start) to \(run.end)").font(.system(size: 13, weight: .medium, design: .rounded))
+                Text(run.name).font(.small).foregroundStyle(Color.ink2)
             }
             .frame(width: 112, alignment: .leading)
             .padding(.leading, 12)
@@ -162,13 +169,17 @@ struct BlockRow: View {
                     Text(subj.isEmpty ? "Not set" : subj)
                         .font(.system(size: 15, weight: .semibold)).foregroundStyle(tone.inkColor)
                         .accessibilityValue(isNow ? "Happening now" : "")
-                    if c.hasPlan { TagLabel(text: "Plan", fg: tone.inkColor, bg: Color.veil.opacity(0.7)) }
+                    if anyPlan { TagLabel(text: "Plan", fg: tone.inkColor, bg: Color.veil.opacity(0.7)) }
                     if moved { Circle().fill(Color.appAmber).frame(width: 6, height: 6).help("Moved for today") }
                 }
-                Text("\(info.isRelease ? "Release" : "Face to face") · \(period.minutes) min" + (moved ? " · changed for today" : ""))
+                Text("\(info.isRelease ? "Release" : "Face to face") · \(run.minutes) min" + (moved ? " · changed for today" : ""))
                     .font(.label).foregroundStyle(Color.ink2)
                 if !c.summary.isEmpty {
                     Text(linkified(c.summary)).font(.bodyLarge).textSelection(.enabled).padding(.top, 2)
+                }
+                ForEach(Array(others.enumerated()), id: \.offset) { _, o in
+                    Text("\(Text(o.name + " ").fontWeight(.semibold))\(linkified(o.c.summary))")
+                        .font(.bodyLarge).textSelection(.enabled).padding(.top, 2)
                 }
                 if !c.li.isEmpty {
                     Text("\(Text("LI ").fontWeight(.bold))\(c.li)").font(.caption1).foregroundStyle(Color.ink2)
@@ -187,8 +198,22 @@ struct BlockRow: View {
                 Button(c.hasPlan ? "Open plan" : (lesExists ? "Edit" : "Add")) {
                     model.sheet = .plan(date: date, per: pn, edit: !c.hasPlan)
                 }
-                Button("Change") { model.sheet = .change(date: date, per: pn) }
-                Button("Move") { model.sheet = .move(date: date, per: pn) }
+                if run.isJoined {
+                    // A joined block is still separate periods in the files, so Change and Move ask which one.
+                    Menu("Change") {
+                        ForEach(run.periods) { p in Button(p.name) { model.sheet = .change(date: date, per: p.period) } }
+                    }
+                    .fixedSize()
+                    .help("Change the subject of one of these periods")
+                    Menu("Move") {
+                        ForEach(run.periods) { p in Button(p.name) { model.sheet = .move(date: date, per: p.period) } }
+                    }
+                    .fixedSize()
+                    .help("Move or push one of these periods")
+                } else {
+                    Button("Change") { model.sheet = .change(date: date, per: pn) }
+                    Button("Move") { model.sheet = .move(date: date, per: pn) }
+                }
             }
             .controlSize(.small)
             .padding(10)
@@ -206,11 +231,25 @@ struct BlockRow: View {
                 model.sheet = .plan(date: date, per: pn, edit: !c.hasPlan)
             }
             .disabled(subj.isEmpty || info.isRelease)
-            Button("Change Subject…") { model.sheet = .change(date: date, per: pn) }
-            Button("Move or Push Lessons…") { model.sheet = .move(date: date, per: pn) }
-                .disabled(subj.isEmpty)
+            if !run.isJoined {
+                Button("Change Subject…") { model.sheet = .change(date: date, per: pn) }
+                Button("Move or Push Lessons…") { model.sheet = .move(date: date, per: pn) }
+                    .disabled(subj.isEmpty)
+            } else {
+                // Change and Move act on one period. These reach each period of a joined block on its own.
+                ForEach(run.periods) { p in
+                    Menu(p.name) {
+                        Button(db.content(date, p.period).hasPlan ? "Open Plan" : (db.lessonRow(date, p.period) != nil ? "Edit Plan…" : "Add Plan…")) {
+                            model.sheet = .plan(date: date, per: p.period, edit: !db.content(date, p.period).hasPlan)
+                        }
+                        .disabled(info.isRelease)
+                        Button("Change Subject…") { model.sheet = .change(date: date, per: p.period) }
+                        Button("Move or Push Lessons…") { model.sheet = .move(date: date, per: p.period) }
+                    }
+                }
+            }
             Divider()
-            Button("Show on Class Screen") { openWindow(id: "classscreen", value: ClassTarget(date: date, per: pn, board: false)) }
+            Button("Show on Class Screen") { openWindow(id: "classscreen", value: ClassTarget(date: date, per: run.lead.period, board: false)) }
                 .disabled(subj.isEmpty || info.isRelease)
         }
     }
@@ -304,15 +343,12 @@ struct NowCard: View {
 
     var body: some View {
         let db = model.db
-        let lessons = db.periods.filter { p in
-            let s = db.plannedSubject(date, p.period)
-            return !s.isEmpty && db.subjectInfo(s).kind != "dottl"
-        }
+        let lessons = db.classRuns(date)
         let now = lessons.first { (hm($0.start) ?? 0) <= minutes && minutes < (hm($0.end) ?? 0) }
         let next = lessons.first { (hm($0.start) ?? 0) > minutes }
         if now != nil || next != nil {
             let shown = now ?? next!
-            let subj = db.plannedSubject(date, shown.period)
+            let subj = shown.subject
             let tone = db.tone(forSubject: subj)
             let a = hm(shown.start) ?? 0, b = hm(shown.end) ?? 1
             let progress = now == nil ? 0 : min(1, max(0, Double(minutes - a) / Double(max(1, b - a))))
@@ -322,7 +358,7 @@ struct NowCard: View {
                     Text(subj).font(.hSection).foregroundStyle(tone.inkColor)
                     Text("\(shown.start) to \(shown.end)").font(.label).foregroundStyle(tone.inkColor.opacity(0.8))
                     Spacer()
-                    Button { openWindow(id: "classscreen", value: ClassTarget(date: date, per: shown.period, board: false)) } label: {
+                    Button { openWindow(id: "classscreen", value: ClassTarget(date: date, per: shown.lead.period, board: false)) } label: {
                         Label("Class screen", systemImage: "tv")
                     }
                     .buttonStyle(.bordered)
@@ -337,7 +373,7 @@ struct NowCard: View {
                     Text("\(b - minutes) minutes left").font(.caption1).foregroundStyle(tone.inkColor)
                 }
                 if now != nil, let n = next {
-                    Text("Then \(db.plannedSubject(date, n.period)) at \(n.start)").font(.caption1).foregroundStyle(tone.inkColor).fixedSize(horizontal: false, vertical: true)
+                    Text("Then \(n.subject) at \(n.start)").font(.caption1).foregroundStyle(tone.inkColor).fixedSize(horizontal: false, vertical: true)
                 }
             }
             .padding(Space.card)

@@ -36,6 +36,50 @@ Setup: add a test target to `Holocron.xcodeproj` and run `xcodebuild test` in CI
 | File change guard | There are no lock files. Before writing, compare the file's signature with the one stored at the last read, and if it changed on disk, reload or ask. `DataFolder.signature` and `fileSigs` already exist. | M |
 | Developer ID signing and notarisation | The app is ad hoc signed, so a first launch needs right-click, Open. Notarising needs a paid Apple Developer account, a signing step in `release.sh` and a notarytool step. It would also let the updater check a team identifier, not just a valid signature. | M |
 | Fail CI on a missing changelog section | `build.yml` only warns. | S |
+| File coordination | See the section below. Live updates from a partner's Mac, safer saves and proper iCloud conflict handling. | M |
+
+### File coordination (from Apple's Shared data overview)
+
+Source: [Shared data](https://developer.apple.com/documentation/technologyoverviews/shared-data), checked 17 Nov 2026. Apple says file coordination is essential for files read and written in iCloud or any shared space. Holocron does not use it yet: no `NSFileCoordinator` or `NSFilePresenter` anywhere. Today it writes with `Data.write(.atomic)`, spots outside changes by modification date and size (`DataFolder.signature`, [Core/DataFolder.swift](../Holocron/Core/DataFolder.swift)), merges row by row before each save ([Core/MergedSave.swift](../Holocron/Core/MergedSave.swift), [Core/RowMerge.swift](../Holocron/Core/RowMerge.swift)) and does not watch the folder while the app is open (see Merge by row in [PROBLEMS.md](PROBLEMS.md)).
+
+Apple documentation to read before starting (for whoever does the work, person or AI assistant):
+
+- [Shared data overview](https://developer.apple.com/documentation/technologyoverviews/shared-data), the File coordination section
+- [NSFileCoordinator](https://developer.apple.com/documentation/foundation/nsfilecoordinator)
+- [coordinate(writingItemAt:options:error:byAccessor:)](https://developer.apple.com/documentation/foundation/nsfilecoordinator/coordinate(writingitemat:options:error:byaccessor:))
+- [coordinate(readingItemAt:options:error:byAccessor:)](https://developer.apple.com/documentation/foundation/nsfilecoordinator/coordinate(readingitemat:options:error:byaccessor:))
+- [NSFileCoordinator.WritingOptions](https://developer.apple.com/documentation/foundation/nsfilecoordinator/writingoptions) (`.forMerging`, `.forReplacing`)
+- [addFilePresenter(_:)](https://developer.apple.com/documentation/foundation/nsfilecoordinator/addfilepresenter(_:)) and [removeFilePresenter(_:)](https://developer.apple.com/documentation/foundation/nsfilecoordinator/removefilepresenter(_:))
+- [NSFilePresenter](https://developer.apple.com/documentation/foundation/nsfilepresenter)
+- [presentedSubitemDidChange(at:)](https://developer.apple.com/documentation/foundation/nsfilepresenter/presentedsubitemdidchange(at:))
+- [NSFileVersion](https://developer.apple.com/documentation/foundation/nsfileversion)
+- [unresolvedConflictVersionsOfItem(at:)](https://developer.apple.com/documentation/foundation/nsfileversion/unresolvedconflictversionsofitem(at:))
+- [startDownloadingUbiquitousItem(at:)](https://developer.apple.com/documentation/foundation/filemanager/startdownloadingubiquitousitem(at:)) (what Holocron uses now)
+- [iCloud design guide (HIG)](https://developer.apple.com/design/human-interface-guidelines/icloud)
+
+What it would add, in the suggested order:
+
+1. **Live updates from a partner.** An `NSFilePresenter` on the planner folder and the student folder. iCloud calls `presentedSubitemDidChange(at:)` when a colleague's changed CSV arrives. Run the existing merge and reload then, instead of at the next save or when the app becomes active. Debounce, ignore Holocron's own writes, and skip anything in `badLoads`. Register in `AppModel` when a folder opens and remove the presenter on folder switch and quit (`NSFileCoordinator.removeFilePresenter`). Biggest visible gain.
+2. **Coordinated saves.** Wrap the read, merge and write in `MergedSave` in one `coordinate(writingItemAt:options:.forMerging)` call, still writing with `.atomic` inside it. iCloud's sync process then cannot upload or replace the file midway, which narrows the same-instant clash. It is still not a lock between Macs, so the row merge stays. Coordinated calls block, so keep them on the background save queue, never the main thread. `flushNow(wait: true)` on quit must still finish.
+3. **iCloud conflict versions.** Use `NSFileVersion.unresolvedConflictVersionsOfItem(at:)` to find conflicts directly, instead of spotting copies by name such as `lessons 2.csv`. Copy each version into `Holocron archive/Before merge` first, verify the copy, merge it, and only then mark it resolved. Never remove a version without a verified copy. Keep the name-based check as well, for copies made by other tools.
+4. **Coordinated reads instead of placeholder polling.** A coordinated read of a file that is not downloaded makes iCloud fetch it and waits. This could replace much of the hand-written `.name.icloud` handling in `ImportPlan`, `YearEnd`, `WorkFiles`, `WorkImport`, `StartOver`, `Interview`, `AIGuide` and `Database+Board`. Do this last and one file at a time, because those paths guard imports and archives.
+
+Limits:
+
+- Coordination only protects against programs that also coordinate. Finder, iCloud and Apple's apps do. A script or AI assistant editing the CSVs directly does not, so keep the "quit Holocron first" advice in `AIGuide.swift`.
+- It works on one Mac only. Two Macs saving in the same instant still rely on the row merge.
+- When done, update the Merge by row entry in PROBLEMS.md, the File change guard row above, ARCHITECTURE.md and the AI guide wording if behaviour changes.
+
+Checks: build, then test with `swiftc` scripts against temporary folders, including a temporary folder in iCloud Drive edited from a second Mac or from Finder while the app is open. Never the real data folder. Run the `code-reviewer` agent before committing.
+
+Looked at and not suggested:
+
+- **CloudKit, SwiftData, Core Data sync.** They replace the CSV files (see Not suggested below).
+- **iCloud app container** (`url(forUbiquityContainerIdentifier:)`). Hides the files in a folder only Holocron uses, which breaks shared planner folders and hand editing.
+- **App groups.** For sharing between several of your own apps or extensions. Holocron is one app.
+- **iCloud key-value storage.** Would sync settings through Apple's servers. Settings are private and stay in the student folder.
+- **File Provider.** For apps with their own server.
+- **GameSave.** For games.
 
 ### Apple Intelligence
 

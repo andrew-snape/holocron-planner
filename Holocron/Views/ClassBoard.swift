@@ -192,13 +192,13 @@ struct WelcomeBoard: View {
                 let cardsHeight = h - 22 - gap
                 HStack(alignment: .top, spacing: gap) {
                     NeedsCard(date: date, scrolls: true).frame(width: w * 0.21)
-                    ScheduleCard(date: date, hideDone: hideDone, openLesson: openLesson).frame(width: w * 0.29)
+                    ScheduleCard(date: date, hideDone: hideDone, compact: cardsHeight < 900, openLesson: openLesson).frame(width: w * 0.29)
                     // The timer keeps its full size when there is room and a smaller ring when the window is short.
                     BoardTimerCard(swatch: BoardStyle.teal, ringSize: cardsHeight >= 720 ? 210 : 160)
                         .frame(width: min(max(w * 0.21, 300), 360))
                     VStack(spacing: gap) {
-                        DocsCard(date: date).fixedSize(horizontal: false, vertical: true)
-                        PromptCard(date: date).frame(minHeight: 220)
+                        DocsCard(date: date, capped: true).fixedSize(horizontal: false, vertical: true)
+                        PromptCard(date: date).frame(minHeight: 180)
                     }
                 }
                 .frame(height: cardsHeight, alignment: .top)
@@ -255,6 +255,8 @@ struct ScheduleCard: View {
     @Environment(AppModel.self) private var model
     var date: String
     var hideDone: Bool
+    /// Smaller rows so a whole day fits on a short window.
+    var compact = false
     var openLesson: (Int) -> Void
     private let swatch = BoardStyle.purple
 
@@ -269,7 +271,7 @@ struct ScheduleCard: View {
                     let shown = blocks.filter { !(hideDone && isToday && (hm($0.end) ?? 0) <= now) }
                     ScrollViewReader { proxy in
                         ScrollView {
-                            VStack(spacing: 10) {
+                            VStack(spacing: compact ? 6 : 10) {
                                 ForEach(shown) { b in
                                     row(b, now: isToday ? now : -1).id(b.id)
                                 }
@@ -305,22 +307,23 @@ struct ScheduleCard: View {
         return nil
     }
 
+    /// The day's blocks. Back-to-back periods of the same subject show as one block, as on Today and the lesson view.
     private var blocks: [DayBlock] {
         let db = model.db
-        let ps = db.periods
+        let rs = db.dayRuns(date)
         var out: [DayBlock] = []
-        for (i, p) in ps.enumerated() {
-            let s = db.plannedSubject(date, p.period)
+        for (i, r) in rs.enumerated() {
+            let s = r.subject
             let isLesson = !s.isEmpty && db.subjectInfo(s).kind != "dottl"
-            let title = isLesson ? s : p.name
+            let title = isLesson ? s : r.lead.name
             let guessed = BoardIcons.guess(title)
             let icon = isLesson ? db.icon(forSubject: s) : (guessed.isEmpty ? "clock" : guessed)
-            out.append(DayBlock(id: "p\(i)", title: title, icon: safeSymbol(icon, "book.closed"), start: p.start, end: p.end,
-                                tone: isLesson ? db.tone(forSubject: s) : nil, lesson: isLesson ? p.period : nil,
+            out.append(DayBlock(id: "p\(r.lead.period)", title: title, icon: safeSymbol(icon, "book.closed"), start: r.start, end: r.end,
+                                tone: isLesson ? db.tone(forSubject: s) : nil, lesson: isLesson ? r.lead.period : nil,
                                 subject: isLesson ? s : ""))
-            if i + 1 < ps.count, mins(p.end, ps[i + 1].start) > 0 {
-                out.append(DayBlock(id: "b\(i)", title: breakLabel(from: p.end, to: ps[i + 1].start), icon: "fork.knife",
-                                    start: p.end, end: ps[i + 1].start, tone: nil, lesson: nil, subject: ""))
+            if i + 1 < rs.count, mins(r.end, rs[i + 1].start) > 0 {
+                out.append(DayBlock(id: "b\(r.lead.period)", title: breakLabel(from: r.end, to: rs[i + 1].start), icon: "fork.knife",
+                                    start: r.end, end: rs[i + 1].start, tone: nil, lesson: nil, subject: ""))
             }
         }
         return out
@@ -334,17 +337,17 @@ struct ScheduleCard: View {
         let fraction: CGFloat = done ? 1 : (current && z > a ? CGFloat(now - a) / CGFloat(z - a) : 0)
         let accent = b.tone?.barColor ?? swatch.ribbon
 
-        let content = HStack(spacing: 16) {
+        let content = HStack(spacing: compact ? 10 : 16) {
             ZStack {
                 Circle().fill(Color.white.opacity(0.6))
                 Image(systemName: b.icon)
-                    .font(.system(size: 30, weight: .semibold))
+                    .font(.system(size: compact ? 20 : 30, weight: .semibold))
                     .foregroundStyle(accent)
             }
-            .frame(width: 70, height: 70)
-            VStack(alignment: .leading, spacing: 6) {
+            .frame(width: compact ? 44 : 70, height: compact ? 44 : 70)
+            VStack(alignment: .leading, spacing: compact ? 2 : 6) {
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text(b.title).font(.boardRow).foregroundStyle(swatch.ink)
+                    Text(b.title).font(compact ? .system(size: 20, weight: .bold, design: .rounded) : .boardRow).foregroundStyle(swatch.ink)
                         .lineLimit(1).minimumScaleFactor(0.6)
                     if current {
                         Text("NOW").font(.boardLabel).tracking(1).foregroundStyle(swatch.ribbon)
@@ -361,12 +364,12 @@ struct ScheduleCard: View {
                     .frame(height: 8)
                     Text(fmtTime(b.end))
                 }
-                .font(.boardTime)
+                .font(compact ? .system(size: 14, weight: .medium, design: .rounded) : .boardTime)
                 .foregroundStyle(swatch.ink.opacity(0.85))
                 .monospacedDigit()
             }
         }
-        .padding(10)
+        .padding(compact ? 6 : 10)
         .background(RoundedRectangle(cornerRadius: Radius.boardTile, style: .continuous)
             .fill(current ? Color.white.opacity(0.55) : swatch.soft.opacity(0.35)))
         .overlay(RoundedRectangle(cornerRadius: Radius.boardTile, style: .continuous)
@@ -426,15 +429,17 @@ struct NeedsCard: View {
 
         BoardCard(swatch: swatch, title: "What you need today", titleFont: .boardHand(26)) {
             if scrolls {
-                ScrollView { list(items: items, missing: missing).padding(.trailing, 6) }
+                ScrollView { list(items: items, missing: missing, weather: false).padding(.trailing, 6) }
                     .scrollIndicators(.automatic)
+                Rectangle().fill(swatch.ribbon.opacity(0.45)).frame(height: 2)
+                WeatherPanel(swatch: swatch, date: date)
             } else {
-                list(items: items, missing: missing)
+                list(items: items, missing: missing, weather: true)
             }
         }
     }
 
-    @ViewBuilder private func list(items: [Row], missing: [String]) -> some View {
+    @ViewBuilder private func list(items: [Row], missing: [String], weather: Bool) -> some View {
         let db = model.db
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 10) {
@@ -486,10 +491,11 @@ struct NeedsCard: View {
                     }
                 }
 
-                Rectangle().fill(swatch.ribbon.opacity(0.45)).frame(height: 2)
-                    .padding(.vertical, 4)
-
-                WeatherPanel(swatch: swatch, date: date)
+                if weather {
+                    Rectangle().fill(swatch.ribbon.opacity(0.45)).frame(height: 2)
+                        .padding(.vertical, 4)
+                    WeatherPanel(swatch: swatch, date: date)
+                }
             }
     }
 
@@ -870,6 +876,8 @@ struct WorkModeRow: View {
 struct DocsCard: View {
     @Environment(AppModel.self) private var model
     var date: String
+    /// On the wide board the list scrolls after a few files, so the question card keeps its room.
+    var capped = false
     @State private var dropping = false
     /// Linked files that cannot be found, checked in the background.
     @State private var missing: Set<String> = []
@@ -895,8 +903,13 @@ struct DocsCard: View {
                         .fixedSize(horizontal: false, vertical: true)
                     Text("Nothing added for today yet.").font(.boardBody).foregroundStyle(swatch.ink.opacity(0.85))
                 } else {
-                    VStack(spacing: 6) {
-                        ForEach(docs, id: \.self) { r in docRow(r) }
+                    if capped {
+                        ScrollView { VStack(spacing: 6) { ForEach(docs, id: \.self) { r in docRow(r) } } }
+                            .frame(maxHeight: 150)
+                    } else {
+                        VStack(spacing: 6) {
+                            ForEach(docs, id: \.self) { r in docRow(r) }
+                        }
                     }
                 }
             }
@@ -997,9 +1010,8 @@ struct PromptCard: View {
                     .font(.boardHand(40))
                     .foregroundStyle(swatch.ink)
                     .lineLimit(4)
-                    .minimumScaleFactor(0.5)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .minimumScaleFactor(0.4)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                     .contentTransition(.opacity)
                     .animation(.easeInOut(duration: 0.3), value: text)
                 Spacer(minLength: 0)

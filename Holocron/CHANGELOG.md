@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.35
+
+- Fixed: on a wide window the whole timetable now fits in its card, the weather stays in view under What you need today, and Documents no longer sits on top of the Question.
+- Today and the Class screen join two lessons of the same subject that run back to back, such as a double TDL. They show as one block from start to finish, and the Class screen no longer jumps at the bell between them. The joined lesson shows the first period's plan, or the second period's if the first is empty. On Today, Change and Move on a joined block ask which period, and right-clicking it reaches each period's plan on its own.
+
 ## 1.34.1
 
 - Fixed: on a wide window the Welcome board no longer runs off the bottom. The timer has its own column, Documents and the Question share the last one, and What you need today scrolls inside its card. The timer buttons and work modes no longer squash their labels.

@@ -96,21 +96,17 @@ enum WorkModes {
 extension ClassTarget {
     /// The lesson to open: the one running now, the next one today, or the first of the day.
     static func pick(_ model: AppModel, date: String) -> ClassTarget? {
-        let db = model.db
-        let ps = db.periods.filter { p in
-            let s = db.plannedSubject(date, p.period)
-            return !s.isEmpty && db.subjectInfo(s).kind != "dottl"
-        }
+        let runs = model.db.classRuns(date)
         if date == todayISO() {
             let n = nowMinutes()
-            if let c = ps.first(where: { (hm($0.start) ?? 0) <= n && n < (hm($0.end) ?? 0) }) {
-                return ClassTarget(date: date, per: c.period)
+            if let c = runs.first(where: { (hm($0.start) ?? 0) <= n && n < (hm($0.end) ?? 0) }) {
+                return ClassTarget(date: date, per: c.lead.period)
             }
-            if let nx = ps.first(where: { (hm($0.start) ?? 0) > n }) {
-                return ClassTarget(date: date, per: nx.period)
+            if let nx = runs.first(where: { (hm($0.start) ?? 0) > n }) {
+                return ClassTarget(date: date, per: nx.lead.period)
             }
         }
-        return ps.first.map { ClassTarget(date: date, per: $0.period) }
+        return runs.first.map { ClassTarget(date: date, per: $0.lead.period) }
     }
 }
 
@@ -177,24 +173,20 @@ struct ClassScreenView: View {
         if let b = initial.board { _mode = State(initialValue: b ? .board : .lesson) }
     }
 
-    private var lessons: [Period] {
-        let db = model.db
-        return db.periods.filter { p in
-            let s = db.plannedSubject(date, p.period)
-            return !s.isEmpty && db.subjectInfo(s).kind != "dottl"
-        }
-    }
+    /// The day's lessons, with back-to-back periods of the same subject joined into one.
+    private var lessons: [LessonRun] { model.db.classRuns(date) }
 
-    /// The lesson running now, or nil before school, at a break or on another day.
+    /// The first period of the lesson running now, or nil before school, at a break or on another day.
+    /// A joined lesson gives the same answer all the way through, so the screen stays put at the bell between its periods.
     private func runningLesson() -> Int? {
         guard date == todayISO() else { return nil }
         let n = nowMinutes()
-        return lessons.first(where: { (hm($0.start) ?? 0) <= n && n < (hm($0.end) ?? 0) })?.period
+        return lessons.first(where: { (hm($0.start) ?? 0) <= n && n < (hm($0.end) ?? 0) })?.lead.period
     }
 
     var body: some View {
         let ps = lessons
-        let ix = ps.firstIndex(where: { $0.period == pn })
+        let ix = ps.firstIndex(where: { $0.contains(pn) })
 
         VStack(alignment: .leading, spacing: 0) {
             if mode == .board {
@@ -273,7 +265,11 @@ struct ClassScreenView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: mode)
-        .onAppear { model.classScreens.insert(screenID); screenFocused = true; wakeBar() }
+        .onAppear {
+            // Opened on the second period of a joined lesson: show it from its first period, where its steps are kept.
+            pn = model.db.classLead(date, pn)
+            model.classScreens.insert(screenID); screenFocused = true; wakeBar()
+        }
         .onDisappear { model.classScreens.remove(screenID); hideTask?.cancel(); overBar = false }
     }
 
@@ -291,12 +287,12 @@ struct ClassScreenView: View {
         }
     }
 
-    private func stepLesson(_ by: Int, ps: [Period], ix: Int?) {
+    private func stepLesson(_ by: Int, ps: [LessonRun], ix: Int?) {
         guard let i = ix, ps.indices.contains(i + by) else { return }
-        pn = ps[i + by].period
+        pn = ps[i + by].lead.period
     }
 
-    private func controls(ps: [Period], ix: Int?) -> some View {
+    private func controls(ps: [LessonRun], ix: Int?) -> some View {
         HStack(spacing: 8) {
             if mode == .lesson {
                 Button { mode = .board } label: { Label("Welcome board", systemImage: "house") }
@@ -337,15 +333,18 @@ struct ClassScreenView: View {
     // MARK: Lesson
 
     @ViewBuilder
-    private func lessonView(ps: [Period], ix: Int?) -> some View {
+    private func lessonView(ps: [LessonRun], ix: Int?) -> some View {
         let db = model.db
-        let p = db.period(pn)
-        let subj = db.plannedSubject(date, pn)
-        let c = db.content(date, pn)
+        let run = ix.map { ps[$0] }
+        let p = run.map { Period(period: $0.lead.period, name: $0.name, start: $0.start, end: $0.end) } ?? db.period(pn)
+        let subj = run?.subject ?? db.plannedSubject(date, pn)
+        let c = run.map { db.classContent(date, $0) } ?? db.content(date, pn)
         let sc = linesOf(c.sc).map { KidWords.strip($0, KidWords.scLeads) }
         let tone = subj.isEmpty ? Tone.unset : db.tone(forSubject: subj)
         let unit: Row? = subj == "TDL" ? db.unitOn(date) : nil
-        let showSteps = stepsOpen || db.classSteps(date, pn).contains { !$0.isEmpty }
+        // Steps belong to the first period of a joined lesson, even if pn is still the second after a timetable change.
+        let stepsPer = run?.lead.period ?? pn
+        let showSteps = stepsOpen || db.classSteps(date, stepsPer).contains { !$0.isEmpty }
         let swatch = BoardStyle.subject(tone)
 
         topBar(subj: subj, p: p, tone: tone, ps: ps, ix: ix)
@@ -389,7 +388,7 @@ struct ClassScreenView: View {
                             }
                         }
                         if showSteps {
-                            stepsRow(tone: tone)
+                            stepsRow(tone: tone, per: stepsPer)
                                 .padding(.top, 14)
                         } else {
                             Button { stepsOpen = true } label: {
@@ -425,13 +424,13 @@ struct ClassScreenView: View {
 
     // MARK: First, Then, Next
 
-    private func stepsRow(tone: Tone) -> some View {
+    private func stepsRow(tone: Tone, per: Int) -> some View {
         HStack(alignment: .top, spacing: 14) {
             ForEach(0..<3, id: \.self) { i in
                 StepCard(number: i + 1,
                          label: ["First", "Then", "Next"][i],
-                         text: Binding(get: { model.db.classSteps(date, pn)[i] },
-                                       set: { model.db.setClassStep(date, pn, i, $0) }),
+                         text: Binding(get: { model.db.classSteps(date, per)[i] },
+                                       set: { model.db.setClassStep(date, per, i, $0) }),
                          tone: tone,
                          active: activeStep == i + 1,
                          onPick: { activeStep = activeStep == i + 1 ? 0 : i + 1 })
@@ -484,7 +483,7 @@ struct ClassScreenView: View {
     // MARK: Top bar
 
     @ViewBuilder
-    private func topBar(subj: String, p: Period?, tone: Tone, ps: [Period], ix: Int?) -> some View {
+    private func topBar(subj: String, p: Period?, tone: Tone, ps: [LessonRun], ix: Int?) -> some View {
         HStack(alignment: .center, spacing: 14) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(subj.isEmpty ? "No lesson" : subj)
@@ -493,6 +492,7 @@ struct ClassScreenView: View {
                     .lineLimit(1).minimumScaleFactor(0.6)
                 HStack(spacing: 10) {
                     Text("\(p?.name ?? "") · \(fmtTime(p?.start ?? "")) to \(fmtTime(p?.end ?? ""))")
+                        .lineLimit(1).minimumScaleFactor(0.7)
                     if date != todayISO() { Text(longDate(date)) }
                     remaining(p)
                 }
